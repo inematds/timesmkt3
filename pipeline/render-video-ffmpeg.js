@@ -139,28 +139,75 @@ function renderVideo(scenePlanPath, outputPath) {
       // Font size based on text length
       const fontSize = textOverlay.length > 60 ? 52 : textOverlay.length > 30 ? 64 : 80;
 
+      // Ken Burns motion type: alternate zoom-in / zoom-out / pan-right / pan-left per scene
+      const motionTypes = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left'];
+      const motionType = motionTypes[i % motionTypes.length];
+      const fps = 30;
+      const totalFrames = Math.round(duration * fps);
+
+      // Ken Burns zoompan filter
+      // Zoom range: 1.0 to 1.08 (subtle — prevents distortion on vertical video)
+      const zoomStart = 1.0;
+      const zoomEnd = 1.08;
+      let kbFilter = '';
+      if (motionType === 'zoom_in') {
+        kbFilter = `zoompan=z='${zoomStart}+(${zoomEnd}-${zoomStart})*on/${totalFrames}':` +
+          `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':` +
+          `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
+      } else if (motionType === 'zoom_out') {
+        kbFilter = `zoompan=z='${zoomEnd}-(${zoomEnd}-${zoomStart})*on/${totalFrames}':` +
+          `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':` +
+          `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
+      } else if (motionType === 'pan_right') {
+        kbFilter = `zoompan=z='${zoomEnd}':` +
+          `x='(iw-(iw/zoom))*on/${totalFrames}':y='ih/2-(ih/zoom/2)':` +
+          `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
+      } else { // pan_left
+        kbFilter = `zoompan=z='${zoomEnd}':` +
+          `x='(iw-(iw/zoom))*(1-on/${totalFrames})':y='ih/2-(ih/zoom/2)':` +
+          `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
+      }
+
+      // Fade in/out for the segment (0.4s each)
+      const fadeDur = Math.min(0.4, duration / 4);
+      const fadeOut = duration - fadeDur;
+      const fadeFilter = `fade=t=in:st=0:d=${fadeDur},fade=t=out:st=${fadeOut.toFixed(2)}:d=${fadeDur}`;
+
+      // Text fade-in: alpha goes from 0 to 1 over first 0.5s
+      const textFadeFrames = Math.round(0.5 * fps);
+      const alphaExpr = `if(lt(n,${textFadeFrames}),n/${textFadeFrames},1)`;
+
       let vfParts = [];
 
       if (imgSrc && fs.existsSync(imgSrc)) {
-        // Scale and crop to target dimensions
-        vfParts.push(`scale=${vidW}:${vidH}:force_original_aspect_ratio=increase`);
-        vfParts.push(`crop=${vidW}:${vidH}`);
+        // Scale to fit first, then Ken Burns
+        vfParts.push(`scale=${vidW * 2}:${vidH * 2}:force_original_aspect_ratio=increase`);
+        vfParts.push(kbFilter);
       } else {
-        // Solid dark background if no image
+        // Solid dark background — just scale, no KB
         vfParts.push(`scale=${vidW}:${vidH}`);
       }
 
+      // Fade in/out on the segment
+      vfParts.push(fadeFilter);
+
       if (escapedText) {
-        // Semi-transparent bottom bar for text readability
+        // Gradient scrim at bottom for text readability
         vfParts.push(
-          `drawbox=x=0:y=ih-${fontSize * 3}:w=iw:h=${fontSize * 3}:color=black@0.55:t=fill`
+          `drawbox=x=0:y=ih-${fontSize * 3 + 20}:w=iw:h=${fontSize * 3 + 20}:` +
+          `color=black@0.0:t=fill`  // transparent base — gradient done via drawtext positioning
         );
-        // Main text
+        // Dark gradient overlay (simulate with two overlapping boxes)
         vfParts.push(
-          `drawtext=text='${escapedText}':fontsize=${fontSize}:fontcolor=white:` +
-          `x=(w-text_w)/2:y=h-${Math.round(fontSize * 2.2)}:` +
+          `drawbox=x=0:y=ih*0.55:w=iw:h=ih*0.45:color=black@0.6:t=fill`
+        );
+        // Text with fade-in alpha
+        vfParts.push(
+          `drawtext=text='${escapedText}':fontsize=${fontSize}:` +
+          `fontcolor=white@1:alpha='${alphaExpr}':` +
+          `x=(w-text_w)/2:y=h-${Math.round(fontSize * 2.4)}:` +
           `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
-          `shadowcolor=black@0.8:shadowx=2:shadowy=2`
+          `shadowcolor=black@0.9:shadowx=3:shadowy=3:shadowx=3`
         );
       }
 
@@ -174,13 +221,13 @@ function renderVideo(scenePlanPath, outputPath) {
             '-vf', vf,
             '-c:v', 'libx264',
             '-pix_fmt', 'yuv420p',
-            '-r', '30',
+            '-r', String(fps),
             '-an',
             '-y', segOut,
           ]
         : [
             '-f', 'lavfi',
-            '-i', `color=c=0x0D0D0D:size=${vidW}x${vidH}:rate=30`,
+            '-i', `color=c=0x0D0D0D:size=${vidW}x${vidH}:rate=${fps}`,
             '-t', String(duration),
             '-vf', vf,
             '-c:v', 'libx264',
@@ -203,7 +250,9 @@ function renderVideo(scenePlanPath, outputPath) {
       '-f', 'concat',
       '-safe', '0',
       '-i', concatList,
-      '-c', 'copy',
+      '-c:v', 'libx264',
+      '-pix_fmt', 'yuv420p',
+      '-r', '30',
       '-y', silentVideo,
     ], { stdio: 'pipe' });
 

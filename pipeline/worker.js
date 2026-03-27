@@ -257,14 +257,62 @@ CRITICAL RENDER: Use Playwright (chromium) to render EVERY HTML to PNG:
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1080, height: 1080 }); // 1920 for stories
   await page.goto('file://' + path.resolve(htmlFilePath));
+  await page.waitForTimeout(600); // let CSS animations settle
   await page.screenshot({ path: pngOutputPath });
   await browser.close();
 
+━━━ VISUAL DESIGN STANDARDS (mandatory — this is the quality bar) ━━━
+
+COMPOSITION & LAYOUT:
+- Use the "Z-pattern" or "F-pattern" reading flow — place the most important element top-left or centered
+- Breathing room: minimum 48px margin on all sides — never crowd the edges
+- Visual weight: one dominant element per slide (headline OR image OR graphic) — not all at once
+- Use the rule of thirds: position subject at intersection points, not dead center
+- For carousels: each slide has ONE primary message — no information overload
+
+TYPOGRAPHY (critical):
+- Maximum 2 font sizes per slide: one for headline (80–120px), one for subtext (36–52px)
+- Headlines: ALL CAPS or Title Case, never sentence case for impact
+- Line height: 1.1–1.2 for headlines, 1.4–1.6 for body text
+- Letter spacing: +0.02em to +0.08em for headlines — gives premium feel
+- Hierarchy rule: headline → subtext → CTA — each 30–40% smaller than the previous
+- NEVER use more than 8 words on a headline — if longer, split into headline + subtext
+
+COLOR & CONTRAST:
+- Text on image: ALWAYS use at least one of: dark scrim (rgba 0,0,0,0.5+), blur backdrop, gradient overlay, or solid color band
+- Contrast ratio minimum: 4.5:1 for body text, 3:1 for large headlines (WCAG AA)
+- Use brand accent color SPARINGLY — 1–2 elements max (CTA button, underline, badge)
+- Gradient overlays: prefer bottom-to-top (text lives at bottom) or full-bleed subtle vignette
+
+VISUAL EFFECTS (use inline CSS):
+- Image treatment: mix of brightness(0.85) + contrast(1.1) + saturate(1.2) for punchy look
+- Glassmorphism CTA button: background: rgba(255,255,255,0.15); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.3)
+- Text pop: text-shadow: 0 2px 8px rgba(0,0,0,0.6), 0 0 40px rgba(0,0,0,0.3)
+- Subtle glow on CTA: box-shadow: 0 4px 24px rgba(<accent-color>, 0.5)
+- Overlay gradient: linear-gradient(to top, rgba(0,0,0,0.75) 0%, rgba(0,0,0,0.2) 50%, transparent 100%)
+
+CSS ANIMATION (capture the "first-frame" of the animation for the screenshot):
+- Headline: animate fade-up — transform: translateY(20px) → 0; opacity: 0 → 1
+- CTA badge: animate scale-in — transform: scale(0.9) → 1; opacity: 0 → 1; delay 0.3s
+- Set animation-fill-mode: both and animation-duration: 0.5s — Playwright captures at ~600ms, so they'll be fully visible
+
+SLIDE-SPECIFIC ANGLES (for carousels):
+- Slide 1 (Hook): Bold question or statement. Minimum text. Maximum visual impact.
+- Middle slides: One benefit per slide. Human/emotional imagery if possible. Short copy.
+- Last slide (CTA): Brand logo visible, CTA button prominent, URL/handle clear.
+
+CTA BUTTON DESIGN:
+- Pill shape: border-radius: 9999px
+- Padding: 18px 48px
+- Font: uppercase, letter-spacing: 0.1em, bold
+- High contrast: brand accent fill or white fill with dark text
+- Never just text — always a visible button container
+
 Design quality bar:
 - Each slide uses a DIFFERENT brand image — never repeat the same photo
-- Brand color palette from brand_identity.md applied to text, overlays, CTAs
-- Bold typography, high contrast, clear visual hierarchy
-- Campaign theme visible in every image — coherent visual story`;
+- Brand color palette from brand_identity.md applied consistently
+- Every slide looks like it belongs to the same campaign (visual cohesion)
+- Campaign theme + emotional feeling present in every single image`;
 
   await runClaude(prompt, 'ad_creative_designer', output_dir, 900000); // 15 min for multiple images
   return { status: 'complete', output: `${output_dir}/ads/` };
@@ -350,15 +398,26 @@ a) Scene plan JSON — save to ${output_dir}/video/video_0N_scene_plan.json
      ]
    }
 
+SCENE DESIGN RULES (critical for quality):
+- text_overlay: MAX 6 words per scene — short, punchy, impactful
+- Scene types and their emotional function:
+  • hook (scene 1): provocative question or bold statement — ignites curiosity
+  • problem/tension (scene 2): shows the pain point or aspiration — emotional connection
+  • solution/benefit (scene 3): product/service as the answer — relief, transformation
+  • social_proof (scene 4): community, results, credibility — trust
+  • cta (last scene): clear action + URL/handle — urgency, clarity
+- Each scene's narration line must match the text_overlay theme — they reinforce each other
+- Scene durations should vary: hook 3s, middle scenes 4-5s, CTA 4s (renderer will auto-adjust to match audio)
+
 b) CRITICAL: Use REAL brand images from the list above for each scene "image" field.
    - Different image per scene — never repeat
-   - Choose images that match the scene's emotional context
+   - Match image emotional mood to scene type (hook = dramatic, cta = clear/inviting)
    - Use absolute file paths
 
 c) After generating ALL scene plans and audio, render each video using ffmpeg:
    node pipeline/render-video-ffmpeg.js ${output_dir}/video/video_0N_scene_plan.json ${output_dir}/video/video_0N.mp4
 
-Each video: 20 seconds, hook in first 3 seconds, 4-5 scenes, strong CTA at end.
+Each video: 20–30 seconds, hook in first 3 seconds, 4-5 scenes, strong CTA at end.
 ${video_count} videos must each have DIFFERENT emotional angles and image selections.`;
 
   await runClaude(prompt, 'video_ad_specialist', output_dir, 900000);
