@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 
+const https = require('https');
 const config = require('./config');
 const session = require('./session');
 const { toTelegramHTML, splitMessage } = require('./formatter');
@@ -37,11 +38,10 @@ bot.use(async (ctx, next) => {
   // Send ack before processing any message
   if (ctx.message?.text) {
     const text = ctx.message.text;
-    // Skip ack for help commands (instant responses)
     const skipAck = /^\/(start|help|projetos|outputs|status)/.test(text);
-    if (!skipAck) {
-      await ctx.reply(BOT_ACK);
-    }
+    if (!skipAck) await ctx.reply(BOT_ACK);
+  } else if (ctx.message?.photo || ctx.message?.document) {
+    await ctx.reply(BOT_ACK);
   }
 
   await next();
@@ -82,7 +82,8 @@ bot.command('help', async (ctx) => {
     `/campanha &lt;nome&gt; [opcoes] — pipeline completo\n` +
     `/status — status do pipeline\n` +
     `/outputs — lista campanhas\n` +
-    `/enviar &lt;pasta&gt; — receber arquivos\n\n` +
+    `/relatorio &lt;campanha&gt; — resumo + inventario de arquivos\n` +
+    `/enviar &lt;campanha&gt; [imagens|videos|audio|copy|tudo]\n\n` +
 
     `<b>Agentes</b>\n` +
     `/pesquisa &lt;tema&gt; — Research Agent\n` +
@@ -95,6 +96,11 @@ bot.command('help', async (ctx) => {
     `/sfx-free\n` +
     `/tts-api, /tts-free\n` +
     `/media-status\n\n` +
+
+    `<b>Fotos (upload)</b>\n` +
+    `/fotoprojeto [pasta] — proximas fotos vao para o projeto\n` +
+    `/fotocampanha [pasta] — proximas fotos vao para a campanha ativa\n` +
+    `Envie foto com legenda "campanha" ou "projeto" para override\n\n` +
 
     `<b>Conversa</b>\n` +
     `/novochat — limpa historico\n` +
@@ -336,51 +342,203 @@ bot.command('projeto', async (ctx) => {
 // ── /outputs ────────────────────────────────────────────────────────────────
 
 bot.command('outputs', async (ctx) => {
-  const chatId = String(ctx.chat.id);
-  const s = session.get(chatId);
-  const outputsDir = path.join(PROJECT_ROOT, s.projectDir, 'outputs');
+  const prjRoot = path.join(PROJECT_ROOT, 'prj');
+  if (!fs.existsSync(prjRoot)) return ctx.reply('Nenhuma campanha gerada ainda.');
 
-  if (!fs.existsSync(outputsDir)) {
-    return ctx.reply('Nenhuma campanha gerada ainda.');
-  }
-
-  const folders = fs.readdirSync(outputsDir, { withFileTypes: true })
+  const projects = fs.readdirSync(prjRoot, { withFileTypes: true })
     .filter(d => d.isDirectory())
-    .map(d => d.name)
-    .sort()
-    .reverse();
+    .map(d => d.name);
 
-  if (folders.length === 0) {
-    return ctx.reply('Nenhuma campanha gerada ainda.');
+  const lines = [];
+  for (const prj of projects) {
+    const outputsDir = path.join(prjRoot, prj, 'outputs');
+    if (!fs.existsSync(outputsDir)) continue;
+    const folders = fs.readdirSync(outputsDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .map(d => d.name)
+      .sort()
+      .reverse();
+    if (folders.length > 0) {
+      lines.push(`<b>${prj}:</b>`);
+      folders.forEach(f => lines.push(`  - <code>${f}</code>`));
+    }
   }
 
-  const lines = folders.map(f => `- <code>${f}</code>`);
+  if (lines.length === 0) return ctx.reply('Nenhuma campanha gerada ainda.');
+
   await ctx.reply(
-    `<b>Campanhas em ${s.projectDir}:</b>\n\n${lines.join('\n')}\n\nUse /enviar &lt;pasta&gt; para receber os arquivos.`,
+    `<b>Campanhas disponíveis:</b>\n\n${lines.join('\n')}\n\nUse /relatorio &lt;pasta&gt; ou /enviar &lt;pasta&gt; [tipo]`,
     { parse_mode: 'HTML' }
   );
 });
 
-// ── /enviar <pasta> ─────────────────────────────────────────────────────────
+// ── /relatorio <campanha> ────────────────────────────────────────────────────
+// Send the Publish MD summary + list of available files for download
 
-bot.command('enviar', async (ctx) => {
+bot.command('relatorio', async (ctx) => {
   const folder = ctx.match?.trim();
   if (!folder) {
-    return ctx.reply('Use: /enviar <nome_da_campanha>\nExemplo: /enviar dia_das_maes_2026-05-10');
+    return ctx.reply('Use: /relatorio <campanha>\nExemplo: /relatorio dia_das_maes_2026-05-10');
   }
 
   const chatId = String(ctx.chat.id);
   const s = session.get(chatId);
-  const outputDir = path.join(PROJECT_ROOT, s.projectDir, 'outputs', folder);
+  let outputDir = path.join(PROJECT_ROOT, s.projectDir, 'outputs', folder);
 
   if (!fs.existsSync(outputDir)) {
-    return ctx.reply(`Pasta nao encontrada: ${s.projectDir}/outputs/${folder}`);
+    // Try to find the campaign in any project
+    const prjRoot = path.join(PROJECT_ROOT, 'prj');
+    const projects = fs.existsSync(prjRoot) ? fs.readdirSync(prjRoot) : [];
+    let found = null;
+    for (const prj of projects) {
+      const candidate = path.join(prjRoot, prj, 'outputs', folder);
+      if (fs.existsSync(candidate)) { found = candidate; session.setProject(chatId, `prj/${prj}`); break; }
+    }
+    if (!found) return ctx.reply(`Campanha nao encontrada: ${folder}\n\nUse /outputs para listar campanhas disponíveis.`);
+    outputDir = found;
   }
 
-  await ctx.reply(`Enviando arquivos de <code>${folder}</code>...`, { parse_mode: 'HTML' });
-  await sendCampaignOutputs(ctx, outputDir);
-  await ctx.reply('Todos os arquivos enviados.');
+  await sendCampaignReport(ctx, outputDir, folder);
 });
+
+// ── /enviar <campanha> [tipo] ────────────────────────────────────────────────
+// Download specific file types from a campaign
+// tipo: imagens | videos | audio | copy | tudo
+
+bot.command('enviar', async (ctx) => {
+  const raw = ctx.match?.trim();
+  if (!raw) {
+    return ctx.reply(
+      'Use: /enviar &lt;campanha&gt; [tipo]\n\n' +
+      'Tipos: <code>imagens</code>, <code>videos</code>, <code>audio</code>, <code>copy</code>, <code>tudo</code>\n\n' +
+      'Exemplos:\n' +
+      '<code>/enviar dia_das_maes_2026-05-10 imagens</code>\n' +
+      '<code>/enviar dia_das_maes_2026-05-10 videos</code>\n' +
+      '<code>/enviar dia_das_maes_2026-05-10 tudo</code>',
+      { parse_mode: 'HTML' }
+    );
+  }
+
+  const parts = raw.split(/\s+/);
+  const folder = parts[0];
+  const tipo = parts[1] || 'tudo';
+
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  let outputDir = path.join(PROJECT_ROOT, s.projectDir, 'outputs', folder);
+
+  if (!fs.existsSync(outputDir)) {
+    // Try to find the campaign in any project
+    const prjRoot = path.join(PROJECT_ROOT, 'prj');
+    const projects = fs.existsSync(prjRoot) ? fs.readdirSync(prjRoot) : [];
+    let found = null;
+    for (const prj of projects) {
+      const candidate = path.join(prjRoot, prj, 'outputs', folder);
+      if (fs.existsSync(candidate)) { found = candidate; session.setProject(chatId, `prj/${prj}`); break; }
+    }
+    if (!found) return ctx.reply(`Campanha nao encontrada: ${folder}\n\nUse /outputs para listar campanhas disponíveis.`);
+    outputDir = found;
+  }
+
+  await ctx.reply(`Enviando <b>${tipo}</b> de <code>${folder}</code>...`, { parse_mode: 'HTML' });
+  await sendCampaignFiles(ctx, outputDir, tipo);
+});
+
+// ── Campaign report sender ───────────────────────────────────────────────────
+
+async function sendCampaignReport(ctx, outputDir, folderName) {
+  const imageExts = ['.png', '.jpg', '.jpeg', '.webp'];
+  const videoExts = ['.mp4', '.mov', '.webm'];
+  const audioExts = ['.mp3', '.wav', '.ogg'];
+
+  // Count available files
+  const countFiles = (subdir, exts) => {
+    const d = path.join(outputDir, subdir);
+    if (!fs.existsSync(d)) return 0;
+    return fs.readdirSync(d).filter(f => exts.includes(path.extname(f).toLowerCase())).length;
+  };
+
+  const imgCount = countFiles('ads', imageExts);
+  const vidCount = countFiles('video', videoExts);
+  const audioCount = countFiles('audio', audioExts);
+
+  // Send Publish MD if exists
+  const publishFiles = fs.readdirSync(outputDir).filter(f => f.startsWith('Publish') && f.endsWith('.md'));
+  if (publishFiles.length > 0) {
+    const publishPath = path.join(outputDir, publishFiles[0]);
+    const publishContent = fs.readFileSync(publishPath, 'utf-8');
+    // Send first 3000 chars as text
+    const preview = publishContent.slice(0, 3000) + (publishContent.length > 3000 ? '\n\n...' : '');
+    const parts = splitMessage(toTelegramHTML(preview));
+    for (const part of parts) {
+      try {
+        await ctx.reply(part, { parse_mode: 'HTML' });
+      } catch {
+        await ctx.reply(part);
+      }
+    }
+  }
+
+  // Send file inventory
+  await ctx.reply(
+    `<b>Arquivos disponíveis — ${folderName}</b>\n\n` +
+    `🖼 Imagens: <b>${imgCount}</b> arquivos em ads/\n` +
+    `🎬 Videos: <b>${vidCount}</b> arquivos em video/\n` +
+    `🔊 Audio: <b>${audioCount}</b> arquivos em audio/\n\n` +
+    `Para baixar, use:\n` +
+    `<code>/enviar ${folderName} imagens</code>\n` +
+    `<code>/enviar ${folderName} videos</code>\n` +
+    `<code>/enviar ${folderName} audio</code>\n` +
+    `<code>/enviar ${folderName} copy</code>\n` +
+    `<code>/enviar ${folderName} tudo</code>`,
+    { parse_mode: 'HTML' }
+  );
+}
+
+// ── Campaign file sender by type ─────────────────────────────────────────────
+
+async function sendCampaignFiles(ctx, outputDir, tipo) {
+  const imageExts = ['.png', '.jpg', '.jpeg', '.webp'];
+  const videoExts = ['.mp4', '.mov', '.webm'];
+  const audioExts = ['.mp3', '.wav', '.ogg'];
+
+  const sendDir = async (subdir, exts, sendFn) => {
+    const d = path.join(outputDir, subdir);
+    if (!fs.existsSync(d)) return 0;
+    const files = fs.readdirSync(d).filter(f => exts.includes(path.extname(f).toLowerCase()));
+    for (const f of files) {
+      await sendFn(ctx, path.join(d, f), f);
+    }
+    return files.length;
+  };
+
+  let sent = 0;
+
+  if (tipo === 'imagens' || tipo === 'tudo') {
+    sent += await sendDir('ads', imageExts, sendPhoto);
+  }
+  if (tipo === 'videos' || tipo === 'tudo') {
+    sent += await sendDir('video', videoExts, sendVideo);
+  }
+  if (tipo === 'audio' || tipo === 'tudo') {
+    sent += await sendDir('audio', audioExts, sendDocument);
+  }
+  if (tipo === 'copy' || tipo === 'tudo') {
+    sent += await sendDir('copy', ['.txt', '.json', '.md'], sendDocument);
+    // Also send Publish MD
+    const publishFiles = fs.readdirSync(outputDir).filter(f => f.startsWith('Publish') && f.endsWith('.md'));
+    for (const f of publishFiles) {
+      await sendDocument(ctx, path.join(outputDir, f), f);
+      sent++;
+    }
+  }
+
+  if (sent === 0) {
+    await ctx.reply(`Nenhum arquivo encontrado para o tipo: ${tipo}`);
+  } else {
+    await ctx.reply(`${sent} arquivo(s) enviado(s).`);
+  }
+}
 
 // ── /campanha ───────────────────────────────────────────────────────────────
 
@@ -397,67 +555,25 @@ bot.command('campanha', async (ctx) => {
     return ctx.reply(
       'Use: /campanha <nome> [opcoes]\n\n' +
       'Opcoes:\n' +
-      '  --date YYYY-MM-DD (padrao: hoje)\n' +
-      '  --lang pt-BR|en (padrao: pt-BR)\n' +
+      '  --date YYYY-MM-DD\n' +
+      '  --lang pt-BR|en\n' +
       '  --platforms instagram,youtube,threads\n' +
-      '  --images N (padrao: 1)\n' +
-      '  --videos N (padrao: 1)\n' +
-      '  --skip-research\n' +
-      '  --skip-image\n' +
-      '  --skip-video\n\n' +
-      'Exemplo:\n/campanha dia_das_maes --date 2026-05-10 --lang pt-BR --images 5 --videos 2'
+      '  --images N\n' +
+      '  --videos N\n' +
+      '  --img-source brand|pexels|generate\n' +
+      '  --skip-research / --skip-image / --skip-video\n\n' +
+      'Ou escreva livremente o que quer na campanha — eu organizo e confirmo antes de rodar.'
     );
   }
 
-  // Parse arguments
   const args = raw.split(/\s+/);
   const taskName = args[0];
   const opts = parseArgs(args.slice(1));
 
   const today = new Date().toISOString().slice(0, 10);
-  const taskDate = opts.date || today;
-  const language = opts.lang || 'pt-BR';
-  const platforms = opts.platforms ? opts.platforms.split(',') : ['instagram', 'youtube', 'threads'];
-  const imageCount = parseInt(opts.images || '1', 10);
-  const videoCount = parseInt(opts.videos || '1', 10);
+  const payload = buildPayload(taskName, opts, s.projectDir, today);
 
-  const payload = {
-    task_name: taskName,
-    task_date: taskDate,
-    project_dir: s.projectDir,
-    platform_targets: platforms,
-    language,
-    skip_research: opts['skip-research'] === true,
-    skip_image: opts['skip-image'] === true,
-    skip_video: opts['skip-video'] === true,
-    image_count: imageCount,
-    video_count: videoCount,
-    campaign_brief: opts.brief || '',
-  };
-
-  const outputDir = `${s.projectDir}/outputs/${taskName}_${taskDate}`;
-
-  session.setRunningTask(chatId, {
-    taskName,
-    taskDate,
-    outputDir,
-    startedAt: new Date().toISOString(),
-  });
-
-  await ctx.reply(
-    `Pipeline iniciado!\n\n` +
-    `Tarefa: <code>${taskName}</code>\n` +
-    `Data: ${taskDate}\n` +
-    `Projeto: <code>${s.projectDir}</code>\n` +
-    `Plataformas: ${platforms.join(', ')}\n` +
-    `Imagens: ${imageCount} | Videos: ${videoCount}\n` +
-    `Idioma: ${language}\n\n` +
-    `Use /status para acompanhar.`,
-    { parse_mode: 'HTML' }
-  );
-
-  // Run orchestrator + worker
-  runPipeline(ctx, chatId, payload, outputDir);
+  await showCampaignConfirmation(ctx, chatId, payload);
 });
 
 // ── /status ─────────────────────────────────────────────────────────────────
@@ -576,6 +692,112 @@ Save to ${outputDir}/copy/: threads_post.txt, instagram_caption.txt, youtube_met
   });
 });
 
+// ── /foto-projeto [pasta] ────────────────────────────────────────────────────
+// Route next photos to project-level folder (default: imgs/)
+
+bot.command('fotoprojeto', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  const folder = ctx.match?.trim() || 'imgs';
+
+  session.setPhotoTarget(chatId, 'project', folder);
+
+  await ctx.reply(
+    `Fotos enviadas serao salvas em:\n<code>${s.projectDir}/${folder}/</code>`,
+    { parse_mode: 'HTML' }
+  );
+});
+
+// ── /foto-campanha [pasta] ───────────────────────────────────────────────────
+// Route next photos to current campaign's assets folder
+
+bot.command('fotocampanha', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  const folder = ctx.match?.trim() || 'assets';
+
+  if (!s.runningTask) {
+    return ctx.reply(
+      'Nenhuma campanha ativa. Use /campanha para iniciar uma ou use /fotoprojeto para salvar no projeto.'
+    );
+  }
+
+  session.setPhotoTarget(chatId, 'campaign', folder);
+
+  await ctx.reply(
+    `Fotos enviadas serao salvas em:\n<code>${s.runningTask.outputDir}/${folder}/</code>`,
+    { parse_mode: 'HTML' }
+  );
+});
+
+// ── Photo/document handler ───────────────────────────────────────────────────
+
+bot.on('message:photo', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  const caption = ctx.message.caption?.trim() || '';
+
+  // Allow inline destination override: "campanha" or "projeto [pasta]"
+  let { destination, folder } = s.photoTarget;
+  if (/^campanha/i.test(caption)) {
+    destination = 'campaign';
+    folder = caption.split(/\s+/)[1] || 'assets';
+  } else if (/^projeto/i.test(caption)) {
+    destination = 'project';
+    folder = caption.split(/\s+/)[1] || 'imgs';
+  }
+
+  // Resolve destination folder
+  let destDir;
+  if (destination === 'campaign') {
+    if (!s.runningTask) {
+      return ctx.reply(
+        'Nenhuma campanha ativa. Enviando para o projeto.\n' +
+        `Use /fotocampanha apos iniciar uma campanha.`
+      );
+    }
+    destDir = path.join(PROJECT_ROOT, s.runningTask.outputDir, folder);
+  } else {
+    destDir = path.join(PROJECT_ROOT, s.projectDir, folder);
+  }
+
+  fs.mkdirSync(destDir, { recursive: true });
+
+  // Get highest resolution photo
+  const photo = ctx.message.photo.at(-1);
+  const file = await ctx.api.getFile(photo.file_id);
+  const ext = path.extname(file.file_path) || '.jpg';
+  const filename = `foto_${Date.now()}${ext}`;
+  const savePath = path.join(destDir, filename);
+
+  // Download file from Telegram
+  await downloadTelegramFile(file.file_path, savePath);
+
+  const relPath = path.relative(PROJECT_ROOT, savePath);
+  await ctx.reply(
+    `Foto salva em:\n<code>${relPath}</code>\n\n` +
+    `Use /fotoprojeto ou /fotocampanha para mudar o destino.`,
+    { parse_mode: 'HTML' }
+  );
+});
+
+// ── Telegram file downloader ─────────────────────────────────────────────────
+
+function downloadTelegramFile(filePath, savePath) {
+  const url = `https://api.telegram.org/file/bot${config.botToken}/${filePath}`;
+  return new Promise((resolve, reject) => {
+    const out = fs.createWriteStream(savePath);
+    https.get(url, (res) => {
+      if (res.statusCode !== 200) {
+        return reject(new Error(`Download failed: HTTP ${res.statusCode}`));
+      }
+      res.pipe(out);
+      out.on('finish', resolve);
+      out.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
 // ── /novochat ───────────────────────────────────────────────────────────────
 
 bot.command('novochat', async (ctx) => {
@@ -584,7 +806,7 @@ bot.command('novochat', async (ctx) => {
   await ctx.reply('Historico limpo. Nova conversa iniciada.');
 });
 
-// ── Free text → Claude conversation ─────────────────────────────────────────
+// ── Free text → campaign confirmation or Claude conversation ─────────────────
 
 bot.on('message:text', async (ctx) => {
   const text = ctx.message.text;
@@ -595,23 +817,205 @@ bot.on('message:text', async (ctx) => {
   const chatId = String(ctx.chat.id);
   const s = session.get(chatId);
 
-  // Don't stack requests
+  // ── Confirmation replies for pending campaign ───────────────────────────
+  if (s.pendingCampaign) {
+    const lower = text.toLowerCase().trim();
+    const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda|rodar)/.test(lower);
+    const isCancel  = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);
+
+    if (isConfirm) {
+      const payload = s.pendingCampaign;
+      session.clearPendingCampaign(chatId);
+
+      const outputDir = `${payload.project_dir}/outputs/${payload.task_name}_${payload.task_date}`;
+      session.setRunningTask(chatId, {
+        taskName: payload.task_name,
+        taskDate: payload.task_date,
+        outputDir,
+        startedAt: new Date().toISOString(),
+      });
+
+      await ctx.reply(`Iniciando pipeline <b>${payload.task_name}</b>...\n\nUse /status para acompanhar.`, { parse_mode: 'HTML' });
+      runPipeline(ctx, chatId, payload, outputDir);
+      return;
+    }
+
+    if (isCancel) {
+      session.clearPendingCampaign(chatId);
+      await ctx.reply('Campanha cancelada.');
+      return;
+    }
+
+    // User is refining the brief — re-parse with updated text
+    if (lower.length > 10) {
+      await ctx.reply('Atualizando o briefing...');
+      parseCampaignFromText(text, s.projectDir, (payload) => {
+        if (payload) {
+          session.setPendingCampaign(chatId, payload);
+          showCampaignConfirmation(ctx, chatId, payload);
+        }
+      });
+      return;
+    }
+  }
+
+  // ── Detect campaign intent in free text ────────────────────────────────
+  const campaignKeywords = /\b(campanha|campaign|pascoa|natal|ano.?novo|dia.das.maes|black.friday|lancamento|carrossel|carousel|video|imagem|post|reel|story|stories|publici|anuncio|anúncio)\b/i;
+  const campaignIntent = campaignKeywords.test(text) && text.length > 30;
+
+  if (campaignIntent && !s.processing) {
+    if (s.runningTask) {
+      // Has active campaign — treat as chat
+    } else {
+      await ctx.reply('Entendi — vou organizar o briefing da campanha...');
+      parseCampaignFromText(text, s.projectDir, (payload) => {
+        if (payload) {
+          session.setPendingCampaign(chatId, payload);
+          showCampaignConfirmation(ctx, chatId, payload);
+        } else {
+          // Fall through to regular Claude chat
+          handleChatMessage(ctx, chatId, s, text);
+        }
+      });
+      return;
+    }
+  }
+
+  handleChatMessage(ctx, chatId, s, text);
+});
+
+// ── Campaign payload builder ─────────────────────────────────────────────────
+
+function buildPayload(taskName, opts, projectDir, today) {
+  return {
+    task_name: taskName.replace(/\s+/g, '_').toLowerCase(),
+    task_date: opts.date || today,
+    project_dir: projectDir,
+    platform_targets: opts.platforms ? opts.platforms.split(',') : ['instagram', 'youtube', 'threads'],
+    language: opts.lang || 'pt-BR',
+    skip_research: opts['skip-research'] === true,
+    skip_image: opts['skip-image'] === true,
+    skip_video: opts['skip-video'] === true,
+    image_count: parseInt(opts.images || '5', 10),
+    image_formats: ['carousel_1080x1080', 'story_1080x1920'],
+    video_count: parseInt(opts.videos || '1', 10),
+    image_source: opts['img-source'] || 'brand',
+    campaign_brief: opts.brief || '',
+  };
+}
+
+// ── Campaign confirmation display ────────────────────────────────────────────
+
+async function showCampaignConfirmation(ctx, chatId, payload) {
+  const skipFlags = [];
+  if (payload.skip_research) skipFlags.push('pesquisa');
+  if (payload.skip_image)    skipFlags.push('imagens');
+  if (payload.skip_video)    skipFlags.push('video');
+
+  const imgSource = { brand: 'pasta do projeto', pexels: 'Pexels (stock)', generate: 'API de geracao' };
+
+  const lines = [
+    `<b>Campanha pronta para rodar — confirme:</b>\n`,
+    `<b>Nome:</b> <code>${payload.task_name}</code>`,
+    `<b>Projeto:</b> <code>${payload.project_dir}</code>`,
+    `<b>Data:</b> ${payload.task_date}`,
+    `<b>Plataformas:</b> ${payload.platform_targets.join(', ')}`,
+    `<b>Imagens:</b> ${payload.image_count} (${imgSource[payload.image_source] || payload.image_source})`,
+    `<b>Videos:</b> ${payload.video_count}`,
+    `<b>Idioma:</b> ${payload.language}`,
+  ];
+
+  if (skipFlags.length > 0) lines.push(`<b>Pular:</b> ${skipFlags.join(', ')}`);
+
+  lines.push(`\nResponda <b>sim</b> para rodar ou <b>não</b> para cancelar.`);
+  lines.push(`Ou ajuste o que quiser e eu reorganizo.`);
+
+  await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
+
+  // Send brief as separate message so it's never truncated
+  if (payload.campaign_brief) {
+    await ctx.reply(`<b>Brief:</b>\n${payload.campaign_brief}`, { parse_mode: 'HTML' });
+  }
+}
+
+// ── Parse campaign from free text via Claude ─────────────────────────────────
+
+function parseCampaignFromText(text, projectDir, callback) {
+  const today = new Date().toISOString().slice(0, 10);
+
+  // Detect project mentioned in text (e.g. "no projeto inema", "projeto coldbrew")
+  const projectMatch = text.match(/projeto\s+([\w-]+)/i);
+  if (projectMatch) {
+    const mentioned = projectMatch[1].toLowerCase();
+    const prjDir = path.join(PROJECT_ROOT, 'prj');
+    if (fs.existsSync(prjDir)) {
+      const projects = fs.readdirSync(prjDir);
+      const found = projects.find(p => p.toLowerCase().includes(mentioned) || mentioned.includes(p.toLowerCase()));
+      if (found) projectDir = `prj/${found}`;
+    }
+  }
+
+  const prompt = `Extract campaign parameters from this request and return ONLY a JSON object.
+
+Request: "${text}"
+Available project dir: ${projectDir}
+Today: ${today}
+
+Return a JSON object with these fields:
+{
+  "task_name": "snake_case name (e.g. pascoa_2026, dia_das_maes, natal)",
+  "task_date": "YYYY-MM-DD (use today if not specified: ${today})",
+  "project_dir": "${projectDir}",
+  "platform_targets": ["instagram", "youtube", "threads"],
+  "language": "pt-BR",
+  "skip_research": false,
+  "skip_image": false,
+  "skip_video": false,
+  "image_count": 5,
+  "image_formats": ["carousel_1080x1080", "story_1080x1920"],
+  "video_count": 1,
+  "image_source": "brand",
+  "campaign_brief": "full campaign brief in pt-BR summarizing the intent, audience, tone, key messages"
+}
+
+Rules:
+- task_name: derive from the campaign theme, short and snake_case
+- image_count: default 5 for carousel; use what user says
+- video_count: how many videos requested (default 1)
+- image_source: "brand" if user mentions brand images; "pexels" if stock photos; "generate" if AI generation
+- campaign_brief: comprehensive summary of everything the user described
+- Return ONLY the JSON object, no markdown, no explanation`;
+
+  runClaude(prompt, 'campaign_parser', (code, stdout) => {
+    if (code !== 0 || !stdout.trim()) return callback(null);
+    try {
+      const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return callback(null);
+      const payload = JSON.parse(jsonMatch[0]);
+      callback(payload);
+    } catch {
+      callback(null);
+    }
+  });
+}
+
+// ── Refactored chat message handler ─────────────────────────────────────────
+
+function handleChatMessage(ctx, chatId, s, text) {
   if (s.processing) {
-    return ctx.reply('Aguarde, ainda estou processando a mensagem anterior...');
+    ctx.reply('Aguarde, ainda estou processando a mensagem anterior...');
+    return;
   }
 
   s.processing = true;
 
-  // Show typing indicator
   const typingInterval = setInterval(() => {
     ctx.api.sendChatAction(ctx.chat.id, 'typing').catch(() => {});
   }, 4000);
   ctx.api.sendChatAction(ctx.chat.id, 'typing').catch(() => {});
 
-  // Add user message to history
   session.addToHistory(chatId, 'user', text);
 
-  // Build conversation context for Claude
   const history = session.getHistory(chatId);
   const conversationContext = history.slice(0, -1).map(m => {
     const prefix = m.role === 'user' ? 'User' : 'Assistant';
@@ -629,38 +1033,30 @@ Be concise and helpful. You have full access to the codebase.`;
     ? `${systemContext}\n\nConversation so far:\n${conversationContext}\n\nUser: ${text}\n\nRespond to the user's latest message.`
     : `${systemContext}\n\nUser: ${text}`;
 
-  try {
-    runClaude(prompt, 'chat', (code, stdout) => {
-      clearInterval(typingInterval);
-      s.processing = false;
-
-      if (code !== 0 || !stdout.trim()) {
-        ctx.reply('Desculpe, tive um problema ao processar. Tente novamente.');
-        return;
-      }
-
-      const response = stdout.trim();
-      session.addToHistory(chatId, 'assistant', response);
-
-      // Send response, splitting if needed
-      const parts = splitMessage(toTelegramHTML(response));
-      (async () => {
-        for (const part of parts) {
-          try {
-            await ctx.reply(part, { parse_mode: 'HTML' });
-          } catch {
-            // Fallback to plain text if HTML fails
-            await ctx.reply(part);
-          }
-        }
-      })();
-    });
-  } catch (err) {
+  runClaude(prompt, 'chat', (code, stdout) => {
     clearInterval(typingInterval);
     s.processing = false;
-    await ctx.reply(`Erro: ${err.message}`);
-  }
-});
+
+    if (code !== 0 || !stdout.trim()) {
+      ctx.reply('Desculpe, tive um problema ao processar. Tente novamente.');
+      return;
+    }
+
+    const response = stdout.trim();
+    session.addToHistory(chatId, 'assistant', response);
+
+    const parts = splitMessage(toTelegramHTML(response));
+    (async () => {
+      for (const part of parts) {
+        try {
+          await ctx.reply(part, { parse_mode: 'HTML' });
+        } catch {
+          await ctx.reply(part);
+        }
+      }
+    })();
+  });
+}
 
 // ── Pipeline runner ─────────────────────────────────────────────────────────
 
@@ -748,12 +1144,13 @@ function runPipeline(ctx, chatId, payload, outputDir) {
         worker.kill('SIGTERM');
         session.clearRunningTask(chatId);
 
+        const folderName = `${payload.task_name}_${payload.task_date}`;
+        const absOutputDir = path.join(PROJECT_ROOT, outputDir);
+
         ctx.reply(
-          `Pipeline <b>${payload.task_name}</b> concluido!\n\n` +
-          `Use /enviar ${payload.task_name}_${payload.task_date} para receber os arquivos.\n` +
-          `Use /status para ver o resumo.`,
+          `Pipeline <b>${payload.task_name}</b> concluido!`,
           { parse_mode: 'HTML' }
-        );
+        ).then(() => sendCampaignReport(ctx, absOutputDir, folderName)).catch(() => {});
       }
     }, 30000);
 
@@ -770,7 +1167,8 @@ function runPipeline(ctx, chatId, payload, outputDir) {
 // ── Claude CLI runner (for individual agents) ───────────────────────────────
 
 function runClaude(prompt, agentName, callback) {
-  const child = spawn('claude', [
+  const claudePath = '/home/nmaldaner/.local/bin/claude';
+  const child = spawn(claudePath, [
     '-p', prompt,
     '--dangerously-skip-permissions',
     '--model', 'sonnet',
@@ -781,10 +1179,19 @@ function runClaude(prompt, agentName, callback) {
   });
 
   let stdout = '';
+  let stderr = '';
   child.stdout.on('data', d => { stdout += d.toString(); });
-  child.stderr.on('data', d => { /* ignore */ });
+  child.stderr.on('data', d => { stderr += d.toString(); });
+
+  child.on('error', (err) => {
+    console.error(`Claude spawn error: ${err.message}`);
+    callback(1, '');
+  });
 
   child.on('close', (code) => {
+    if (code !== 0) {
+      console.error(`Claude exit ${code}: ${stderr.slice(0, 500)}`);
+    }
     callback(code, stdout);
   });
 
