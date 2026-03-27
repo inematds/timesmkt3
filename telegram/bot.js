@@ -562,6 +562,7 @@ bot.command('campanha', async (ctx) => {
       '  --images N\n' +
       '  --videos N\n' +
       '  --img-source brand|pexels|api\n' +
+      '  --img-model flux-kontext-pro|flux-kontext-max|gpt-image-1\n' +
       '  --skip-research / --skip-image / --skip-video\n\n' +
       'Ou escreva livremente o que quer na campanha — eu organizo e confirmo antes de rodar.'
     );
@@ -951,6 +952,7 @@ function buildPayload(taskName, opts, projectDir, today) {
     image_formats: ['carousel_1080x1080', 'story_1080x1920'],
     video_count: parseInt(opts.videos || '1', 10),
     image_source: opts['img-source'] || 'brand',
+    image_model: opts['img-model'] || 'flux-kontext-pro',
     campaign_brief: opts.brief || '',
   };
 }
@@ -963,7 +965,8 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
   if (payload.skip_image)    skipFlags.push('imagens');
   if (payload.skip_video)    skipFlags.push('video');
 
-  const imgSource = { brand: 'pasta do projeto', pexels: 'Pexels (gratis)', api: 'API de geracao (paga)' };
+  const imgSource = { brand: 'pasta do projeto', pexels: 'Pexels (gratis)', api: 'KIE API (geração paga)' };
+  const modelLabels = { 'flux-kontext-pro': 'Flux Pro', 'flux-kontext-max': 'Flux Max', 'gpt-image-1': 'GPT-Image-1' };
 
   const lines = [
     `<b>Campanha pronta para rodar — confirme:</b>\n`,
@@ -971,7 +974,7 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     `<b>Projeto:</b> <code>${payload.project_dir}</code>`,
     `<b>Data:</b> ${payload.task_date}`,
     `<b>Plataformas:</b> ${payload.platform_targets.join(', ')}`,
-    `<b>Imagens:</b> ${payload.image_count} (${imgSource[payload.image_source] || payload.image_source})`,
+    `<b>Imagens:</b> ${payload.image_count} (${imgSource[payload.image_source] || payload.image_source}${payload.image_source === 'api' ? ' — ' + (modelLabels[payload.image_model] || payload.image_model || 'flux-kontext-pro') : ''})`,
     `<b>Videos:</b> ${payload.video_count}`,
     `<b>Idioma:</b> ${payload.language}`,
   ];
@@ -1026,6 +1029,7 @@ Return a JSON object with these fields:
   "image_formats": ["carousel_1080x1080", "story_1080x1920"],
   "video_count": 1,
   "image_source": "brand",
+  "image_model": "flux-kontext-pro",
   "campaign_brief": "full campaign brief in pt-BR summarizing the intent, audience, tone, key messages"
 }
 
@@ -1034,6 +1038,7 @@ Rules:
 - image_count: default 5 for carousel; use what user says
 - video_count: how many videos requested (default 1)
 - image_source: "brand" if user mentions brand images; "pexels" if free stock photos; "api" if paid AI image generation
+- image_model: only relevant when image_source is "api". Options: "flux-kontext-pro" (default, fast), "flux-kontext-max" (max quality), "gpt-image-1" (OpenAI style). Pick based on user's quality preference.
 - campaign_brief: comprehensive summary of everything the user described
 - Return ONLY the JSON object, no markdown, no explanation`;
 

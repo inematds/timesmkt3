@@ -18,6 +18,7 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+const { generateImage, AVAILABLE_MODELS } = require('./generate-image-kie');
 
 // ── Asset discovery ────────────────────────────────────────────────────────────
 
@@ -86,6 +87,86 @@ function formatAssetList(assets) {
  */
 function assetPaths(assets) {
   return assets.map(a => a.path || a);
+}
+
+/**
+ * Generates images via KIE API for use as assets in ad creatives / video.
+ * Returns assets array (same format as getProjectAssets) pointing to downloaded files.
+ *
+ * @param {string} outputDir  - relative output dir (e.g. prj/inema/outputs/task_2026-03-27)
+ * @param {string} model      - KIE model id (default: flux-kontext-pro)
+ * @param {number} count      - number of images to generate
+ * @param {string[]} formats  - ['carousel_1080x1080', 'story_1080x1920']
+ * @param {string} brief      - campaign brief used to build prompts
+ * @param {string} brandContext - brand identity summary for the prompt
+ */
+async function generateApiImages(outputDir, model = 'flux-kontext-pro', count = 5, formats = ['carousel_1080x1080'], brief = '', brandContext = '') {
+  const absImgsDir = path.resolve(PROJECT_ROOT, outputDir, 'imgs');
+  fs.mkdirSync(absImgsDir, { recursive: true });
+
+  // Map format to KIE aspect ratio
+  const formatToRatio = {
+    'carousel_1080x1080': '1:1',
+    'story_1080x1920': '9:16',
+    'youtube_thumbnail': '16:9',
+  };
+
+  const assets = [];
+  let imgIndex = 1;
+
+  // Distribute images across formats
+  const formatList = [];
+  for (let i = 0; i < count; i++) {
+    formatList.push(formats[i % formats.length]);
+  }
+
+  for (const fmt of formatList) {
+    const ratio = formatToRatio[fmt] || '1:1';
+    const ext = 'jpg';
+    const filename = `generated_${String(imgIndex).padStart(2, '0')}_${fmt}.${ext}`;
+    const outputPath = path.join(absImgsDir, filename);
+
+    if (fs.existsSync(outputPath)) {
+      log(outputDir, 'api_image_gen', `Image already exists, skipping: ${filename}`);
+    } else {
+      // Build a focused prompt from brief + brand context
+      const prompt = buildImagePrompt(brief, brandContext, fmt, imgIndex, count);
+      log(outputDir, 'api_image_gen', `Generating image ${imgIndex}/${count}: ${filename} (${model}, ${ratio})`);
+
+      try {
+        await generateImage(outputPath, prompt, model, ratio);
+      } catch (err) {
+        log(outputDir, 'api_image_gen', `Image ${imgIndex} generation failed: ${err.message}`);
+        imgIndex++;
+        continue;
+      }
+    }
+
+    const dims = getImageDimensions(outputPath);
+    assets.push({ path: outputPath, ...dims });
+    imgIndex++;
+  }
+
+  return assets;
+}
+
+/**
+ * Builds a descriptive image generation prompt for a marketing ad.
+ */
+function buildImagePrompt(brief, brandContext, format, index, total) {
+  const isStory = format.includes('1920');
+  const orientation = isStory ? 'vertical portrait' : 'square';
+  const position = index === 1 ? 'opening hook' : index === total ? 'call to action' : `scene ${index} of ${total}`;
+
+  return [
+    `Professional marketing advertisement photo, ${orientation} format.`,
+    brief ? `Campaign: ${brief.slice(0, 200)}` : '',
+    brandContext ? `Brand: ${brandContext.slice(0, 150)}` : '',
+    `Scene purpose: ${position}.`,
+    'High quality, cinematic lighting, emotional and aspirational tone.',
+    'No text, no logos, no watermarks.',
+    'Suitable for social media advertising.',
+  ].filter(Boolean).join(' ');
 }
 
 /**
@@ -247,16 +328,39 @@ Each story has one bold key message with large text.`;
   const brandAssets = getProjectAssets(project_dir);
   const assetList = formatAssetList(brandAssets);
 
+  // ── Pre-generate images via API if image_source === 'api' ──────────────────
+  let apiGeneratedAssets = [];
+  if (image_source === 'api') {
+    const model = job.data.image_model || 'flux-kontext-pro';
+    log(output_dir, 'ad_creative_designer', `Generating ${image_count} images via KIE API (${model})...`);
+    try {
+      apiGeneratedAssets = await generateApiImages(
+        output_dir, model, image_count, image_formats, campaign_brief,
+        '' // brand context will be read by agent from brand_identity.md
+      );
+      log(output_dir, 'ad_creative_designer', `Generated ${apiGeneratedAssets.length} images via API → ${output_dir}/imgs/`);
+    } catch (err) {
+      log(output_dir, 'ad_creative_designer', `API image generation failed: ${err.message}. Falling back to CSS-only layouts.`);
+    }
+  }
+
   // Build image source instructions based on image_source field
   let imageSourceSection = '';
   if (image_source === 'api') {
-    imageSourceSection = `
-STEP 2 — Image source: AI GENERATION
-- Do NOT use brand photos as backgrounds
-- Use CSS gradients, geometric shapes, abstract visuals, and typography-driven layouts
-- Create visually striking designs using ONLY CSS/HTML — no <img> tags for backgrounds
-- You may use brand colors from brand_identity.md for the visual palette
-- Focus on bold typography, strong visual hierarchy, and brand color usage`;
+    if (apiGeneratedAssets.length > 0) {
+      const generatedList = formatAssetList(apiGeneratedAssets);
+      imageSourceSection = `
+STEP 2 — AI-generated images (generated via KIE API — use these):
+${generatedList}
+
+These images were generated specifically for this campaign. Use them as <img src="file://<absolute_path>"> in your HTML.
+Apply overlays, gradients, and text — the same way as brand images.`;
+    } else {
+      imageSourceSection = `
+STEP 2 — Image source: CSS-only (API generation failed or unavailable)
+- Use CSS gradients, bold typography, and geometric shapes
+- No <img> tags — pure HTML/CSS visual design`;
+    }
   } else if (image_source === 'pexels') {
     const pexelsKey = process.env.PEXELS_API_KEY || '';
     imageSourceSection = `
@@ -406,15 +510,39 @@ AUDIO NARRATION (ElevenLabs available):
 AUDIO: ElevenLabs not configured. Generate silent videos. Narration scripts only in scene plan.
 `;
 
+  // ── Pre-generate images via API if image_source === 'api' ──────────────────
+  let apiGeneratedAssetsVideo = [];
+  if (image_source === 'api') {
+    const model = job.data.image_model || 'flux-kontext-pro';
+    const videoImgCount = video_count * 5; // ~5 scenes per video
+    log(output_dir, 'video_ad_specialist', `Generating ${videoImgCount} images via KIE API (${model}) for video scenes...`);
+    try {
+      apiGeneratedAssetsVideo = await generateApiImages(
+        output_dir, model, videoImgCount, ['story_1080x1920'], campaign_brief, ''
+      );
+      log(output_dir, 'video_ad_specialist', `Generated ${apiGeneratedAssetsVideo.length} images → ${output_dir}/imgs/`);
+    } catch (err) {
+      log(output_dir, 'video_ad_specialist', `API image generation failed: ${err.message}.`);
+    }
+  }
+
   // ── Build image source section based on image_source ───────────────────────
   let imageSourceSection = '';
   if (image_source === 'api') {
-    imageSourceSection = `
-STEP 2 — Image source: AI GENERATION (no brand photos)
-- Do NOT reference any file paths for scene "image" fields
-- Leave "image": null for all scenes
-- The renderer will use solid color backgrounds with strong text/graphic overlays
-- Focus ALL creative energy on the narration script and text overlays — they carry the visual`;
+    if (apiGeneratedAssetsVideo.length > 0) {
+      const generatedList = formatAssetList(apiGeneratedAssetsVideo);
+      imageSourceSection = `
+STEP 2 — AI-generated images for video scenes (generated via KIE API):
+${generatedList}
+
+Use these images in scene "image" fields — same rules as brand images.
+They were generated in 9:16 portrait format, ideal for 1080×1920 video.`;
+    } else {
+      imageSourceSection = `
+STEP 2 — Image source: null (API generation failed)
+- Set "image": null for all scenes
+- Renderer will use dark solid background`;
+    }
   } else if (image_source === 'pexels') {
     const pexelsKey = process.env.PEXELS_API_KEY || '';
     imageSourceSection = `
