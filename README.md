@@ -742,3 +742,70 @@ The Service Role Key is used because the pipeline runs server-side with no user 
 | Kie.ai image timeout | A API é assíncrona — pode levar até 2 min. Verificar se `KIE_API_KEY` está válida |
 | ElevenLabs 401 | Verificar se `ELEVENLABS_API_KEY` está correta e a conta tem créditos |
 | Dynamic video identical to fixed | Verificar se o scene_plan.json está sendo passado ao render-video.js como segundo argumento |
+
+---
+
+## Começando do Zero
+
+Se você clonou este repositório e quer rodar, siga estes passos:
+
+### 1. Instalar dependências
+
+```bash
+npm install
+cd remotion-ad && npm install && cd ..
+npx playwright install chromium
+```
+
+### 2. Subir Redis (Docker)
+
+```bash
+docker run -d --name redis -p 6379:6379 redis:alpine
+```
+
+### 3. Criar o .env
+
+```bash
+cp .env.example .env
+```
+
+Preencha no `.env` pelo menos:
+
+```
+TAVILY_API_KEY=sua-key          # pesquisa de mercado (tavily.com)
+SUPABASE_URL=sua-url            # hospedagem de mídia (supabase.com)
+SUPABASE_SERVICE_ROLE_KEY=sua-key
+```
+
+Opcionais (mas recomendados):
+
+```
+KIE_API_KEY=sua-key             # imagens IA (kie.ai)
+PEXELS_API_KEY=sua-key          # fotos grátis (pexels.com/api)
+PIXABAY_API_KEY=sua-key         # fotos + música + SFX grátis (pixabay.com/api/docs)
+ELEVENLABS_API_KEY=sua-key      # narração por voz (elevenlabs.io)
+```
+
+### 4. Rodar uma campanha
+
+```bash
+# Terminal 1 — worker
+node pipeline/worker.js
+
+# Terminal 2 — disparar campanha
+node pipeline/orchestrator.js --file pipeline/payloads/dia_das_maes_2026.json
+```
+
+### 5. Renderizar vídeo avulso
+
+```bash
+node pipeline/render-video.js output.mp4 scene_plan.json
+```
+
+### 6. Ver providers configurados
+
+```bash
+npm run media:status
+```
+
+Pronto. O pipeline roda os 5 agentes em sequência e salva tudo em `outputs/`.
