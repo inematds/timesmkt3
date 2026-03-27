@@ -11,7 +11,7 @@
 const { Worker } = require('bullmq');
 const { redisConnection } = require('./redis');
 const { QUEUE_NAME } = require('./queues');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
@@ -22,8 +22,29 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 // ── Asset discovery ────────────────────────────────────────────────────────────
 
 /**
+ * Returns image dimensions using ffprobe.
+ */
+function getImageDimensions(imagePath) {
+  try {
+    const out = execFileSync('ffprobe', [
+      '-v', 'quiet', '-print_format', 'json', '-show_streams', imagePath,
+    ], { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 });
+    const info = JSON.parse(out.toString());
+    const s = info.streams && info.streams[0];
+    if (s && s.width && s.height) {
+      const w = s.width, h = s.height;
+      const ratio = w / h;
+      const orientation = ratio > 1.2 ? 'landscape' : ratio < 0.85 ? 'portrait' : 'square';
+      return { width: w, height: h, orientation, ratio: ratio.toFixed(2) };
+    }
+  } catch {}
+  return null;
+}
+
+/**
  * Returns a list of absolute paths for all brand images in a project.
  * Checks both `imgs/` and `assets/` directories.
+ * Returns objects with path + dimensions metadata.
  */
 function getProjectAssets(projectDir) {
   const imageExts = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -35,7 +56,11 @@ function getProjectAssets(projectDir) {
     if (!fs.existsSync(fullDir)) continue;
     const found = fs.readdirSync(fullDir)
       .filter(f => imageExts.includes(path.extname(f).toLowerCase()))
-      .map(f => path.resolve(fullDir, f));
+      .map(f => {
+        const absPath = path.resolve(fullDir, f);
+        const dims = getImageDimensions(absPath);
+        return { path: absPath, ...dims };
+      });
     files.push(...found);
   }
 
@@ -44,10 +69,35 @@ function getProjectAssets(projectDir) {
 
 /**
  * Formats asset list for inclusion in agent prompts.
+ * Includes dimensions and orientation so the agent can make smart crop/composition decisions.
  */
-function formatAssetList(assetPaths) {
-  if (!assetPaths || assetPaths.length === 0) return 'No brand assets found.';
-  return assetPaths.map(p => `  - ${p}`).join('\n');
+function formatAssetList(assets) {
+  if (!assets || assets.length === 0) return 'No brand assets found.';
+  return assets.map(a => {
+    const dimInfo = a.width
+      ? `  [${a.width}×${a.height}, ${a.orientation}, ratio ${a.ratio}]`
+      : '';
+    return `  - ${a.path}${dimInfo}`;
+  }).join('\n');
+}
+
+/**
+ * Formats asset list returning only the path strings (backward compat).
+ */
+function assetPaths(assets) {
+  return assets.map(a => a.path || a);
+}
+
+/**
+ * Polls for a file to appear, up to timeoutMs. Returns true if found, false on timeout.
+ */
+async function waitForFile(filePath, timeoutMs = 1800000, intervalMs = 3000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (fs.existsSync(filePath)) return true;
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+  return false;
 }
 
 // ── Claude CLI invocation ────────────────────────────────────────────────────
@@ -323,6 +373,7 @@ async function handleVideoAdSpecialist(job) {
     task_name, task_date, output_dir, project_dir, platform_targets,
     language, campaign_brief,
     video_count = 1, video_briefs = [],
+    image_source = 'brand',
   } = job.data;
   const absVideoDir = path.resolve(PROJECT_ROOT, output_dir, 'video');
   fs.mkdirSync(absVideoDir, { recursive: true });
@@ -335,8 +386,6 @@ async function handleVideoAdSpecialist(job) {
     ? `\nCampaign Brief: ${campaign_brief}`
     : '';
 
-  const brandAssets = getProjectAssets(project_dir);
-  const assetList = formatAssetList(brandAssets);
   const hasElevenLabs = !!process.env.ELEVENLABS_API_KEY;
 
   const videoBriefsText = video_briefs.length > 0
@@ -351,15 +400,56 @@ AUDIO NARRATION (ElevenLabs available):
 - Generate narration audio using: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|antoni]
 - Save audio as: ${output_dir}/audio/video_01_narration.mp3, video_02_narration.mp3, etc.
 - Include the narration text in the scene plan under "narration_script"
-- Include the audio path in the scene plan under "audio": "${output_dir}/audio/video_01_narration.mp3"
+- Include the audio path in the scene plan under "audio": "${output_dir}/audio/video_0N_narration.mp3"
 - Recommended voices: rachel (warm/emotional), bella (clear/friendly), antoni (professional)
 ` : `
 AUDIO: ElevenLabs not configured. Generate silent videos. Narration scripts only in scene plan.
 `;
 
-  const prompt = `You are the Video Ad Specialist. Follow the skill defined in skills/video-ad-specialist/SKILL.md for guidelines, but adapt for multiple videos.
+  // ── Build image source section based on image_source ───────────────────────
+  let imageSourceSection = '';
+  if (image_source === 'api') {
+    imageSourceSection = `
+STEP 2 — Image source: AI GENERATION (no brand photos)
+- Do NOT reference any file paths for scene "image" fields
+- Leave "image": null for all scenes
+- The renderer will use solid color backgrounds with strong text/graphic overlays
+- Focus ALL creative energy on the narration script and text overlays — they carry the visual`;
+  } else if (image_source === 'pexels') {
+    const pexelsKey = process.env.PEXELS_API_KEY || '';
+    imageSourceSection = `
+STEP 2 — Image source: PEXELS STOCK PHOTOS
+- Fetch relevant stock photos from Pexels API before writing scene plans
+- API key: ${pexelsKey}
+- Search: GET https://api.pexels.com/v1/search?query=<theme>&per_page=10&orientation=portrait
+  Header: Authorization: ${pexelsKey}
+- Download the best matching photo for each scene to ${output_dir}/imgs/scene_0N.jpg
+- Use the downloaded absolute path as the scene "image" field
+- Choose photos that match the scene's emotional context (hook=dramatic, cta=warm/inviting)`;
+  } else {
+    // brand (default) — include metadata so agent can make smart decisions
+    const brandAssets = getProjectAssets(project_dir);
+    const assetList = formatAssetList(brandAssets);
+    imageSourceSection = `
+STEP 2 — Available brand images (with dimensions — study before assigning to scenes):
+${assetList}
 
-Task: Create ${video_count} short-form video ads for the "${task_name}" campaign.
+IMAGE ANALYSIS RULES (mandatory before building scene plan):
+- Read each image's orientation: portrait images work best for 1080×1920 video (less crop needed)
+- For landscape images in portrait video: the renderer will center-crop — plan text_overlay to avoid important image areas at the edges
+- Choose images whose visual content matches the scene's emotional type:
+  • hook scene → most dramatic/striking image
+  • tension/problem → images showing effort, challenge, aspiration
+  • solution/benefit → product, community, positive outcome images
+  • cta → clearest, most inviting image — brand logo visible if possible
+- Never assign the same image to two scenes
+- Prefer portrait-oriented images for 1080×1920 format (they need less cropping)`;
+  }
+
+  // ── PHASE 1: Generate scene plans only (no rendering yet) ──────────────────
+  const prompt = `You are the Video Ad Specialist. Follow the skill defined in skills/video-ad-specialist/SKILL.md for guidelines.
+
+Task: Create scene plans for ${video_count} short-form video ads — "${task_name}" campaign.
 Date: ${task_date}
 Platforms: ${platform_targets.join(', ')}
 Research input: ${output_dir}/research_results.json
@@ -369,61 +459,66 @@ STEP 1 — Read brand knowledge:
 - ${project_dir}/knowledge/brand_identity.md
 - ${project_dir}/knowledge/product_campaign.md
 - ${output_dir}/research_results.json (winning angles, hooks, audience insights)
-
-STEP 2 — Available brand images for video frames:
-${assetList}
+${imageSourceSection}
 
 STEP 3 — Video briefs:
 ${videoBriefsText}
 ${audioInstructions}
-STEP 4 — For EACH video, create:
+STEP 4 — For EACH video, create a scene plan JSON and save to ${output_dir}/video/video_0N_scene_plan.json:
+{
+  "titulo": "...",
+  "video_length": 25,
+  "format": "1080x1920",
+  "audio": "${output_dir}/audio/video_0N_narration.mp3",
+  "narration_script": "full narration text (20-30 seconds of natural speech)...",
+  "voice": "rachel",
+  "scenes": [
+    {
+      "id": "hook",
+      "duration": 3,
+      "type": "hook",
+      "image": "<absolute path or null>",
+      "image_crop_focus": "center-top",
+      "text_overlay": "Max 6 words here",
+      "narration": "This scene's narration line"
+    }
+  ]
+}
 
-a) Scene plan JSON — save to ${output_dir}/video/video_0N_scene_plan.json
-   Required format:
-   {
-     "titulo": "...",
-     "video_length": 20,
-     "format": "1080x1920",
-     "audio": "${output_dir}/audio/video_0N_narration.mp3",
-     "narration_script": "full narration text here...",
-     "scenes": [
-       {
-         "id": "hook",
-         "duration": 4,
-         "type": "hook",
-         "image": "<absolute path to brand image>",
-         "text_overlay": "Short impactful text",
-         "narration": "First sentence of narration for this scene"
-       }
-     ]
-   }
+image_crop_focus options: "center", "center-top", "center-bottom", "left", "right"
+Use this to tell the renderer where to anchor the crop when the image needs to be cropped to fit.
 
-SCENE DESIGN RULES (critical for quality):
-- text_overlay: MAX 6 words per scene — short, punchy, impactful
-- Scene types and their emotional function:
-  • hook (scene 1): provocative question or bold statement — ignites curiosity
-  • problem/tension (scene 2): shows the pain point or aspiration — emotional connection
-  • solution/benefit (scene 3): product/service as the answer — relief, transformation
-  • social_proof (scene 4): community, results, credibility — trust
-  • cta (last scene): clear action + URL/handle — urgency, clarity
-- Each scene's narration line must match the text_overlay theme — they reinforce each other
-- Scene durations should vary: hook 3s, middle scenes 4-5s, CTA 4s (renderer will auto-adjust to match audio)
+SCENE DESIGN RULES:
+- text_overlay: MAX 6 words — short, punchy
+- Scene flow: hook → tension → solution → social_proof → cta
+- Each scene duration: hook 3s, middle 4-5s, CTA 4s
+- Also generate the ElevenLabs audio BEFORE saving the scene plan so the "audio" path is valid
 
-b) CRITICAL: Use REAL brand images from the list above for each scene "image" field.
-   - Different image per scene — never repeat
-   - Match image emotional mood to scene type (hook = dramatic, cta = clear/inviting)
-   - Use absolute file paths
-
-c) After generating ALL scene plans and audio, render each video using ffmpeg:
-   node pipeline/render-video-ffmpeg.js ${output_dir}/video/video_0N_scene_plan.json ${output_dir}/video/video_0N.mp4
-
-Each video: 20–30 seconds, hook in first 3 seconds, 4-5 scenes, strong CTA at end.
-${video_count} videos must each have DIFFERENT emotional angles and image selections.`;
+IMPORTANT: ONLY generate scene plans and audio. Do NOT run render-video-ffmpeg.js yet.
+After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
   await runClaude(prompt, 'video_ad_specialist', output_dir, 900000);
 
-  // Render videos using ffmpeg (via render-video-ffmpeg.js)
-  const { execFileSync } = require('child_process');
+  // ── PHASE 2: Wait for user approval via file handshake ─────────────────────
+  const approvalPath = path.resolve(PROJECT_ROOT, output_dir, 'video', 'approved.json');
+  const rejectedPath = path.resolve(PROJECT_ROOT, output_dir, 'video', 'rejected.json');
+
+  log(output_dir, 'video_ad_specialist', '[VIDEO_APPROVAL_NEEDED] Waiting for user approval of scene plans (30 min timeout)...');
+  process.stdout.write(`[VIDEO_APPROVAL_NEEDED] ${output_dir}\n`);
+
+  const approved = await waitForFile(approvalPath, 1800000);
+  if (!approved) {
+    if (fs.existsSync(rejectedPath)) {
+      log(output_dir, 'video_ad_specialist', 'User rejected the video plan. Skipping render.');
+      return { status: 'skipped', reason: 'rejected by user' };
+    }
+    log(output_dir, 'video_ad_specialist', 'Approval timeout. Skipping video render.');
+    return { status: 'skipped', reason: 'approval timeout' };
+  }
+
+  // ── PHASE 3: Render approved videos ────────────────────────────────────────
+  log(output_dir, 'video_ad_specialist', 'User approved. Starting video render...');
+
   for (let i = 1; i <= video_count; i++) {
     const idx = String(i).padStart(2, '0');
     const videoOutput = path.resolve(PROJECT_ROOT, `${output_dir}/video/video_${idx}.mp4`);

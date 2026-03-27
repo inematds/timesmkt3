@@ -16,9 +16,37 @@ function get(chatId) {
       runningTask: null,
       history: [],
       processing: false,
+      photoTarget: { destination: 'project', folder: 'imgs' },
+      pendingCampaign: null,
+      pendingVideoApproval: null, // { outputDir, scenePlans: [...] }
     });
   }
   return sessions.get(chatId);
+}
+
+function setPendingVideoApproval(chatId, data) {
+  const s = get(chatId);
+  s.pendingVideoApproval = data;
+}
+
+function clearPendingVideoApproval(chatId) {
+  const s = get(chatId);
+  s.pendingVideoApproval = null;
+}
+
+function setPendingCampaign(chatId, payload) {
+  const s = get(chatId);
+  s.pendingCampaign = payload;
+}
+
+function clearPendingCampaign(chatId) {
+  const s = get(chatId);
+  s.pendingCampaign = null;
+}
+
+function setPhotoTarget(chatId, destination, folder) {
+  const s = get(chatId);
+  s.photoTarget = { destination, folder };
 }
 
 function addToHistory(chatId, role, content) {
@@ -56,5 +84,8 @@ function clearRunningTask(chatId) {
 module.exports = {
   get, setProject, setRunningTask, clearRunningTask,
   addToHistory, getHistory, clearHistory,
+  setPhotoTarget,
+  setPendingCampaign, clearPendingCampaign,
+  setPendingVideoApproval, clearPendingVideoApproval,
   DEFAULT_PROJECT,
 };

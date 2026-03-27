@@ -10,7 +10,7 @@
 const { Bot, InputFile } = require('grammy');
 const fs = require('fs');
 const path = require('path');
-const { spawn } = require('child_process');
+const { spawn, execFileSync } = require('child_process');
 
 const https = require('https');
 const config = require('./config');
@@ -818,6 +818,56 @@ bot.on('message:text', async (ctx) => {
   const chatId = String(ctx.chat.id);
   const s = session.get(chatId);
 
+  // ── Video storyboard approval ───────────────────────────────────────────
+  if (s.pendingVideoApproval) {
+    const lower = text.toLowerCase().trim();
+    const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda|rodar|renderiza|renderizar)/.test(lower);
+    const isCancel  = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);
+
+    if (isConfirm) {
+      const { outputDir } = s.pendingVideoApproval;
+      session.clearPendingVideoApproval(chatId);
+      writeVideoApproval(outputDir, true);
+      await ctx.reply('Aprovado! Renderizando os vídeos agora...');
+      return;
+    }
+
+    if (isCancel) {
+      const { outputDir } = s.pendingVideoApproval;
+      session.clearPendingVideoApproval(chatId);
+      writeVideoApproval(outputDir, false);
+      await ctx.reply('Vídeos cancelados. Os outros arquivos da campanha continuam disponíveis.');
+      return;
+    }
+
+    // User wants to adjust — rewrite scene plans via Claude then re-show
+    if (lower.length > 10) {
+      const { outputDir, absOutputDir } = s.pendingVideoApproval;
+      await ctx.reply('Entendido — ajustando o roteiro...');
+
+      const planFiles = fs.existsSync(path.join(absOutputDir, 'video'))
+        ? fs.readdirSync(path.join(absOutputDir, 'video')).filter(f => f.endsWith('_scene_plan.json'))
+        : [];
+
+      const adjustPrompt = `Adjust the video scene plans based on this feedback: "${text}"
+
+Scene plan files to update:
+${planFiles.map(f => path.join(absOutputDir, 'video', f)).join('\n')}
+
+Read each scene plan, apply the feedback, and save the updated versions to the same file paths.
+Keep the same JSON structure. Only modify what the feedback requests.`;
+
+      runClaude(adjustPrompt, 'video_adjustment', (code) => {
+        if (code !== 0) {
+          ctx.reply('Erro ao ajustar o roteiro.');
+          return;
+        }
+        sendVideoApprovalRequest(ctx, chatId, outputDir).catch(() => {});
+      });
+      return;
+    }
+  }
+
   // ── Confirmation replies for pending campaign ───────────────────────────
   if (s.pendingCampaign) {
     const lower = text.toLowerCase().trim();
@@ -1107,6 +1157,19 @@ function runPipeline(ctx, chatId, payload, outputDir) {
           ctx.reply(`Agente FALHOU: <code>${match[1]}</code>`, { parse_mode: 'HTML' });
         }
       }
+
+      // Video approval handshake
+      if (text.includes('[VIDEO_APPROVAL_NEEDED]')) {
+        const match = text.match(/\[VIDEO_APPROVAL_NEEDED\]\s*(\S+)/);
+        if (match) {
+          const approvalOutputDir = match[1];
+          ctx.reply('Roteiro de vídeo pronto. Preparando para revisão...').then(() => {
+            sendVideoApprovalRequest(ctx, chatId, approvalOutputDir).catch(e => {
+              console.error('Error sending video approval:', e.message);
+            });
+          });
+        }
+      }
     });
 
     worker.stderr.on('data', (d) => {
@@ -1277,7 +1340,7 @@ Instructions:
     // Get git diff summary of what changed
     let diffSummary = '';
     try {
-      const { execFileSync } = require('child_process');
+      // execFileSync already imported at top
       diffSummary = execFileSync('git', ['diff', '--stat', 'HEAD'], {
         cwd: PROJECT_ROOT, encoding: 'utf-8',
       }).trim();
@@ -1337,6 +1400,72 @@ Instructions:
 
 function escapeHtml(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ── Video storyboard formatter ───────────────────────────────────────────────
+
+function formatStoryboardMessage(outputDir) {
+  const videoDir = path.join(outputDir, 'video');
+  if (!fs.existsSync(videoDir)) return null;
+
+  const planFiles = fs.readdirSync(videoDir)
+    .filter(f => f.endsWith('_scene_plan.json'))
+    .sort();
+
+  if (planFiles.length === 0) return null;
+
+  const lines = [`🎬 <b>Roteiro gerado — confirme antes de renderizar</b>\n`];
+
+  for (const file of planFiles) {
+    try {
+      const plan = JSON.parse(fs.readFileSync(path.join(videoDir, file), 'utf-8'));
+      const voiceLabel = { rachel: 'Rachel (emocional)', bella: 'Bella (amigável)', antoni: 'Antoni (profissional)' };
+      lines.push(`<b>${plan.titulo || file}</b>`);
+      lines.push(`Voz: ${voiceLabel[plan.voice] || plan.voice || 'padrão'} | Duração: ~${plan.video_length || '?'}s\n`);
+
+      if (plan.narration_script) {
+        const preview = plan.narration_script.slice(0, 120);
+        lines.push(`<i>"${escapeHtml(preview)}${plan.narration_script.length > 120 ? '...' : ''}"</i>\n`);
+      }
+
+      lines.push(`<b>Cenas:</b>`);
+      (plan.scenes || []).forEach((s, i) => {
+        const imgName = s.image ? path.basename(s.image) : '(sem imagem)';
+        const crop = s.image_crop_focus ? ` crop:${s.image_crop_focus}` : '';
+        lines.push(`  ${i + 1}. [${s.type || s.id}] "<b>${escapeHtml(s.text_overlay || '')}</b>" — ${escapeHtml(imgName)}${crop} | ${s.duration}s`);
+      });
+      lines.push('');
+    } catch {}
+  }
+
+  lines.push(`Responda <b>sim</b> para renderizar ou <b>não</b> para cancelar.`);
+  lines.push(`Ou descreva ajustes e eu reescrevo o roteiro.`);
+
+  return lines.join('\n');
+}
+
+async function sendVideoApprovalRequest(ctx, chatId, outputDir) {
+  const absOutputDir = path.join(PROJECT_ROOT, outputDir);
+  const msg = formatStoryboardMessage(absOutputDir);
+
+  if (!msg) {
+    // No scene plans found — auto-approve
+    writeVideoApproval(outputDir, true);
+    return;
+  }
+
+  session.setPendingVideoApproval(chatId, { outputDir, absOutputDir });
+  await ctx.reply(msg, { parse_mode: 'HTML' });
+}
+
+function writeVideoApproval(outputDir, approved, feedback = null) {
+  const videoDir = path.join(PROJECT_ROOT, outputDir, 'video');
+  fs.mkdirSync(videoDir, { recursive: true });
+  if (approved) {
+    fs.writeFileSync(path.join(videoDir, 'approved.json'), JSON.stringify({ approved: true, feedback, ts: new Date().toISOString() }));
+  } else {
+    fs.writeFileSync(path.join(videoDir, 'rejected.json'), JSON.stringify({ approved: false, feedback, ts: new Date().toISOString() }));
+  }
 }
 
 // ── Arg parser ──────────────────────────────────────────────────────────────
