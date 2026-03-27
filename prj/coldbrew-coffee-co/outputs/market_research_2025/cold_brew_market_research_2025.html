@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cold Brew Coffee Co. | Market Research Report 2025</title>
+    <meta name="description" content="Comprehensive market research for cold brew coffee targeting young professionals, detailing market size, consumer motivations, and social media content strategies.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #2C1A0E; /* Coffee Dark */
+            --text-color: #F9F5F0; /* Off-White */
+            --accent-glow: rgba(245, 166, 35, 0.3); /* Amber glow */
+            --primary-accent: #F5A623; /* Amber */
+            --secondary-accent: #BFD9E8; /* Cold Blue */
+            --card-bg: rgba(75, 46, 26, 0.6); /* Coffee Mid */
+            --card-border: rgba(245, 166, 35, 0.15); /* Subtle Amber */
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--card-bg);
+            border-radius: 6px;
+            border: 2px solid var(--bg-color); /* To create a padded effect */
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-accent);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background Gradient */
+        .ambient-bg {
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 20%, rgba(191, 217, 232, 0.2) 0%, transparent 30%); /* Cold Blue */
+            z-index: -1;
+            animation: pulse-bg 15s infinite alternate ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes pulse-bg {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.05) translate(-2%, 2%); }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0 0 1rem 0;
+            background: linear-gradient(135deg, #fff, #9ca3af);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            letter-spacing: -1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: #9ca3af;
+            font-weight: 300;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5), 0 0 30px var(--accent-glow);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 350px;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        .data-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .data-list li {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1.25rem;
+            font-size: 1.05rem;
+        }
+
+        .data-list li::before {
+            content: "✦";
+            position: absolute;
+            left: 0;
+            color: var(--primary-accent);
+            font-size: 1.2rem;
+        }
+
+        .stat-highlight {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--secondary-accent), var(--primary-accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.4rem 1rem;
+            background: rgba(245, 166, 35, 0.15); /* Amber background */
+            border: 1px solid rgba(245, 166, 35, 0.3); /* Amber border */
+            border-radius: 2rem;
+            font-size: 0.85rem;
+            color: #F5A623; /* Amber text */
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        .cta-section {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(180deg, var(--card-bg), transparent);
+            border-top: 1px solid var(--card-border);
+            margin-top: 4rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2 { grid-template-columns: 1fr; }
+            h1 { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="ambient-bg"></div>
+    <div class="container">
+        
+        <header>
+            <span class="badge">Strategic Insight Output</span>
+            <h1>Cold Brew Market Intelligence</h1>
+            <p class="subtitle">Targeting Young Professionals (Millennials & Gen Z) | 2024-2025</p>
+        </header>
+
+        <section class="glass-card">
+            <h2>Executive Summary</h2>
+            <p>The cold brew market is experiencing explosive growth, fundamentally shifting from a seasonal treat to a year-round, daily necessity for young professionals. Valued at <strong>$1.35 Billion in 2024</strong>, it is projected to skyrocket to <strong>$16.22 Billion by 2032</strong>, reflecting a massive Compound Annual Growth Rate (CAGR) of 22.7%. The driving forces? A demand for ready-to-drink (RTD) convenience, unparalleled smoothness (low acidity), and hyper-customizable functional health additions (like adaptogens and plant-based milks).</p>
+        </section>
+
+        <div class="grid-2">
+            <section class="glass-card">
+                <h2>Market Trajectory & Growth</h2>
+                <p>The global outlook showcases aggressive expansion. The Ready-to-Drink (RTD) format commands <strong>75.1%</strong> of the market share, highlighting the overwhelming preference for grab-and-go convenience among time-constrained professionals.</p>
+                <div class="chart-container">
+                    <canvas id="growthChart"></canvas>
+                </div>
+            </section>
+
+            <section class="glass-card">
+                <h2>Product Segmentation</h2>
+                <div style="text-align: center; margin-bottom: 1rem;">
+                    <span class="stat-highlight">75.1%</span>
+                    <span style="color: #9ca3af; text-transform: uppercase; font-size: 0.9rem; letter-spacing: 1px;">Ready-to-Drink (RTD) Dominance</span>
+                </div>
+                <p>Consumers prioritize convenience. The market is overwhelmingly leaning towards canned and bottled RTD options over concentrate or in-cafe purchases.</p>
+                <div class="chart-container">
+                    <canvas id="segmentChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <div class="grid-2">
+            <section class="glass-card">
+                <h2>Consumer Motivations & Pain Points</h2>
+                <ul class="data-list">
+                    <li><strong>Stomach Sensitivity:</strong> Traditional hot coffee causes acid reflux and jittery spikes. Cold brew offers a low-acid, smooth alternative.</li>
+                    <li><strong>Functional Wellness:</strong> Seeking "clean energy." Buyers want sugar-free caffeine with added benefits like collagen, oat milk, or adaptogens for sustained focus without the crash.</li>
+                    <li><strong>Aesthetic "Little Treat" Culture:</strong> Highly visual drinks. Cold foams, bold colors, and customized layers cater to the "Sip, Snap, Share" Gen Z mentality.</li>
+                    <li><strong>Year-Round Consumption:</strong> Cold brew is no longer just for summer; it's a daily productivity tool.</li>
+                </ul>
+            </section>
+
+            <section class="glass-card">
+                <h2>Competitor Strategy & Positioning</h2>
+                <ul class="data-list">
+                    <li><strong>Premium Experience at Scale:</strong> Brands highlight artisanal brewing (slow steeping, nitro) to justify premium pricing.</li>
+                    <li><strong>Health over Caffeine:</strong> Marketing emphasizes the absence of negative side effects (no crash, zero sugar, dairy-free).</li>
+                    <li><strong>Scarcity & Drops:</strong> Mimicking streetwear, cafes launch limited-edition seasonal cold foams to drive FOMO.</li>
+                    <li><strong>Role-Based Efficiency:</strong> B2B and young professional marketing sells "time back" and "focused afternoons"—not just coffee.</li>
+                </ul>
+            </section>
+        </div>
+
+        <section class="glass-card">
+            <h2>Social Media & Content Strategy</h2>
+            <p>For the Distribution and Creative Agents, leverage these proven angles and formats to maximize engagement:</p>
+            
+            <div style="margin-top: 2rem;">
+                <h3>Top Visual Hooks</h3>
+                <div>
+                    <span class="badge">ASMR Pours</span>
+                    <span class="badge">Before/After Productivity</span>
+                    <span class="badge">Macro Texture (Foam/Ice)</span>
+                    <span class="badge">Transparent Brewing</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <h3>High-Converting Ad Angles</h3>
+                <ul class="data-list" style="margin-top: 1rem;">
+                    <li><em>"Still suffering through bitter coffee just to survive the 2PM slump?"</em></li>
+                    <li><em>"The most oddly satisfying morning ritual you've ever seen."</em></li>
+                    <li><em>"Hot coffee is out. Functional clean energy is the upgrade."</em></li>
+                    <li><em>"Watch this daily routine go from chaos to closing-ready."</em></li>
+                </ul>
+            </div>
+            
+            <div style="margin-top: 2rem;">
+                <h3>SEO & Campaign Keywords</h3>
+                <div>
+                    <span class="badge">#RTDColdBrew</span>
+                    <span class="badge">#CleanEnergy</span>
+                    <span class="badge">#LowAcidity</span>
+                    <span class="badge">#NitroInfused</span>
+                    <span class="badge">#MorningRitual</span>
+                    <span class="badge">#FunctionalCoffee</span>
+                </div>
+            </div>
+        </section>
+
+        <div class="cta-section">
+            <h2>Next Steps: Creative Handoff</h2>
+            <p style="color: #9ca3af; max-width: 600px; margin: 0 auto; font-size: 1.1rem;">
+                This intelligence brief serves as the foundational data layer. Proceed to initialize the <strong>Video Ad Agent</strong> and <strong>Image Ad Agent</strong> utilizing the defined ad angles, visual hooks, and "clean energy" functional messaging matrix.
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // Chart Configuration Theme
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        
+        // Growth Chart
+        const growthCtx = document.getElementById('growthChart').getContext('2d');
+        new Chart(growthCtx, {
+            type: 'bar',
+            data: {
+                labels: ['2024', '2025', '2032 (Proj.)'],
+                datasets: [{
+                    label: 'Global Market Value (Billion USD)',
+                    data: [1.35, 1.54, 16.22],
+                    backgroundColor: [
+                        'rgba(191, 217, 232, 0.6)', /* Cold Blue */
+                        'rgba(245, 166, 35, 0.6)', /* Amber */
+                        'rgba(245, 166, 35, 1)' /* Amber Solid */
+                    ],
+                    borderColor: [
+                        '#BFD9E8',
+                        '#F5A623',
+                        '#F5A623'
+                    ],
+                    borderWidth: 2,
+                    borderRadius: 8,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleFont: { size: 14, family: 'Outfit' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)' },
+                        border: { display: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        border: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Market Segment Chart
+        const segmentCtx = document.getElementById('segmentChart').getContext('2d');
+        new Chart(segmentCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Ready-To-Drink (RTD)', 'Cafe/Fresh Pour', 'Concentrate & Other'],
+                datasets: [{
+                    data: [75.1, 15.0, 9.9],
+                    backgroundColor: [
+                        'rgba(245, 166, 35, 1)', /* Amber */
+                        'rgba(191, 217, 232, 0.8)', /* Cold Blue */
+                        'rgba(249, 245, 240, 0.2)' /* Off-White */
+                    ],
+                    borderColor: '#2C1A0E', /* Coffee Dark */
+                    borderWidth: 4,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            font: { size: 13 }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

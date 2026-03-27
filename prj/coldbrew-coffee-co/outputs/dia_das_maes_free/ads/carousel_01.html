@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Carousel 01 - Hook</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_mae_filha.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.55);
+  }
+
+  .gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      160deg,
+      rgba(44, 26, 14, 0.7) 0%,
+      rgba(75, 46, 26, 0.4) 40%,
+      rgba(191, 217, 232, 0.15) 100%
+    );
+  }
+
+  .content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 60px;
+    max-width: 900px;
+  }
+
+  .tag {
+    display: inline-block;
+    background: #F5A623;
+    color: #2C1A0E;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border-radius: 100px;
+    margin-bottom: 40px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 88px;
+    font-weight: 900;
+    color: #F9F5F0;
+    line-height: 1.05;
+    margin-bottom: 30px;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  h1 em {
+    color: #F5A623;
+    font-style: italic;
+  }
+
+  .subtitle {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: #BFD9E8;
+    letter-spacing: 0.5px;
+    line-height: 1.6;
+  }
+
+  .product-img {
+    position: absolute;
+    bottom: -20px;
+    right: 60px;
+    width: 220px;
+    opacity: 0.95;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+    z-index: 20;
+  }
+
+  .logo {
+    position: absolute;
+    top: 50px;
+    left: 60px;
+    z-index: 20;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .logo-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: #BFD9E8;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .slide-indicator {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(249,245,240,0.4);
+  }
+  .dot.active {
+    background: #F5A623;
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  .arrow {
+    position: absolute;
+    right: 50px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    color: rgba(249,245,240,0.5);
+    font-size: 32px;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bg"></div>
+  <div class="gradient-overlay"></div>
+
+  <div class="logo">
+    <div class="logo-text">Cold Brew Co.</div>
+    <div class="logo-sub">Coffee For Every Moment</div>
+  </div>
+
+  <div class="content">
+    <div class="tag">☕ Dia das Mães 2026</div>
+    <h1>Para quem te deu<br><em>tudo.</em></h1>
+    <p class="subtitle">Celebre com o sabor que aquece<br>qualquer momento.</p>
+  </div>
+
+  <img class="product-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_glass.png.jpeg" alt="Cold Brew">
+
+  <div class="slide-indicator">
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <div class="arrow">›</div>
+</div>
+</body>
+</html>

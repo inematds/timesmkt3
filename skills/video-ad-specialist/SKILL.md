@@ -23,9 +23,9 @@ Generates short-form marketing video concepts and Remotion-ready scene structure
 
 Always reference these files before producing any output:
 
-- `knowledge/brand_identity.md` — tone, brand voice, CTA language, emoji usage, hashtag strategy
-- `knowledge/product_campaign.md` — product features, selling points, visual references, campaign ideas
-- `knowledge/platform_guidelines.md` — platform best practices for Instagram, YouTube
+- `<project_dir>/knowledge/brand_identity.md` — tone, brand voice, CTA language, emoji usage, hashtag strategy
+- `<project_dir>/knowledge/product_campaign.md` — product features, selling points, visual references, campaign ideas
+- `<project_dir>/knowledge/platform_guidelines.md` — platform best practices for Instagram, YouTube
 
 These files govern hook style, pacing, copy tone, and CTA language.
 

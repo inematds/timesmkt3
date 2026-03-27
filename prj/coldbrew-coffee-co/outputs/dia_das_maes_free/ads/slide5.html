@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  html, body {
+    width: 1080px;
+    height: 1080px;
+    overflow: hidden;
+  }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/img/ChatGPT%20Image%2026%20de%20mar.%20de%202026%2C%2023_57_44.png');
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Gradiente: forte e warm de baixo, leve no topo */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(44, 26, 14, 0.96) 0%,
+      rgba(44, 26, 14, 0.70) 35%,
+      rgba(44, 26, 14, 0.20) 65%,
+      rgba(44, 26, 14, 0.35) 100%
+    );
+  }
+
+  /* Toda a área de CTA: coluna centralizada */
+  .cta-block {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 80px 80px;
+    text-align: center;
+  }
+
+  .pre-headline {
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #F5A623;
+    margin-bottom: 20px;
+    opacity: 0.9;
+  }
+
+  .headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 84px;
+    font-weight: 900;
+    line-height: 1.02;
+    color: #F9F5F0;
+    margin-bottom: 16px;
+    text-shadow: 0 2px 30px rgba(44,26,14,0.4);
+  }
+
+  .brand-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #F9F5F0;
+    opacity: 0.70;
+    margin-bottom: 44px;
+  }
+
+  /* CTA Button */
+  .cta-btn {
+    display: inline-block;
+    background: #F5A623;
+    color: #2C1A0E;
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 22px 72px;
+    border-radius: 60px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .cta-btn::after {
+    content: '→';
+    margin-left: 12px;
+    font-size: 22px;
+  }
+
+  .cta-hint {
+    font-family: 'Inter', sans-serif;
+    font-size: 17px;
+    font-weight: 300;
+    color: #F9F5F0;
+    opacity: 0.55;
+    letter-spacing: 1px;
+  }
+
+  /* Detalhe de ícone topo central */
+  .top-ornament {
+    position: absolute;
+    top: 56px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+  }
+  .orn-bar {
+    width: 80px;
+    height: 1px;
+    background: rgba(245, 166, 35, 0.5);
+  }
+  .orn-icon {
+    font-size: 22px;
+  }
+
+  .counter {
+    position: absolute;
+    bottom: 44px;
+    right: 72px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: #F9F5F0;
+    opacity: 0.40;
+    letter-spacing: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="overlay"></div>
+
+  <div class="top-ornament">
+    <div class="orn-bar"></div>
+    <div class="orn-icon">☕</div>
+    <div class="orn-bar"></div>
+  </div>
+
+  <div class="cta-block">
+    <div class="pre-headline">Dia das Mães</div>
+    <div class="headline">Presenteie<br>Ela</div>
+    <div class="brand-name">Cold Brew Coffee Co.</div>
+    <div class="cta-btn">Comprar Agora</div>
+    <div class="cta-hint">Link na bio · Entrega para todo o Brasil</div>
+  </div>
+
+  <div class="counter">05 / 05</div>
+</div>
+</body>
+</html>

@@ -25,7 +25,7 @@ Gera imagem via IA (Kie.ai Z-Image por padrão).
 | `--provider` | `kie`, `dalle`, `stability` | `kie` |
 | `--ratio` | `1:1`, `4:3`, `3:4`, `16:9`, `9:16` | `1:1` |
 | `--quality` | `standard`, `hd` | `standard` |
-| `--output` | caminho do arquivo | `outputs/media/img_[timestamp].png` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/img_[timestamp].png` |
 
 **Execução:** `media.image.generate(prompt, outputPath, { provider, aspectRatio })`
 
@@ -44,7 +44,7 @@ Busca foto gratuita em banco de imagens stock.
 |---|---|---|
 | `--provider` | `pexels`, `unsplash`, `pixabay` | `pexels` |
 | `--orientation` | `landscape`, `portrait`, `square` | `square` |
-| `--output` | caminho do arquivo | `outputs/media/stock_[timestamp].jpg` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/stock_[timestamp].jpg` |
 
 **Execução:** `media.image.stock(query, outputPath, { provider, orientation })`
 
@@ -62,7 +62,7 @@ Gera imagem usando SVGs programáticos via Playwright (HTML → PNG). Sem API, s
 | Parâmetro | Valores | Default |
 |---|---|---|
 | `--size` | `1080x1080`, `1080x1920`, `1920x1080` | `1080x1080` |
-| `--output` | caminho do arquivo | `outputs/media/svg_[timestamp].png` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/svg_[timestamp].png` |
 
 **Execução:** Claude gera HTML+CSS → renderiza com Playwright → salva PNG.
 
@@ -72,8 +72,8 @@ Gera imagem usando SVGs programáticos via Playwright (HTML → PNG). Sem API, s
 Usa imagens de uma pasta local existente. Não gera nada — apenas referencia.
 
 ```
-/img-pasta assets/
-/img-pasta outputs/dia_das_maes_2026-05-10/ads/
+/img-pasta prj/coldbrew-coffee-co/assets/
+/img-pasta prj/coldbrew-coffee-co/outputs/dia_das_maes_2026-05-10/ads/
 /img-pasta ~/minhas-fotos/campanha/
 ```
 
@@ -115,7 +115,7 @@ Gera vídeo completo: scene plan (Claude) → renderização (Remotion).
 | `--count` | `1`, `2`, `3`... | `1` |
 | `--fmt` | `v`, `q`, `h`, `v,q` | `v` |
 | `--duration` | `10`, `15`, `20`, `30` | `15` |
-| `--output` | pasta de saída | `outputs/media/video/` |
+| `--output` | pasta de saída | `<project_dir>/outputs/media/video/` |
 
 **Execução:** Video Ad Specialist gera scene_plan.json → render-video.js renderiza via Remotion.
 
@@ -125,7 +125,7 @@ Gera vídeo completo: scene plan (Claude) → renderização (Remotion).
 Usa vídeo clips de uma pasta local como assets para composição.
 
 ```
-/video-clip-pasta assets/clips/
+/video-clip-pasta prj/coldbrew-coffee-co/assets/clips/
 /video-clip-pasta ~/meus-videos/b-roll/
 ```
 
@@ -148,7 +148,7 @@ Busca música royalty-free gratuita.
 |---|---|---|
 | `--provider` | `pixabay`, `freesound` | `pixabay` |
 | `--duration` | duração máx em segundos | sem limite |
-| `--output` | caminho do arquivo | `outputs/media/music_[timestamp].mp3` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/music_[timestamp].mp3` |
 
 **Execução:** `media.music.fetch(query, outputPath, { provider })`
 
@@ -166,7 +166,7 @@ Gera música via IA.
 |---|---|---|
 | `--provider` | `suno` | `suno` |
 | `--duration` | `15`, `30`, `60` | `30` |
-| `--output` | caminho do arquivo | `outputs/media/music_ai_[timestamp].mp3` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/music_ai_[timestamp].mp3` |
 
 **Execução:** `media.music.generate(prompt, outputPath, { provider })` (requer `SUNO_API_KEY`)
 
@@ -187,7 +187,7 @@ Busca efeito sonoro gratuito.
 |---|---|---|
 | `--provider` | `pixabay`, `freesound` | `pixabay` |
 | `--duration` | duração máx em segundos | `10` |
-| `--output` | caminho do arquivo | `outputs/media/sfx_[timestamp].mp3` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/sfx_[timestamp].mp3` |
 
 **Execução:** `media.sfx.fetch(query, outputPath, { provider })`
 
@@ -209,7 +209,7 @@ Gera narração com voz IA premium.
 | `--provider` | `elevenlabs`, `openai`, `minimax` | `elevenlabs` |
 | `--voice` | ver tabela abaixo | `Rachel` (ElevenLabs) / `nova` (OpenAI) |
 | `--lang` | `pt-BR`, `en`, `es` | `pt-BR` |
-| `--output` | caminho do arquivo | `outputs/media/tts_[timestamp].mp3` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/tts_[timestamp].mp3` |
 
 Vozes ElevenLabs: `Rachel` (feminina, quente), `Bella` (feminina, suave), `Antoni` (masculina), `Josh` (masculina, grave), `Arnold` (masculina, forte)
 
@@ -230,7 +230,7 @@ Gera narração com TTS local gratuito (Piper).
 | Parâmetro | Valores | Default |
 |---|---|---|
 | `--lang` | `pt-BR`, `en`, `es` | `pt-BR` |
-| `--output` | caminho do arquivo | `outputs/media/tts_local_[timestamp].wav` |
+| `--output` | caminho do arquivo | `<project_dir>/outputs/media/tts_local_[timestamp].wav` |
 
 **Execução:** `media.tts.speak(text, outputPath, { provider: 'local-piper' })` (requer `pip install piper-tts`)
 

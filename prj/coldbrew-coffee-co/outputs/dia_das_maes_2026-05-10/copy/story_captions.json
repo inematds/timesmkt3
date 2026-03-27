@@ -1,0 +1,26 @@
+[
+  {
+    "story": 1,
+    "label": "Gancho Nostálgico",
+    "caption": "Você lembra do cheiro do café dela quando era criança? ☕",
+    "formato": "Texto sobre fundo escuro #2C1A0E"
+  },
+  {
+    "story": 2,
+    "label": "Reconhecimento",
+    "caption": "Ela sempre acordou primeiro. Desta vez, surpreenda ela antes das 8h.",
+    "formato": "Texto animado com fade-in"
+  },
+  {
+    "story": 3,
+    "label": "Produto",
+    "caption": "Cold brew premium. Suave, pronto para beber, cheio de carinho.",
+    "formato": "Produto em destaque com texto embaixo"
+  },
+  {
+    "story": 4,
+    "label": "CTA Swipe-Up",
+    "caption": "O presente que ela vai usar todo dia. Presenteie sua mãe → Cold Brew Coffee Co.",
+    "formato": "CTA com seta e link"
+  }
+]

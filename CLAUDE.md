@@ -10,6 +10,22 @@ The demo brand used in this project is **Cold Brew Coffee Co.**
 
 ---
 
+# Project Directory Structure
+
+Projects are organized under the `prj/` directory. Each project (client/brand) has its own subdirectory containing `assets/`, `knowledge/`, and `outputs/`:
+
+```
+prj/
+└── coldbrew-coffee-co/        ← Cold Brew Coffee Co. project
+    ├── assets/                 ← product images and media assets
+    ├── knowledge/              ← brand_identity, product_campaign, platform_guidelines
+    └── outputs/                ← campaign output folders
+```
+
+All pipeline payloads must include a `project_dir` field (e.g., `"project_dir": "prj/coldbrew-coffee-co"`) so agents know where to find knowledge files, assets, and where to write outputs.
+
+---
+
 # System Architecture
 
 The system consists of five agents managed by a central orchestrator:
@@ -35,11 +51,11 @@ The Orchestrator is not an agent — it is a coordinating skill that manages the
 Skill File: `skills/orchestrator/SKILL.md`
 
 Responsibilities:
-- Accept a Job Payload (JSON) with `task_name`, `task_date`, `platform_targets`, and optional skip flags
+- Accept a Job Payload (JSON) with `task_name`, `task_date`, `project_dir`, `platform_targets`, and optional skip flags
 - Validate the payload and enforce dependency ordering
 - Enqueue all agent jobs into the `ai-content-pipeline` BullMQ queue via `pipeline/orchestrator.js`
 - Start the BullMQ worker (`pipeline/worker.js`) to process queued jobs
-- Track job status via log files in `outputs/<task_name>_<date>/logs/`
+- Track job status via log files in `<project_dir>/outputs/<task_name>_<date>/logs/`
 - Report pipeline completion and surface the generated Publish MD file
 
 ### Pipeline Commands
@@ -54,7 +70,7 @@ node pipeline/worker.js                  # start the BullMQ worker (separate ter
 
 | Flag | Effect |
 |---|---|
-| `skip_research: true` | Skips Research Agent; requires `assets/<task_name>/` to exist |
+| `skip_research: true` | Skips Research Agent; requires `<project_dir>/assets/<task_name>/` to exist |
 | `skip_image: true` | Skips Ad Creative Designer |
 | `skip_video: true` | Skips Video Ad Specialist |
 
@@ -74,7 +90,7 @@ Responsibilities:
 - Synthesize findings into marketing intelligence categories
 - Output three deliverables: structured JSON, Markdown brief with Mermaid diagrams, and an interactive HTML report with Chart.js
 
-Typical Output (saved to `outputs/<task_name>_<date>/`):
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/`):
 - `research_results.json` — machine-readable structured data consumed by downstream agents
 - `research_brief.md` — human-readable Markdown report with Mermaid graphs
 - `interactive_report.html` — brand-styled interactive dashboard with Chart.js charts
@@ -95,7 +111,7 @@ Responsibilities:
 - Generate `ad.html` + `styles.css` from the layout spec
 - Render the HTML to a 1080×1080 PNG screenshot using Playwright (`chromium.launch()`)
 
-Typical Output (saved to `outputs/<task_name>_<date>/ads/`):
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/ads/`):
 - `layout.json` — design specification
 - `ad.html` + `styles.css` — generated HTML ad
 - `instagram_ad.png` — Playwright-rendered screenshot at 1080×1080
@@ -115,7 +131,7 @@ Responsibilities:
 - Output scene JSON for Remotion rendering
 - Reference the official `remotion-best-practices` skill for technical guidance
 
-Typical Output (saved to `outputs/<task_name>_<date>/video/`):
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/video/`):
 - Scene JSON with `video_length`, `platform`, and per-scene `visual` + `text_overlay`
 - Rendering configuration for Remotion
 
@@ -133,7 +149,7 @@ Responsibilities:
 - Write platform-specific copy adapted in tone, length, CTA, and hashtag format
 - Output structured JSON and individual platform text files
 
-Typical Output (saved to `outputs/<task_name>_<date>/copy/`):
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/copy/`):
 - `threads_post.txt` — witty, casual, ≤500 characters
 - `instagram_caption.txt` — hook + benefit + CTA + 3–5 hashtags
 - `youtube_metadata.json` — title (60–70 chars), description, and keyword tags
@@ -160,7 +176,7 @@ Platforms:
 - **YouTube** — YouTube Data API (requires OAuth `YOUTUBE_REFRESH_TOKEN`)
 - **Threads** — No public API; post text is included in Publish MD for manual posting
 
-Typical Output (saved to `outputs/<task_name>_<date>/`):
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/`):
 - `media_urls.json` — Supabase public URLs for all uploaded media
 - `Publish <task_name> <date>.md` — complete advisory with captions, metadata, scheduling, and publishing instructions
 
@@ -168,7 +184,7 @@ Typical Output (saved to `outputs/<task_name>_<date>/`):
 
 # Knowledge Files
 
-All agents must reference the following knowledge files located in the **knowledge/** directory.
+All agents must reference the following knowledge files located in each project's **`<project_dir>/knowledge/`** directory.
 
 ### brand_identity.md
 Defines:
@@ -212,7 +228,9 @@ Used by:
 
 # Assets
 
-`assets/` contains demo media assets used for testing and rendering:
+Each project's `<project_dir>/assets/` contains media assets used for testing and rendering.
+
+For Cold Brew Coffee Co. (`prj/coldbrew-coffee-co/assets/`):
 - `coffee_can.png.jpeg`
 - `coffee_glass.png.jpeg`
 - `morning_cafe.png.jpeg`
@@ -224,7 +242,7 @@ Used by:
 # Pipeline Output Folder Structure
 
 ```
-outputs/<task_name>_<date>/
+<project_dir>/outputs/<task_name>_<date>/
 ├── research_results.json         ← Research Agent
 ├── research_brief.md             ← Research Agent
 ├── interactive_report.html       ← Research Agent

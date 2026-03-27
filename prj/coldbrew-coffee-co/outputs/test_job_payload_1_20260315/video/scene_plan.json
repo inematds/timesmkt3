@@ -1,0 +1,66 @@
+{
+  "video_length": 20,
+  "total_frames": 600,
+  "fps": 30,
+  "platform": "instagram_reels",
+  "format": "1080x1080",
+  "concept": "Your Morning, Upgraded",
+  "motion_style": "kurzgesagt_flat",
+  "scenes": [
+    {
+      "id": "hook",
+      "time": "0-3s",
+      "frames": "0-90",
+      "duration_frames": 90,
+      "type": "hook",
+      "visual": "Dark coffee-brown background fades in. Animated alarm clock SVG scales in from zero with spring pop, rings with a vibration effect. Sun arc SVG rises slowly from the bottom edge.",
+      "text_overlay": "Still dragging this morning?",
+      "svg_elements": ["AlarmClock", "SunArc"],
+      "color_mood": "dark — coffee brown dominant"
+    },
+    {
+      "id": "struggle",
+      "time": "3-6s",
+      "frames": "90-180",
+      "duration_frames": 90,
+      "type": "hook",
+      "visual": "Flat illustrated character in tired state — half-closed eyes, slumped posture. Scene is desaturated grey-brown. Character bobs up and down subtly with interpolate.",
+      "text_overlay": "We've been there.",
+      "svg_elements": ["FlatHumanTired"],
+      "color_mood": "desaturated — grey-brown, low energy"
+    },
+    {
+      "id": "reveal",
+      "time": "6-9s",
+      "frames": "180-270",
+      "duration_frames": 90,
+      "type": "product_showcase",
+      "visual": "Coffee can SVG slides in from the right with a spring overshoot pop. Scene color shifts — amber and cold blue flood in from the sides. Character turns to look at the can.",
+      "text_overlay": "Meet Cold Brew.",
+      "svg_elements": ["CoffeeCanSilhouette"],
+      "color_mood": "color-shift — amber and cold blue emerge"
+    },
+    {
+      "id": "energy_beat",
+      "time": "9-15s",
+      "frames": "270-450",
+      "duration_frames": 180,
+      "type": "benefit",
+      "visual": "Character snaps upright in alert state. Sparkle/star SVGs burst outward from the can in a radial pattern. Background fills to warm amber. Can pulses with a subtle glow.",
+      "text_overlay": "No bitterness. Pure boost.",
+      "svg_elements": ["FlatHumanAlert", "SparkleBurst", "CoffeeCanSilhouette"],
+      "color_mood": "full energy — amber dominant, cold blue accents"
+    },
+    {
+      "id": "cta",
+      "time": "15-20s",
+      "frames": "450-600",
+      "duration_frames": 150,
+      "type": "cta",
+      "visual": "Clean off-white background. Text animates in per-word: 'Upgrade Your Morning.' Can SVG fades in centered below the text. Amber CTA button scales up from zero.",
+      "text_overlay": "Upgrade Your Morning.",
+      "svg_elements": ["CoffeeCanSilhouette"],
+      "color_mood": "clean — off-white, amber CTA"
+    }
+  ]
+}

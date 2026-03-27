@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1920px; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1920px;
+    background: #2C1A0E;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 320px 80px 280px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Background image */
+  .bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.2) saturate(0.5);
+  }
+
+  /* Radial glow */
+  .glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center 45%, rgba(75,46,26,0.5) 0%, transparent 65%);
+  }
+
+  /* Top gradient */
+  .top-fade {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 400px;
+    background: linear-gradient(to bottom, rgba(44,26,14,0.8) 0%, transparent 100%);
+  }
+
+  /* Bottom gradient */
+  .bottom-fade {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 400px;
+    background: linear-gradient(to top, rgba(44,26,14,0.9) 0%, transparent 100%);
+  }
+
+  .top-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .date-tag {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #F5A623;
+    margin-bottom: 32px;
+    border: 2px solid #F5A623;
+    padding: 10px 28px;
+    border-radius: 100px;
+  }
+
+  .brand-name {
+    font-size: 20px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: rgba(249,245,240,0.5);
+    font-weight: 600;
+  }
+
+  .center-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .number {
+    font-family: 'Georgia', serif;
+    font-size: 220px;
+    font-weight: 700;
+    line-height: 0.8;
+    color: #F5A623;
+    opacity: 0.12;
+    position: absolute;
+    top: -80px;
+    letter-spacing: -10px;
+  }
+
+  .headline {
+    font-family: 'Georgia', serif;
+    font-size: 88px;
+    font-weight: 700;
+    color: #F9F5F0;
+    line-height: 1.1;
+    text-align: center;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+  .headline em {
+    color: #F5A623;
+    font-style: italic;
+  }
+
+  .accent-line {
+    width: 80px;
+    height: 4px;
+    background: #F5A623;
+    border-radius: 2px;
+    margin: 0 auto 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .subtext {
+    font-size: 32px;
+    color: #BFD9E8;
+    text-align: center;
+    line-height: 1.5;
+    max-width: 780px;
+    font-weight: 300;
+    position: relative;
+    z-index: 1;
+  }
+
+  .bottom-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .cta-pill {
+    background: #F5A623;
+    color: #2C1A0E;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 24px 80px;
+    border-radius: 100px;
+  }
+
+  .swipe-up {
+    font-size: 18px;
+    color: rgba(249,245,240,0.4);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .swipe-up span {
+    display: block;
+    text-align: center;
+    font-size: 28px;
+    opacity: 0.5;
+  }
+</style>
+</head>
+<body>
+<div class="ad">
+  <img class="bg-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/morning_cafe.png.jpeg" alt="" />
+  <div class="glow"></div>
+  <div class="top-fade"></div>
+  <div class="bottom-fade"></div>
+
+  <div class="top-content">
+    <div class="date-tag">10 de Maio · Dia das Mães</div>
+    <div class="brand-name">Cold Brew Coffee Co.</div>
+  </div>
+
+  <div class="center-content">
+    <div class="number">☕</div>
+    <div class="headline">
+      O presente<br>que ela usa<br><em>todo dia.</em>
+    </div>
+    <div class="accent-line"></div>
+    <div class="subtext">A cada gole da manhã, ela vai lembrar de você.</div>
+  </div>
+
+  <div class="bottom-content">
+    <div class="cta-pill">Presenteie Ela</div>
+    <div class="swipe-up">
+      <span>↑</span>
+      Ver presente
+    </div>
+  </div>
+</div>
+</body>
+</html>

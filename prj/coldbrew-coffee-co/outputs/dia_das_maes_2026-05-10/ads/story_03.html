@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1920px; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1920px;
+    background: #4B2E1A;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 300px 80px 260px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Amber diagonal stripe */
+  .stripe-1 {
+    position: absolute;
+    top: 0;
+    left: -100px;
+    width: 300px;
+    height: 1920px;
+    background: #F5A623;
+    transform: skewX(-8deg);
+    opacity: 0.08;
+  }
+  .stripe-2 {
+    position: absolute;
+    top: 0;
+    right: -100px;
+    width: 200px;
+    height: 1920px;
+    background: #F5A623;
+    transform: skewX(-8deg);
+    opacity: 0.05;
+  }
+
+  /* Top glow */
+  .top-glow {
+    position: absolute;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,166,35,0.15) 0%, transparent 70%);
+  }
+
+  .top-section {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .heart {
+    font-size: 72px;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .tag {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #F5A623;
+    background: rgba(245,166,35,0.12);
+    padding: 12px 32px;
+    border-radius: 100px;
+    border: 1px solid rgba(245,166,35,0.3);
+  }
+
+  .headline {
+    font-family: 'Georgia', serif;
+    font-size: 96px;
+    font-weight: 700;
+    color: #F9F5F0;
+    line-height: 1.0;
+    text-align: center;
+  }
+
+  .center-section {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 40px;
+  }
+
+  .message {
+    font-family: 'Georgia', serif;
+    font-size: 42px;
+    font-style: italic;
+    color: #BFD9E8;
+    line-height: 1.4;
+    text-align: center;
+    max-width: 800px;
+  }
+  .message strong {
+    color: #F5A623;
+    font-style: normal;
+    font-weight: 700;
+  }
+
+  .product-img {
+    width: 300px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 60px rgba(245,166,35,0.3));
+  }
+
+  .bottom-section {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .accent-text {
+    font-size: 24px;
+    color: rgba(249,245,240,0.45);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .cta-main {
+    background: #F5A623;
+    color: #2C1A0E;
+    font-size: 32px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    padding: 28px 80px;
+    border-radius: 8px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .cta-sub {
+    font-size: 20px;
+    color: rgba(249,245,240,0.35);
+    letter-spacing: 2px;
+  }
+
+  .brand {
+    position: absolute;
+    bottom: 36px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 15px;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: rgba(249,245,240,0.25);
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="stripe-1"></div>
+  <div class="stripe-2"></div>
+  <div class="top-glow"></div>
+
+  <div class="top-section">
+    <div class="heart">☕</div>
+    <div class="tag">Dia das Mães · 10 de Maio</div>
+    <div class="headline">Ela sempre<br>cuidou de você.</div>
+  </div>
+
+  <div class="center-section">
+    <div class="message">
+      Agora, cuide da manhã dela.<br>
+      Com <strong>cold brew premium</strong> e muito carinho.
+    </div>
+    <img class="product-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_can.png.jpeg" alt="Cold Brew Can" />
+  </div>
+
+  <div class="bottom-section">
+    <div class="accent-text">O presente que dura o ano todo</div>
+    <div class="cta-main">Presenteie Agora</div>
+    <div class="cta-sub">coldbrewcoffeeco.com.br</div>
+  </div>
+
+  <div class="brand">Cold Brew Coffee Co.</div>
+</div>
+</body>
+</html>

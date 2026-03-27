@@ -1,0 +1,34 @@
+{
+  "platform": "instagram",
+  "format": "square",
+  "dimensions": "1080x1080",
+  "headline": "Your Morning, Upgraded.",
+  "subtext": "Smooth cold brew energy. Zero bitterness.",
+  "cta": "Shop Now",
+  "layout": {
+    "type": "lifestyle",
+    "background": "morning_cafe.png",
+    "product_image": "coffee_can.png",
+    "text_position": "top",
+    "cta_position": "bottom",
+    "product_frame": {
+      "style": "circular",
+      "border_radius": "50%",
+      "border": "4px solid #F5A623",
+      "background": "#2C1A0E",
+      "note": "Nanobanana circular crop with amber border — product image straight, not tilted"
+    }
+  },
+  "colors": {
+    "background_overlay": "rgba(44, 26, 14, 0.62)",
+    "headline_color": "#F9F5F0",
+    "subtext_color": "#BFD9E8",
+    "cta_background": "#F5A623",
+    "cta_text": "#2C1A0E"
+  },
+  "typography": {
+    "headline_font": "800 72px / 1.1 'Segoe UI', system-ui, sans-serif",
+    "subtext_font": "400 36px / 1.4 'Segoe UI', system-ui, sans-serif",
+    "cta_font": "700 32px / 1 'Segoe UI', system-ui, sans-serif"
+  }
+}

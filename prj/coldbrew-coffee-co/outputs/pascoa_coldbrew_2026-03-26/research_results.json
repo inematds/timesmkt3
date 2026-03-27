@@ -1,0 +1,132 @@
+{
+  "campaign": "pascoa_coldbrew",
+  "date": "2026-03-26",
+  "brand": "Cold Brew Coffee Co.",
+  "platforms": ["instagram", "threads", "youtube"],
+  "industry_trends": [
+    "Cold brew market projected to grow from $604M (2023) to $3.75B by 2032 — a 6x expansion opportunity",
+    "Cold brew has shifted from seasonal summer drink to year-round daily staple; sales remain strong even in cooler months",
+    "Flavored cold brew segment growing at 19.07% CAGR through 2030, driven by younger demographics seeking unique profiles",
+    "Wellness-infused cold brew (collagen, adaptogens, functional ingredients) is the top product innovation trend in 2025",
+    "Easter/spring season drives peak F&B gifting — 69% of consumers celebrate Easter, with food and beverage gifting central",
+    "Social media buzz around Easter food & beverage peaks mid-March; limited-edition packaging amplifies influencer reach",
+    "70% of global consumers express positive sentiment toward Easter F&B on social media"
+  ],
+  "consumer_motivations": [
+    "Millennials and Gen Z value craft, origin, and 'new coffee experiences' — they research ingredients and sourcing",
+    "Easter shoppers prioritize indulgence + gifting; millennials are the most likely generation to give Easter gifts (26%)",
+    "69% of Easter celebrators plan to purchase food for the holiday — coffee aligns naturally as a premium food gift",
+    "Smooth taste and low acidity are key purchase drivers; cold brew is positioned as the gentler, premium choice",
+    "Convenience matters: busy professionals want grab-and-go quality without sacrificing premium feel",
+    "Health consciousness is a major trigger — 62% of consumers consider health an important factor when choosing beverages",
+    "FOMO and limited-edition scarcity drive Easter purchase decisions, especially among Gen Z"
+  ],
+  "competitor_messaging": [
+    "Ryan Reynolds x STōK Cold Brew used humor + celebrity culture to embed cold brew into mainstream culture",
+    "Chameleon Cold-Brew's influencer strategy (diverse content creators, 1M followers/month) proves UGC + authentic voice wins",
+    "Dunkin and Costa Coffee expanded cold brew menu offerings for spring/summer to capture seasonal demand",
+    "Seasonal coffee shops push limited-time Easter bundles: coffee + pastry pairings, gift baskets, branded merchandise",
+    "Competitor coffee brands use 'Buy One Get One' holiday promos to accelerate trial and gifting behavior",
+    "Pistachio, ginger honey citrus, and other limited-edition flavors are being used as Easter hooks by major chains"
+  ],
+  "content_topics": [
+    "Easter coffee bar setup and spring morning aesthetic — trending on Instagram and TikTok",
+    "Cold brew gift basket unboxing and gifting ideas for coffee-loving family members",
+    "'Your Easter ritual, upgraded' — morning routine content tied to the holiday",
+    "Cold brew vs. hot coffee — 'choose your Easter energy' format comparisons",
+    "Behind-the-scenes limited-edition cold brew can reveal for Easter campaign",
+    "Easter egg hunt parody with cold brew cans hidden around the house (comedic UGC angle)",
+    "Family gathering + cold brew aesthetic: Easter table setup, brunch vibes"
+  ],
+  "marketing_angles": [
+    {
+      "angle": "Easter Morning, Upgraded",
+      "description": "Position cold brew as the premium Easter morning ritual — replaces typical coffee chaos with smooth, effortless energy",
+      "resonance": "Connects to consumer desire for a special, indulgent Easter morning experience without the bitterness"
+    },
+    {
+      "angle": "The Easter Gift Nobody Returns",
+      "description": "Cold brew as the perfect gifting item — premium, practical, universally loved, zero risk of being the wrong size",
+      "resonance": "Taps into millennials' Easter gifting behavior and the 'safe premium gift' desire"
+    },
+    {
+      "angle": "Smooth as Easter Sunday",
+      "description": "Use Easter's cultural association with calm, renewal, and lightness to mirror cold brew's smooth, low-acid profile",
+      "resonance": "Ties product truth (smooth, low acidity) to an emotional Easter narrative of peace and fresh starts"
+    },
+    {
+      "angle": "Limited Edition Pascoa Drop",
+      "description": "Create urgency and FOMO with a seasonal limited-edition framing — even without an actual product variant, the campaign can feel exclusive",
+      "resonance": "Scarcity + seasonal packaging drives purchase intent, especially among Gen Z and millennial food enthusiasts"
+    }
+  ],
+  "keywords": [
+    "cold brew Easter",
+    "Páscoa café",
+    "Easter coffee gift",
+    "cold brew Páscoa",
+    "smooth coffee morning",
+    "premium Easter gift",
+    "cold brew spring",
+    "Easter morning routine",
+    "craft cold brew",
+    "ready-to-drink coffee Easter",
+    "Easter coffee bar",
+    "ColdBrewCoffeeCo Páscoa"
+  ],
+  "video_concepts": [
+    {
+      "title": "Easter Morning Upgrade",
+      "hook": "Most people wake up to chaos on Easter. You wake up to cold brew.",
+      "format": "Flat SVG animation — Kurzgesagt-inspired",
+      "platform": "Instagram Reels / YouTube Shorts",
+      "duration_seconds": 20,
+      "scene_breakdown": [
+        "Scene 1 (0–5s): Easter morning chaos — animated alarm, colorful Easter eggs flying, hot coffee spilling",
+        "Scene 2 (5–10s): Hand reaches for Cold Brew can in slow motion; scene calms, color shifts to amber + cold blue",
+        "Scene 3 (10–15s): Character sips cold brew; sparkles burst, Easter egg motifs transform into energy icons",
+        "Scene 4 (15–20s): CTA text animates in: 'Upgrade Your Easter Morning' with coffee can and egg silhouette"
+      ],
+      "cta": "Upgrade Your Morning"
+    },
+    {
+      "title": "The Easter Gift Nobody Returns",
+      "hook": "Chocolate? Flowers? Try again. Cold brew is the Easter gift that actually wins.",
+      "format": "Bold typography + product reveal",
+      "platform": "Threads / Instagram Stories",
+      "duration_seconds": 15,
+      "scene_breakdown": [
+        "Scene 1 (0–4s): Strike-through animations on typical Easter gifts (chocolate egg, flowers, socks)",
+        "Scene 2 (4–9s): Cold brew can slides in with a spring 'pop'; Easter ribbon SVG wraps around it",
+        "Scene 3 (9–13s): Social proof text fades in: 'Zero returns since forever.'",
+        "Scene 4 (13–15s): CTA: 'Grab Yours' with arrow pointing down"
+      ],
+      "cta": "Grab Yours"
+    }
+  ],
+  "ad_hooks": [
+    "Your Easter morning just got a serious upgrade. ☕",
+    "The Easter gift nobody returns.",
+    "Skip the hot mess. Cold brew your Easter.",
+    "This Easter, serve the good stuff.",
+    "Smooth as Easter Sunday. No bitterness allowed.",
+    "Hot coffee on Easter? Life's too short for that."
+  ],
+  "scheduling_recommendations": {
+    "instagram": {
+      "best_times": ["Friday 10AM", "Saturday 9AM", "Easter Sunday 8AM"],
+      "content_type": "Reels + Stories + Feed carousel",
+      "hashtags": ["#ColdBrewCoffeeCo", "#PascoaColdBrew", "#EasterCoffee", "#ColdBrew", "#MorningFuel"]
+    },
+    "threads": {
+      "best_times": ["Thursday 8PM", "Saturday 10AM"],
+      "content_type": "Short punchy text + image",
+      "hashtags": ["#ColdBrew", "#EasterMorning", "#BrewedDifferent"]
+    },
+    "youtube": {
+      "best_times": ["Friday release, 2 weeks before Easter"],
+      "content_type": "YouTube Shorts (60s) + pre-roll ad",
+      "hashtags": ["ColdBrewCoffee", "EasterCoffee", "MorningRoutine"]
+    }
+  }
+}

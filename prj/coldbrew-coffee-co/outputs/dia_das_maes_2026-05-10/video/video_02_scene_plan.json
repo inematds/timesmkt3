@@ -1,0 +1,244 @@
+{
+  "video_id": "video_02",
+  "titulo": "Anos de Café",
+  "campanha": "dia_das_maes",
+  "data": "2026-05-10",
+  "plataformas": ["instagram", "threads", "youtube"],
+  "video_length": 15,
+  "fps": 30,
+  "total_frames": 450,
+  "composition": {
+    "width": 1080,
+    "height": 1920,
+    "aspect_ratio": "9:16",
+    "format_note": "Instagram Reels · YouTube Shorts · Threads vertical"
+  },
+  "angulo_criativo": "Nostalgia e passagem do tempo — o café que esteve em todos os momentos",
+  "tom_emocional": "Dinâmico, energético, com pico emocional crescente. Termina em celebração.",
+  "arco_emocional": "Nostalgia (passado) → Reconhecimento (crescimento) → Celebração (presente) → CTA poderoso",
+  "paleta_cores": {
+    "fase_infancia": "#8B6347",
+    "fase_adolescencia": "#4B2E1A",
+    "fase_adulta": "#2C1A0E",
+    "destaque_frio": "#BFD9E8",
+    "destaque_amber": "#F5A623",
+    "texto": "#F9F5F0",
+    "fundo_cta": "#F9F5F0"
+  },
+  "musica": {
+    "estilo": "Beat crescente — começa com melodia nostálgica de piano, cresce para percussão dinâmica a partir da cena 3",
+    "bpm_inicio": 85,
+    "bpm_fim": 110,
+    "curva_volume": "Constante no início, crescendo nas últimas 2 cenas — pico no CTA"
+  },
+  "hook_conceito": "Anos passam. O café ficou.",
+  "cta_final": "Cada gole é um abraço.",
+  "cta_acao": "Presenteie Ela",
+  "scenes": [
+    {
+      "scene_id": 1,
+      "tipo": "hook",
+      "nome": "O Tempo Que Passou",
+      "timing_segundos": "0s – 2s",
+      "frame_inicio": 0,
+      "frame_fim": 60,
+      "duracao_frames": 60,
+      "descricao_visual": "Fundo escuro (#2C1A0E). Texto entra em tipografia bold e grande ocupando quase todo o frame. Cada linha de texto entra com impacto — efeito de punch in (scale 1.3→1.0 com spring). Estilo gráfico limpo, quase editorial. Ritmo rápido mas com pausa de leitura.",
+      "animacoes": [
+        "Linha 1 'Anos passam.': scale spring de 1.4→1.0 no frame 0–20 com damping alto",
+        "Linha 2 'O café ficou.': mesma entrada, delay de 20 frames",
+        "Fundo: noise/grain SVG muito sutil, opacity 0.05 — textura orgânica",
+        "Micro-flash de luz: opacity 0→1→0 em 5 frames sincronizado com entrada de cada linha"
+      ],
+      "text_overlay": {
+        "linha_1": {
+          "texto": "Anos passam.",
+          "fonte": "Playfair Display Bold",
+          "tamanho": "88px",
+          "cor": "#F9F5F0",
+          "posicao": "centro vertical, 38% do topo",
+          "animacao": "Punch in: scale 1.4→1.0 com spring, frame 5–25"
+        },
+        "linha_2": {
+          "texto": "O café ficou.",
+          "fonte": "Playfair Display Bold Italic",
+          "tamanho": "88px",
+          "cor": "#F5A623",
+          "posicao": "centro vertical, 52% do topo",
+          "animacao": "Punch in: scale 1.4→1.0 com spring, frame 25–45"
+        }
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 2,
+      "tipo": "flashback_infancia",
+      "nome": "Memória #1 — A Criança e o Café",
+      "timing_segundos": "2s – 5s",
+      "frame_inicio": 60,
+      "frame_fim": 150,
+      "duracao_frames": 90,
+      "descricao_visual": "Transição rápida por wipe horizontal. Cena em tom sépia/marrom desbotado (#8B6347 dominante). Ilustração SVG flat: criança pequena sentada à mesa de cozinha, mãe de costas preparando café. Cena simples, quase como memória — detalhes propositalmente incompletos. Vapor em cima da xícara da mãe. Criança balança as pernas que não alcançam o chão.",
+      "animacoes": [
+        "Wipe de entrada: clipPath horizontal da esquerda, frame 60–80",
+        "Tom sépia: fundo e personagens usam palette desaturada — apenas tons marrons",
+        "Criança: pernas SVG oscilam em loop — translateY +8px/-8px a cada 20 frames",
+        "Vapor da xícara: translateY de 0→-30px em loop de 40 frames, opacity 0.6→0",
+        "Grão de filme: SVG noise overlay opacity 0.08 para sensação de memória",
+        "Leve vinheta nas bordas: radial gradient escuro nas extremidades"
+      ],
+      "text_overlay": {
+        "texto": "Ela sempre estava lá.",
+        "fonte": "Playfair Display Italic",
+        "tamanho": "46px",
+        "cor": "#F9F5F0",
+        "posicao": "inferior, 80% do topo, centralizado",
+        "animacao": "Fade-in suave, frame 100–120",
+        "entrada_frame": 100
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 3,
+      "tipo": "flashback_adolescencia",
+      "nome": "Memória #2 — Primeiros Frios Compartilhados",
+      "timing_segundos": "5s – 8s",
+      "frame_inicio": 150,
+      "frame_fim": 240,
+      "duracao_frames": 90,
+      "descricao_visual": "Corte rápido (match cut no formato do copo). Agora as cores ficam um pouco mais vivas — tons quentes de âmbar. Cena SVG: adolescente e mãe sentados juntos em um sofá, cada um com um copo — copo quente para a mãe, algo frio para o adolescente. Eles riem. Janela ao fundo com luz da manhã. Ritmo começa a ficar mais acelerado.",
+      "animacoes": [
+        "Match cut: o copo da cena anterior transforma no copo desta via morphing de shape SVG (frame 150–165)",
+        "Cores: saturação aumenta progressivamente via filter SVG saturate(0.6→1.0) nos primeiros 30 frames",
+        "Personagens: expressão mais animada — eyebrows SVG levantadas, bocas em curva maior",
+        "Luz da janela: raios de sol animados que pulsam levemente em opacidade",
+        "Ritmo: a cena dura 3s — mais rápida que a anterior (era 3s, mesma, mas transição mais agressiva)"
+      ],
+      "text_overlay": {
+        "texto": "De manhã em manhã.",
+        "fonte": "Playfair Display Italic",
+        "tamanho": "50px",
+        "cor": "#F5A623",
+        "posicao": "superior, 18% do topo, centralizado",
+        "animacao": "Slide down de -20px com fade-in, frame 175–200",
+        "entrada_frame": 175
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 4,
+      "tipo": "presente_produto",
+      "nome": "Agora — Cold Brew Juntos",
+      "timing_segundos": "8s – 12s",
+      "frame_inicio": 240,
+      "frame_fim": 360,
+      "duracao_frames": 120,
+      "descricao_visual": "Corte dinâmico com flash de luz (1 frame branco puro). Cores totalmente saturadas agora — paleta completa da marca. Filho adulto SVG e mãe SVG no mesmo ambiente, mas modernos. Filho entrega uma lata de Cold Brew Co. à mãe com um sorriso. Mãe reage com surpresa e afeto. Produto claramente visível. Esta é a cena mais longa — o pico emocional e visual.",
+      "animacoes": [
+        "Flash de entrada: 1 frame opaque white no frame 240, retorna em 3 frames",
+        "Cores: HSL vivid — fundo escuro rico #2C1A0E, amber brilhante #F5A623 nos destaques",
+        "Filho: movimento de extensão de braço — translateX -20px→0, frame 255–280",
+        "Lata Cold Brew Co.: aparece na mão do filho com spring pop (scale 0.3→1.0), frame 260–285",
+        "Mãe: reação — leve recuo e depois aproximação (translateX +10px→-5px), frame 275–310",
+        "Brilho ao redor da lata: radial glow SVG âmbar, opacity 0→0.5 em 20 frames",
+        "Partículas: 4–6 star/sparkle SVGs explodem da lata para fora ao ser entregue"
+      ],
+      "text_overlay": {
+        "texto": "Cada gole é um abraço.",
+        "fonte": "Playfair Display Bold",
+        "tamanho": "60px",
+        "cor": "#F9F5F0",
+        "posicao": "superior, 12% do topo, centralizado",
+        "animacao": "Per-word scale 1.2→1.0 + fade-in, 12 frames por palavra a partir do frame 300",
+        "entrada_frame": 300
+      },
+      "assets_remotion": [
+        "coffee_can.png via staticFile() — produto na mão do personagem filho, com spring animation",
+        "morning_cafe.png via staticFile() — fundo suavizado, opacity 0.25"
+      ]
+    },
+    {
+      "scene_id": 5,
+      "tipo": "cta",
+      "nome": "CTA — Presenteie Ela",
+      "timing_segundos": "12s – 15s",
+      "frame_inicio": 360,
+      "frame_fim": 450,
+      "duracao_frames": 90,
+      "descricao_visual": "Fundo gradiente de #2C1A0E para #F5A623 de baixo para cima — dinâmico e premium. Lata de Cold Brew Co. centralizada, grande, com brilho. Texto do CTA aparece em dois momentos com impacto. Logo da marca no topo. Botão de ação com cor âmbar vibrante. Sensação de energia e urgência positiva.",
+      "animacoes": [
+        "Fundo: gradiente animado — posição do gradient-stop se move de baixo para cima em 90 frames",
+        "Lata: entra com spring pop agressivo (scale 0→1.1→1.0), frame 360–385",
+        "Lata: leve rotação Z de -5°→0° junto com o pop",
+        "Brilho produto: pulsação de radial glow — scale 0.8→1.2 em loop de 30 frames",
+        "Texto CTA: cada palavra entra em punch-in individualizado",
+        "Botão: bounce entrada frame 420–440, depois leve pulsação scale 1.0→1.03 loop",
+        "Sparkles: 6–8 stars orbitando a lata em arco circular"
+      ],
+      "text_overlay": {
+        "linha_1": {
+          "texto": "Presenteie ela.",
+          "fonte": "Playfair Display Bold",
+          "tamanho": "72px",
+          "cor": "#F9F5F0",
+          "posicao": "centro, 65% do topo",
+          "animacao": "Punch in per-word, scale 1.3→1.0 com spring, frame 385–405"
+        },
+        "linha_2": {
+          "texto": "Cold Brew Coffee Co.",
+          "fonte": "Inter Regular",
+          "tamanho": "32px",
+          "cor": "#F9F5F0",
+          "posicao": "centro, 73% do topo",
+          "animacao": "Fade-in simples, frame 405–420"
+        },
+        "botao_cta": {
+          "texto": "Presenteie Ela ☕",
+          "fonte": "Inter Bold",
+          "tamanho": "38px",
+          "cor": "#2C1A0E",
+          "fundo_botao": "#F5A623",
+          "border_radius": "40px",
+          "posicao": "centro, 85% do topo",
+          "animacao": "Bounce entrada: translateY +40px→0 com spring, frame 420–440"
+        },
+        "logo_topo": {
+          "texto": "Cold Brew Coffee Co.",
+          "fonte": "Inter Bold",
+          "tamanho": "28px",
+          "cor": "#F9F5F0",
+          "posicao": "topo, 6% do topo, centralizado",
+          "animacao": "Fade-in, frame 362–375"
+        }
+      },
+      "assets_remotion": [
+        "coffee_can.png via staticFile() — produto hero, tamanho ~380px de altura"
+      ]
+    }
+  ],
+  "remotion_config": {
+    "composition_id": "DiaDasMaesVideo02",
+    "fps": 30,
+    "duration_in_frames": 450,
+    "width": 1080,
+    "height": 1920,
+    "fonts_necessarias": ["Playfair Display", "Playfair Display Bold", "Playfair Display Bold Italic", "Playfair Display Italic", "Inter Regular", "Inter Bold"],
+    "audio_component": "<Audio src={staticFile('audio/anos_crescendo.mp3')} volume={0.8} />",
+    "notas_remotion": [
+      "Match cut entre cenas 2 e 3: morphing de forma do copo via interpolate em SVG <path> d attribute",
+      "Flash de entrada da cena 4: renderizar frame 240 com backgroundColor '#FFFFFF' e opacity 1",
+      "Para sensação de memória nas cenas 2–3: aplicar SVG <feColorMatrix> para dessaturação progressiva",
+      "spring() com damping baixo (8–10) para efeitos de punch — feeling mais agressivo que vídeo 01",
+      "Sparkles e partículas: arrays de SVG <polygon> com posições randomizadas via seededRandom()",
+      "Cada flashback é um componente <Sequence> separado com from e durationInFrames definidos",
+      "Usar <AbsoluteFill> em cada cena para garantir composição correta no layout 1080x1920"
+    ]
+  },
+  "hashtags_sugeridas": [
+    "#DiadasMães",
+    "#ColdBrewCoffeeCo",
+    "#MomMoment",
+    "#CaféComCarinho",
+    "#ColdBrew"
+  ]
+}

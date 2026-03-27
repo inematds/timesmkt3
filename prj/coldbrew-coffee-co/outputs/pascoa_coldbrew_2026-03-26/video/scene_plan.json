@@ -1,0 +1,160 @@
+{
+  "campaign": "pascoa_coldbrew",
+  "date": "2026-03-26",
+  "concept_title": "Smooth as Easter Sunday",
+  "concept_logline": "Easter chaos gets a cold brew calm-down — your morning ritual, upgraded.",
+  "video_length": 15,
+  "fps": 30,
+  "total_frames": 450,
+  "motion_style": "Kurzgesagt-inspired flat SVG animation",
+  "color_palette": {
+    "coffee_dark": "#2C1A0E",
+    "coffee_mid": "#4B2E1A",
+    "cold_blue": "#BFD9E8",
+    "amber": "#F5A623",
+    "off_white": "#F9F5F0",
+    "easter_accent": "#E8C4D8"
+  },
+  "platforms": {
+    "instagram_reels": {
+      "dimensions": "1080x1920",
+      "aspect_ratio": "9:16",
+      "cta": "Grab Yours"
+    },
+    "youtube_shorts": {
+      "dimensions": "1080x1920",
+      "aspect_ratio": "9:16",
+      "cta": "Try It Today"
+    },
+    "threads": {
+      "dimensions": "1080x1080",
+      "aspect_ratio": "1:1",
+      "cta": "Grab Yours"
+    }
+  },
+  "primary_platform": "instagram_reels",
+  "scenes": [
+    {
+      "id": "scene_01_hook",
+      "time": "0-2",
+      "frames": "0-60",
+      "type": "hook",
+      "duration_seconds": 2,
+      "visual": "Easter egg SVG cracks from center — coffee can silhouette bursts out with spring-pop overshoot; background coffee dark (#2C1A0E); egg shards scatter outward with ease-out physics",
+      "text_overlay": "Easter, upgraded.",
+      "animation": {
+        "entrance": "spring_pop_overshoot",
+        "text_motion": "per-word fade-in with upward slide",
+        "text_start_frame": 30
+      },
+      "svgs_needed": ["easter_egg_cracked", "coffee_can_silhouette", "egg_shard_particles"],
+      "audio_cue": "Crisp pop SFX at frame 0; coffee shop ambience fades in"
+    },
+    {
+      "id": "scene_02_product_showcase",
+      "time": "2-7",
+      "frames": "60-210",
+      "type": "product_showcase",
+      "duration_seconds": 5,
+      "visual": "Full cold brew can reveal — staticFile('coffee_can.png') centered on cold blue (#BFD9E8) background; Easter ribbon SVG draws on around can via path animation; sparkle bursts pop around can; scene color shifts dark-to-cold-blue over first 1.5s",
+      "text_overlay": "No bitterness. Pure smooth.",
+      "animation": {
+        "entrance": "scene_wipe_from_bottom over frames 60-105",
+        "can_animation": "scale 0.6 to 1.0 with spring overshoot, then subtle float loop",
+        "ribbon_draw": "SVG path draw-on left to right, frames 90-150",
+        "sparkles": "burst from can center at frame 150, ease-out scatter",
+        "text_motion": "per-word slide-up from below at frame 160"
+      },
+      "svgs_needed": ["easter_ribbon", "sparkle_burst_set", "ice_crystal_accents"],
+      "remotion_assets": ["coffee_can.png via staticFile()"]
+    },
+    {
+      "id": "scene_03_benefit",
+      "time": "7-12",
+      "frames": "210-360",
+      "type": "benefit",
+      "duration_seconds": 5,
+      "visual": "Split-screen: left panel — chaotic hot coffee cup spilling, desaturated grey, tired flat character with drooping eyes; right panel — cold brew can with alert character, amber (#F5A623) radial glow; right panel expands to full screen by frame 300",
+      "text_overlay": "Smooth start. Every time.",
+      "animation": {
+        "entrance": "horizontal_split_wipe from center at frame 210",
+        "left_panel": "desaturated, shaking steam SVG, tired character drooping eyes",
+        "right_panel": "full color, amber radial glow pulse, character with sparkle eyes",
+        "full_expand": "right panel slides to fill screen at frame 290, left exits off-screen",
+        "text_motion": "letter-by-letter reveal with amber color flash at frame 310"
+      },
+      "svgs_needed": [
+        "hot_coffee_cup_spill",
+        "steam_lines",
+        "tired_character_flat",
+        "alert_character_flat",
+        "amber_glow_radial",
+        "sparkle_eyes"
+      ],
+      "brand_voice_note": "Positive framing — show the upgrade, not the failure. Right panel wins the frame."
+    },
+    {
+      "id": "scene_04_cta",
+      "time": "12-15",
+      "frames": "360-450",
+      "type": "cta",
+      "duration_seconds": 3,
+      "visual": "Off-white (#F9F5F0) background flash; coffee can staticFile('coffee_can.png') spring-slides to center from right; small Easter egg SVG drops and bounces beside can; bold amber CTA text animates in word-by-word below product; brand logo fades in at top center",
+      "text_overlay": "Grab Yours",
+      "animation": {
+        "entrance": "background_flash_to_off_white at frame 360",
+        "can_entrance": "slide from right with spring-settle, frames 365-390",
+        "egg_drop": "drop from top with bounce at frame 385",
+        "cta_text": "per-word slide-up amber fill (#F5A623), frames 395-425",
+        "logo_fade": "fade in at frame 430",
+        "final_hold": "static hold frames 430-450"
+      },
+      "svgs_needed": ["easter_egg_small", "brand_logo_svg", "arrow_down_indicator"],
+      "remotion_assets": ["coffee_can.png via staticFile()"],
+      "cta_variants": {
+        "instagram_reels": "Grab Yours ↓",
+        "youtube_shorts": "Try It Today →",
+        "threads": "Grab Yours"
+      }
+    }
+  ],
+  "remotion_config": {
+    "composition_id": "PascoaColdBrewAd",
+    "width": 1080,
+    "height": 1920,
+    "fps": 30,
+    "duration_in_frames": 450,
+    "default_props": {
+      "primaryColor": "#F5A623",
+      "backgroundColor": "#2C1A0E",
+      "accentColor": "#BFD9E8",
+      "textColor": "#F9F5F0"
+    },
+    "font": "Poppins Bold for overlays, Poppins Regular for subtext — load via @remotion/google-fonts",
+    "animation_notes": "All motion via useCurrentFrame() + interpolate(). Use spring() for pop/bounce. No external CSS keyframes.",
+    "audio": {
+      "background_music": "Upbeat lo-fi spring track — fade in at frame 0, fade out at frame 420",
+      "sfx": [
+        { "frame": 0, "sound": "pop_crack" },
+        { "frame": 150, "sound": "sparkle_chime" },
+        { "frame": 360, "sound": "whoosh_transition" }
+      ]
+    }
+  },
+  "creative_brief": {
+    "hook_strategy": "Pattern interrupt — Easter egg cracks open to reveal cold brew can. Subverts holiday expectations in the first 2 seconds to stop the scroll.",
+    "emotional_arc": "Chaos → Calm → Energy → Action. Easter morning usually means stress; cold brew is the upgrade that makes it smooth.",
+    "visual_style": "Kurzgesagt-inspired flat SVG motion — snappy spring animations, brand color palette, no live footage or external CSS",
+    "cta_rationale": "'Grab Yours' taps into Easter gifting behavior from research data; direct imperative verb, under 4 words per brand_identity.md CTA rules",
+    "platform_adaptations": {
+      "instagram_reels": "9:16 vertical primary format; text in center safe zone; CTA with swipe-up intent",
+      "youtube_shorts": "Same 9:16 composition; CTA swapped to 'Try It Today' for YouTube search/discovery context",
+      "threads": "Export 1:1 square crop variant (1080x1080); used as teaser clip with link to full Reel"
+    },
+    "research_alignment": {
+      "angle_used": "Smooth as Easter Sunday",
+      "key_insight": "Easter shoppers prioritize indulgence; cold brew positioned as the smooth, premium morning ritual vs. hot coffee chaos",
+      "trend_hooks": ["Easter F&B gifting — 69% of consumers celebrate", "Smooth taste and low acidity as purchase drivers", "Scarcity/seasonal framing drives Gen Z FOMO"]
+    }
+  }
+}

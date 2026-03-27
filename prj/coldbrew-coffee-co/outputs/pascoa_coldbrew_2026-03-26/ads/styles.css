@@ -1,0 +1,229 @@
+/* ============================================================
+   Cold Brew Coffee Co. — Páscoa 2026 Instagram Ad
+   1080 × 1080px — Lifestyle Layout
+   ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  background: #2C1A0E;
+}
+
+.ad-container {
+  position: relative;
+  width: 1080px;
+  height: 1080px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* ── Background ── */
+.bg-image {
+  position: absolute;
+  inset: 0;
+  background-image: url('../../../assets/morning_cafe.png.jpeg');
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
+.bg-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(44, 26, 14, 0.82) 0%,
+    rgba(44, 26, 14, 0.55) 40%,
+    rgba(44, 26, 14, 0.60) 65%,
+    rgba(44, 26, 14, 0.92) 100%
+  );
+  z-index: 1;
+}
+
+/* ── Decorative Easter Eggs (CSS shapes) ── */
+.egg {
+  position: absolute;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  z-index: 2;
+  opacity: 0.18;
+}
+
+.egg-1 {
+  width: 56px;
+  height: 72px;
+  background: #BFD9E8;
+  top: 80px;
+  left: 72px;
+  transform: rotate(-20deg);
+}
+
+.egg-2 {
+  width: 44px;
+  height: 58px;
+  background: #F5A623;
+  top: 120px;
+  right: 88px;
+  transform: rotate(15deg);
+}
+
+.egg-3 {
+  width: 38px;
+  height: 50px;
+  background: #F9F5F0;
+  bottom: 140px;
+  left: 64px;
+  transform: rotate(10deg);
+}
+
+.egg-4 {
+  width: 52px;
+  height: 68px;
+  background: #BFD9E8;
+  bottom: 110px;
+  right: 72px;
+  transform: rotate(-12deg);
+}
+
+.egg-5 {
+  width: 32px;
+  height: 42px;
+  background: #F5A623;
+  top: 460px;
+  left: 48px;
+  transform: rotate(25deg);
+  opacity: 0.12;
+}
+
+/* ── Main Content ── */
+.content {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 64px 80px 72px;
+}
+
+/* ── Top Section ── */
+.top-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  color: #F9F5F0;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
+.pascoa-badge {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  color: #BFD9E8;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.headline {
+  font-size: 108px;
+  font-weight: 900;
+  line-height: 1.0;
+  color: #F5A623;
+  text-align: center;
+  letter-spacing: -2px;
+  text-shadow: 0 4px 24px rgba(44, 26, 14, 0.60);
+}
+
+/* ── Product Section ── */
+.product-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.product-frame {
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 6px solid #F5A623;
+  box-shadow:
+    0 0 0 12px rgba(245, 166, 35, 0.15),
+    0 0 0 24px rgba(245, 166, 35, 0.06),
+    0 24px 80px rgba(44, 26, 14, 0.70);
+  background: #3a2010;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* ── Bottom Section ── */
+.bottom-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+}
+
+.subtext {
+  font-size: 34px;
+  font-weight: 400;
+  color: #F9F5F0;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 820px;
+  opacity: 0.92;
+}
+
+.cta {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  color: #2C1A0E;
+  background: #F5A623;
+  border: none;
+  border-radius: 8px;
+  padding: 22px 72px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: 0 8px 32px rgba(245, 166, 35, 0.35);
+}
+
+/* ── Decorative horizontal rule ── */
+.divider {
+  width: 80px;
+  height: 3px;
+  background: #F5A623;
+  border-radius: 2px;
+  opacity: 0.6;
+}

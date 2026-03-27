@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Inter:wght@300;400;600;700&display=swap');
+
+  html, body {
+    width: 1080px;
+    height: 1080px;
+    overflow: hidden;
+  }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/img/ChatGPT%20Image%2026%20de%20mar.%20de%202026%2C%2023_57_53.png');
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Gradiente: faixa horizontal no terço inferior */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to top,
+      rgba(44, 26, 14, 0.90) 0%,
+      rgba(44, 26, 14, 0.55) 30%,
+      rgba(44, 26, 14, 0.08) 55%,
+      rgba(44, 26, 14, 0.20) 100%
+    );
+  }
+
+  /* Conteúdo: centralizado no rodapé */
+  .content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 80px 72px;
+    text-align: center;
+  }
+
+  .product-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #F5A623;
+    border-radius: 50px;
+    padding: 10px 28px;
+    margin-bottom: 24px;
+  }
+  .product-badge .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #2C1A0E;
+  }
+  .product-badge span {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #2C1A0E;
+  }
+
+  .headline {
+    font-family: 'Playfair Display', serif;
+    font-size: 68px;
+    font-weight: 900;
+    line-height: 1.10;
+    color: #F9F5F0;
+    margin-bottom: 18px;
+    text-shadow: 0 2px 24px rgba(44,26,14,0.6);
+  }
+
+  .subtext {
+    font-family: 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 300;
+    color: #F9F5F0;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+    line-height: 1.5;
+  }
+
+  .subtext strong {
+    font-weight: 600;
+    color: #F5A623;
+  }
+
+  /* Detalhe decorativo topo */
+  .top-accent {
+    position: absolute;
+    top: 52px;
+    left: 72px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .accent-circle {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #F5A623;
+  }
+  .accent-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #F9F5F0;
+    opacity: 0.70;
+  }
+
+  .counter {
+    position: absolute;
+    bottom: 44px;
+    right: 72px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: #F9F5F0;
+    opacity: 0.45;
+    letter-spacing: 2px;
+  }
+
+  .logo {
+    position: absolute;
+    top: 48px;
+    right: 64px;
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: #F9F5F0;
+    opacity: 0.70;
+    text-align: right;
+    line-height: 1.3;
+  }
+  .logo span {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #F5A623;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="overlay"></div>
+
+  <div class="top-accent">
+    <div class="accent-circle"></div>
+    <div class="accent-text">Nosso produto</div>
+  </div>
+
+  <div class="logo">
+    Cold Brew Co.
+    <span>Since 2018</span>
+  </div>
+
+  <div class="content">
+    <div class="product-badge">
+      <div class="dot"></div>
+      <span>Cold Brew Co.</span>
+      <div class="dot"></div>
+    </div>
+    <div class="headline">Preparado<br>com amor</div>
+    <div class="subtext">Infusão a frio por <strong>12 horas</strong><br>para um sabor que abraça</div>
+  </div>
+
+  <div class="counter">03 / 05</div>
+</div>
+</body>
+</html>

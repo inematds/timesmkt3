@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Story 01</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1920px; overflow: hidden; }
+
+  .slide {
+    width: 1080px;
+    height: 1920px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_mae_filha.jpg');
+    background-size: cover;
+    background-position: center 30%;
+    filter: brightness(0.45) saturate(0.8);
+  }
+
+  .gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      180deg,
+      rgba(44,26,14,0.6) 0%,
+      rgba(44,26,14,0.2) 35%,
+      rgba(44,26,14,0.2) 60%,
+      rgba(44,26,14,0.9) 100%
+    );
+  }
+
+  /* Top safe zone */
+  .top-bar {
+    position: absolute;
+    top: 80px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 60px;
+    z-index: 20;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: 2px;
+  }
+
+  .tag {
+    background: rgba(245,166,35,0.15);
+    border: 1px solid rgba(245,166,35,0.4);
+    color: #F5A623;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border-radius: 100px;
+  }
+
+  /* Center content */
+  .content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 0 80px;
+    margin-top: -100px;
+  }
+
+  .super-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #BFD9E8;
+    margin-bottom: 30px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 110px;
+    font-weight: 900;
+    color: #F9F5F0;
+    line-height: 1.0;
+    margin-bottom: 30px;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.5);
+  }
+
+  h1 em {
+    font-style: italic;
+    color: #F5A623;
+  }
+
+  .sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 26px;
+    font-weight: 400;
+    color: rgba(249,245,240,0.8);
+    line-height: 1.5;
+  }
+
+  /* Bottom content */
+  .bottom-content {
+    position: absolute;
+    bottom: 140px;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    text-align: center;
+    padding: 0 80px;
+  }
+
+  .cta-pill {
+    display: inline-block;
+    background: #F5A623;
+    color: #2C1A0E;
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 24px 70px;
+    border-radius: 100px;
+    margin-bottom: 20px;
+    box-shadow: 0 10px 40px rgba(245,166,35,0.4);
+  }
+
+  .link-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: rgba(191,217,232,0.7);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* Decorative vertical line */
+  .v-line {
+    position: absolute;
+    left: 60px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 200px;
+    background: linear-gradient(to bottom, transparent, #F5A623, transparent);
+    z-index: 20;
+  }
+
+  .v-line-right {
+    left: auto;
+    right: 60px;
+  }
+
+  /* Product */
+  .product-img {
+    position: absolute;
+    bottom: 300px;
+    right: 70px;
+    width: 180px;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.6));
+    z-index: 20;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bg"></div>
+  <div class="gradient-overlay"></div>
+
+  <div class="v-line"></div>
+  <div class="v-line v-line-right"></div>
+
+  <div class="top-bar">
+    <div class="logo-text">Cold Brew Co.</div>
+    <div class="tag">Dia das Mães</div>
+  </div>
+
+  <div class="content">
+    <div class="super-text">Para a mulher da sua vida</div>
+    <h1>Amor<br>em cada<br><em>gota.</em></h1>
+    <p class="sub">Cold Brew feito com o mesmo<br>cuidado que ela coloca<br>em tudo.</p>
+  </div>
+
+  <img class="product-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_glass.png.jpeg" alt="Cold Brew">
+
+  <div class="bottom-content">
+    <div class="cta-pill">Presenteie Agora ☕</div>
+    <p class="link-text">coldbrewcoffee.co</p>
+  </div>
+</div>
+</body>
+</html>

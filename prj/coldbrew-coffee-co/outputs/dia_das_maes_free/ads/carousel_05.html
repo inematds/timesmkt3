@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Carousel 05 - CTA</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #4B2E1A;
+  }
+
+  /* Background texture layer */
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_cafe_beans.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.18;
+    filter: saturate(0.5);
+  }
+
+  /* Radial glow */
+  .glow {
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(245,166,35,0.2) 0%, transparent 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  /* Decorative ring */
+  .ring {
+    position: absolute;
+    width: 820px;
+    height: 820px;
+    border-radius: 50%;
+    border: 1px solid rgba(245, 166, 35, 0.12);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .ring-inner {
+    position: absolute;
+    width: 640px;
+    height: 640px;
+    border-radius: 50%;
+    border: 1px solid rgba(249, 245, 240, 0.06);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .content {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 60px;
+  }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #BFD9E8;
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 80px;
+    font-weight: 900;
+    color: #F9F5F0;
+    line-height: 1.05;
+    margin-bottom: 20px;
+  }
+
+  h2 em {
+    font-style: italic;
+    color: #F5A623;
+  }
+
+  .tagline {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    color: rgba(249,245,240,0.7);
+    font-weight: 400;
+    line-height: 1.6;
+    margin-bottom: 56px;
+    max-width: 560px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .cta-btn {
+    display: inline-block;
+    background: #F5A623;
+    color: #2C1A0E;
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 22px 56px;
+    border-radius: 100px;
+    margin-bottom: 28px;
+    box-shadow: 0 8px 30px rgba(245,166,35,0.35);
+  }
+
+  .secondary-cta {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: #BFD9E8;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .product-img {
+    position: absolute;
+    bottom: 40px;
+    right: 60px;
+    width: 200px;
+    filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5));
+    z-index: 20;
+  }
+
+  .logo {
+    position: absolute;
+    top: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    text-align: center;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .hashtags {
+    position: absolute;
+    bottom: 55px;
+    left: 60px;
+    z-index: 20;
+  }
+
+  .hashtags p {
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: rgba(191, 217, 232, 0.6);
+    font-weight: 500;
+    line-height: 1.8;
+  }
+
+  .slide-indicator {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(249,245,240,0.3);
+  }
+  .dot.active {
+    background: #F5A623;
+    width: 24px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bg"></div>
+  <div class="glow"></div>
+  <div class="ring"></div>
+  <div class="ring-inner"></div>
+
+  <div class="logo">
+    <div class="logo-text">Cold Brew Co.</div>
+  </div>
+
+  <div class="content">
+    <div class="eyebrow">Presente para o Dia das Mães</div>
+    <h2>Dê o presente<br>que ela <em>merece.</em></h2>
+    <p class="tagline">Cold Brew premium. Feito pra quem<br>tornou tudo possível.</p>
+    <div class="cta-btn">Compre Agora ☕</div>
+    <span class="secondary-cta">coldbrewcoffee.co — Entrega em todo o Brasil</span>
+  </div>
+
+  <img class="product-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_can.png.jpeg" alt="Cold Brew Can">
+
+  <div class="slide-indicator">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot active"></div>
+  </div>
+</div>
+</body>
+</html>

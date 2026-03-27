@@ -1,0 +1,120 @@
+{
+  "titulo": "Domingo com Ela (v2 — imagens da campanha)",
+  "video_length": 21,
+  "fps": 30,
+  "total_frames": 630,
+  "paleta_cores": {
+    "coffee_dark": "#2C1A0E",
+    "coffee_mid": "#4B2E1A",
+    "cold_blue": "#BFD9E8",
+    "amber": "#F5A623",
+    "off_white": "#F9F5F0"
+  },
+  "cta_final": "Presente perfeito para quem te deu tudo.",
+  "cta_acao": "Presentear Agora",
+  "narration_file": "audio/v1_full.mp3",
+  "narration_volume": 1,
+  "background_music": "audio/bgm_v1.mp3",
+  "background_music_volume": 0.2,
+  "remotion_config": {
+    "width": 1080,
+    "height": 1920
+  },
+  "scenes": [
+    {
+      "scene_id": 1,
+      "tipo": "hook",
+      "nome": "Dia das Mães",
+      "frame_inicio": 0,
+      "frame_fim": 90,
+      "duracao_frames": 90,
+      "descricao_visual": "Imagem da campanha com lata + presente + Dia das Mães. Push in dramático.",
+      "background_image": "img_dia_das_maes.png",
+      "camera_effect": "push-in",
+      "overlay": "dark",
+      "overlay_opacity": 0.35,
+      "text_animation": "blur-in",
+      "text_overlay": {
+        "texto": "Domingos têm um cheiro especial.",
+        "entrada_frame": 10
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 2,
+      "tipo": "conexao_emocional",
+      "nome": "Mãe e Filha Abraçadas",
+      "frame_inicio": 90,
+      "frame_fim": 195,
+      "duracao_frames": 105,
+      "descricao_visual": "Mãe e filha abraçadas com cold brew na mesa. Drift suave e emocional.",
+      "background_image": "img_mae_filha_abraco.png",
+      "camera_effect": "drift",
+      "overlay": "warm",
+      "overlay_opacity": 0.2,
+      "text_animation": "per-word",
+      "text_overlay": {
+        "texto": "Ela ensinou tudo. Até o café perfeito.",
+        "entrada_frame": 15
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 3,
+      "tipo": "produto_em_acao",
+      "nome": "Servindo Cold Brew",
+      "frame_inicio": 195,
+      "frame_fim": 285,
+      "duracao_frames": 90,
+      "descricao_visual": "Mãe servindo cold brew da lata pro copo com gelo. Ken Burns zoom in no momento.",
+      "background_image": "img_servindo_coldbrew.png",
+      "camera_effect": "ken-burns-in",
+      "overlay": "warm",
+      "overlay_opacity": 0.15,
+      "text_animation": "slide-up",
+      "text_overlay": {
+        "texto": "Suave. Gelado. Perfeito.",
+        "entrada_frame": 15
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 4,
+      "tipo": "close_produto",
+      "nome": "No Café Juntas",
+      "frame_inicio": 285,
+      "frame_fim": 360,
+      "duracao_frames": 75,
+      "descricao_visual": "Mãe e filha no café com bilhete 'Com você tudo faz sentido'. Pan up suave.",
+      "background_image": "img_mae_filha_cafe.png",
+      "camera_effect": "pan-up",
+      "overlay": "warm",
+      "overlay_opacity": 0.2,
+      "text_animation": "fade",
+      "text_overlay": {
+        "texto": "Um brinde pra ela. ✨",
+        "entrada_frame": 10
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 5,
+      "tipo": "cta",
+      "nome": "Presente Perfeito",
+      "frame_inicio": 360,
+      "frame_fim": 630,
+      "duracao_frames": 270,
+      "descricao_visual": "Lata Cold Brew Co. com caixa de presente. Breathe sutil. Hold longo no CTA.",
+      "background_image": "img_cta_presente.png",
+      "camera_effect": "breathe",
+      "overlay": "dark",
+      "overlay_opacity": 0.2,
+      "text_animation": "bounce-in",
+      "text_overlay": {
+        "texto": "Presente perfeito para quem te deu tudo.",
+        "entrada_frame": 10
+      },
+      "assets_remotion": []
+    }
+  ]
+}

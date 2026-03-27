@@ -1,0 +1,220 @@
+{
+  "video_id": "video_01",
+  "titulo": "Domingo com Ela",
+  "campanha": "dia_das_maes",
+  "data": "2026-05-10",
+  "plataformas": ["instagram", "threads", "youtube"],
+  "video_length": 15,
+  "fps": 30,
+  "total_frames": 450,
+  "composition": {
+    "width": 1080,
+    "height": 1920,
+    "aspect_ratio": "9:16",
+    "format_note": "Instagram Reels / Stories · YouTube Shorts · Threads vertical"
+  },
+  "angulo_criativo": "Intimidade e Presença — o presente de dar o seu tempo",
+  "tom_emocional": "Suave, nostálgico, acolhedor. Cresce de quieto para emocionante.",
+  "arco_emocional": "Quietude matinal → Conexão através do ritual → Gratidão → CTA afetivo",
+  "paleta_cores": {
+    "fundo_principal": "#2C1A0E",
+    "fundo_cena_quente": "#4B2E1A",
+    "destaque_frio": "#BFD9E8",
+    "destaque_amber": "#F5A623",
+    "texto": "#F9F5F0"
+  },
+  "musica": {
+    "estilo": "Piano acústico suave com sons ambientes de cozinha — xícaras, gelo",
+    "bpm": 72,
+    "curva_volume": "Cresce suavemente até a cena 3, pleno na cena 4, fade leve no CTA"
+  },
+  "hook_conceito": "Domingo de manhã. Ela e você. Cold brew no meio.",
+  "cta_final": "Presente perfeito para quem te deu tudo.",
+  "cta_acao": "Compre Agora",
+  "scenes": [
+    {
+      "scene_id": 1,
+      "tipo": "hook",
+      "nome": "Quietude do Domingo",
+      "timing_segundos": "0s – 2s",
+      "frame_inicio": 0,
+      "frame_fim": 60,
+      "duracao_frames": 60,
+      "descricao_visual": "Fundo escuro (#2C1A0E). SVG de janela com luz suave entrando — raios animados via interpolate() de opacidade 0→1. Vapor SVG sobe lentamente de um copo fora de quadro na parte inferior. Cena extremamente quieta.",
+      "animacoes": [
+        "Raios de sol: opacity interpolate(frame, [0,30], [0,0.6]) com ease-in",
+        "Vapor: translateY de +20px para -40px nos frames 0–60, loopado com spring suave",
+        "Fundo: leve gradiente radial animado em pulso lento (escala 1.0 → 1.03)"
+      ],
+      "text_overlay": {
+        "texto": "Domingo de manhã.",
+        "fonte": "Serif elegante — ex: Playfair Display via @remotion/google-fonts",
+        "tamanho": "64px",
+        "cor": "#F9F5F0",
+        "posicao": "centro vertical, 35% do topo",
+        "animacao": "Cada palavra aparece em fade-in sequencial: delay de 15 frames por palavra",
+        "entrada_frame": 10
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 2,
+      "tipo": "produto_em_acao",
+      "nome": "Preparando Juntas",
+      "timing_segundos": "2s – 6s",
+      "frame_inicio": 60,
+      "frame_fim": 180,
+      "duracao_frames": 120,
+      "descricao_visual": "Cena principal ilustrada em SVG flat. Duas figuras femininas — mãe e filha — lado a lado em uma bancada de cozinha desenhada com formas geométricas simples. A filha inclina uma lata SVG de Cold Brew Co. sobre um copo com cubos de gelo. Cores quentes (#4B2E1A) na bancada, azul-frio (#BFD9E8) no líquido e nos cubos de gelo. Personagens expressam leveza e afeto — leve inclinação de cabeça da mãe em direção à filha.",
+      "animacoes": [
+        "Transição entrada: slide horizontal suave da direita (translateX +100px→0 em 20 frames, ease-out)",
+        "Lata SVG: inclina de 0°→45° do frame 80 ao 120 via interpolate(frame, [80,120], [0, 45])",
+        "Líquido SVG: altura do líquido no copo cresce de 0% → 60% do frame 100 ao 140",
+        "Cubos de gelo: micro-tremor leve via spring() ao liquid tocar o copo",
+        "Vapor do copo: mesmo padrão do hook — translateY suave e loopado",
+        "Personagens: leve balanço breathing (scaleY 1.0 → 1.01) em loop de 60 frames"
+      ],
+      "text_overlay": {
+        "texto": "Um café preparado com amor.",
+        "fonte": "Playfair Display Italic",
+        "tamanho": "48px",
+        "cor": "#F5A623",
+        "posicao": "inferior, 75% do topo, centralizado",
+        "animacao": "Fade-in após frame 120, per-word com 10 frames de delay",
+        "entrada_frame": 120
+      },
+      "assets_remotion": [
+        "coffee_can.png via staticFile() — sobreposto com SVG da mão/personagem",
+        "coffee_glass.png via staticFile() — como referência de produto no copo"
+      ]
+    },
+    {
+      "scene_id": 3,
+      "tipo": "close_produto",
+      "nome": "O Gole",
+      "timing_segundos": "6s – 9s",
+      "frame_inicio": 180,
+      "frame_fim": 270,
+      "duracao_frames": 90,
+      "descricao_visual": "Close em SVG do copo de cold brew — gelo, líquido escuro âmbar translúcido, condensação em gotas na parte externa do copo. Camera faz micro-zoom in lento (scale 1.0→1.08). Fundo fica desfocado — gradiente suave ao redor do copo. Luz suave refletida na lateral do copo.",
+      "animacoes": [
+        "Zoom suave: scale interpolate(frame, [180, 270], [1.0, 1.08]) com ease-in-out",
+        "Gotas de condensação: 3–4 gotas SVG deslizam translateY de -5px→+15px em tempos aleatórios",
+        "Reflexo de luz: linha SVG de highlight na lateral do copo pulsa em opacidade 0.3→0.7",
+        "Fundo desfoque: Gaussian blur animado de 0 → 8px nos primeiros 30 frames da cena"
+      ],
+      "text_overlay": {
+        "texto": "Suave como esse momento.",
+        "fonte": "Playfair Display",
+        "tamanho": "52px",
+        "cor": "#F9F5F0",
+        "posicao": "superior, 20% do topo, centralizado",
+        "animacao": "Slide up de +30px com fade-in, frame 200–230",
+        "entrada_frame": 200
+      },
+      "assets_remotion": [
+        "coffee_glass.png via staticFile() — como camada de produto central"
+      ]
+    },
+    {
+      "scene_id": 4,
+      "tipo": "conexao_emocional",
+      "nome": "Sentadas Juntas",
+      "timing_segundos": "9s – 12s",
+      "frame_inicio": 270,
+      "frame_fim": 360,
+      "duracao_frames": 90,
+      "descricao_visual": "Volta para as duas personagens SVG, agora sentadas — vista mais aberta. Copos nas mãos, encostadas uma na outra levemente. Fundo usa morning_cafe.png como camada base com opacidade reduzida, personagens SVG flat por cima. Luz âmbar dominante. Cena mais cheia de cor — o pico emocional do vídeo.",
+      "animacoes": [
+        "Transição entrada: cross-fade suave da cena 3 (30 frames de dissolve)",
+        "Personagens: leve oscilação de breathing em loop — escala vertical 1.0→1.015",
+        "Fundo morning_cafe.png: opacity 0→0.4 em 20 frames — sempre abaixo das ilustrações",
+        "Brilho âmbar: radial glow SVG no centro da cena pulsa de 0.2→0.5 em 45 frames loop"
+      ],
+      "text_overlay": {
+        "texto": "O presente que ela vai lembrar todo dia.",
+        "fonte": "Playfair Display Italic",
+        "tamanho": "44px",
+        "cor": "#F5A623",
+        "posicao": "superior, 15% do topo, centralizado",
+        "animacao": "Per-word fade-in, 8 frames entre cada palavra, a partir do frame 290",
+        "entrada_frame": 290
+      },
+      "assets_remotion": [
+        "morning_cafe.png via staticFile() — camada de fundo, opacidade 0.4"
+      ]
+    },
+    {
+      "scene_id": 5,
+      "tipo": "cta",
+      "nome": "CTA — Presente Perfeito",
+      "timing_segundos": "12s – 15s",
+      "frame_inicio": 360,
+      "frame_fim": 450,
+      "duracao_frames": 90,
+      "descricao_visual": "Fundo off-white (#F9F5F0). SVG da lata de Cold Brew Co. entra com spring pop do centro (scale 0→1.05→1.0). Abaixo da lata, texto do CTA principal. Logo da marca aparece no topo. Seta animada para baixo indica ação de swipe/link.",
+      "animacoes": [
+        "Lata: scale spring(frame - 360, {mass:1, damping:12, stiffness:200}) de 0→1",
+        "Texto CTA principal: per-word slide-up + fade-in, delay de 15 frames após lata entrar",
+        "Botão 'Compre Agora': aparece no frame 420 com bounce leve",
+        "Seta de swipe-up: translateY oscilando de 0→+8px em loop de 20 frames",
+        "Logo marca: fade-in no topo, frame 365–380"
+      ],
+      "text_overlay": {
+        "linha_1": {
+          "texto": "Presente perfeito",
+          "fonte": "Playfair Display Bold",
+          "tamanho": "58px",
+          "cor": "#2C1A0E",
+          "posicao": "centro, 65% do topo",
+          "entrada_frame": 375
+        },
+        "linha_2": {
+          "texto": "para quem te deu tudo.",
+          "fonte": "Playfair Display Bold",
+          "tamanho": "58px",
+          "cor": "#2C1A0E",
+          "posicao": "centro, 72% do topo",
+          "entrada_frame": 390
+        },
+        "botao_cta": {
+          "texto": "Compre Agora ☕",
+          "fonte": "Sans-serif bold — ex: Inter Bold",
+          "tamanho": "36px",
+          "cor": "#F9F5F0",
+          "fundo_botao": "#F5A623",
+          "border_radius": "40px",
+          "posicao": "centro, 85% do topo",
+          "entrada_frame": 420
+        }
+      },
+      "assets_remotion": [
+        "coffee_can.png via staticFile() — produto hero centralizado"
+      ]
+    }
+  ],
+  "remotion_config": {
+    "composition_id": "DiaDasMaesVideo01",
+    "fps": 30,
+    "duration_in_frames": 450,
+    "width": 1080,
+    "height": 1920,
+    "fonts_necessarias": ["Playfair Display", "Playfair Display Italic", "Playfair Display Bold", "Inter Bold"],
+    "audio_component": "<Audio src={staticFile('audio/domingo_piano.mp3')} volume={0.7} />",
+    "notas_remotion": [
+      "Todos os SVGs devem ser componentes React inline — não importar arquivos SVG externos",
+      "Usar useCurrentFrame() + interpolate() para toda animação — nunca CSS keyframes",
+      "Personagens devem ser construídos com formas SVG primitivas: <rect>, <circle>, <ellipse>, <path>",
+      "spring() do @remotion/core para efeitos de entrada com física (lata, personagens)",
+      "Cada cena pode ser um componente React separado montado numa <Sequence> principal",
+      "morning_cafe.png: sempre como camada base com opacity < 0.5 — personagens SVG ficam por cima"
+    ]
+  },
+  "hashtags_sugeridas": [
+    "#DiadasMães",
+    "#ColdBrewCoffeeCo",
+    "#ManhãComAmor",
+    "#CaféComCarinho",
+    "#PresenteParaMãe"
+  ]
+}

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; font-family: 'Georgia', serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1080px;
+    background: #2C1A0E;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Texture circles in background */
+  .bg-circle-1 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #4B2E1A 0%, transparent 70%);
+    top: -150px;
+    right: -100px;
+    opacity: 0.6;
+  }
+  .bg-circle-2 {
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #3A2010 0%, transparent 70%);
+    bottom: -100px;
+    left: -80px;
+    opacity: 0.5;
+  }
+
+  .tag {
+    font-family: 'Arial', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #F5A623;
+    margin-bottom: 48px;
+  }
+
+  .headline {
+    font-size: 80px;
+    font-weight: 700;
+    color: #F9F5F0;
+    text-align: center;
+    line-height: 1.1;
+    max-width: 860px;
+    margin-bottom: 32px;
+  }
+  .headline em {
+    color: #F5A623;
+    font-style: italic;
+  }
+
+  .accent-line {
+    width: 80px;
+    height: 4px;
+    background: #F5A623;
+    border-radius: 2px;
+    margin: 0 auto 36px;
+  }
+
+  .subtext {
+    font-family: 'Arial', sans-serif;
+    font-size: 30px;
+    font-weight: 300;
+    color: #BFD9E8;
+    text-align: center;
+    max-width: 700px;
+    line-height: 1.5;
+  }
+
+  .slide-number {
+    position: absolute;
+    bottom: 48px;
+    right: 60px;
+    font-family: 'Arial', sans-serif;
+    font-size: 18px;
+    color: rgba(249,245,240,0.3);
+    letter-spacing: 2px;
+  }
+
+  .brand {
+    position: absolute;
+    bottom: 48px;
+    left: 60px;
+    font-family: 'Arial', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(249,245,240,0.4);
+  }
+
+  /* Decorative coffee bean shapes */
+  .bean {
+    position: absolute;
+    width: 28px;
+    height: 44px;
+    background: #F5A623;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    opacity: 0.15;
+  }
+  .bean-1 { top: 120px; left: 80px; transform: rotate(30deg); }
+  .bean-2 { top: 200px; right: 120px; transform: rotate(-20deg); opacity: 0.08; }
+  .bean-3 { bottom: 160px; left: 200px; transform: rotate(60deg); opacity: 0.1; }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="bg-circle-1"></div>
+  <div class="bg-circle-2"></div>
+  <div class="bean bean-1"></div>
+  <div class="bean bean-2"></div>
+  <div class="bean bean-3"></div>
+
+  <div class="tag">Dia das Mães · 2026</div>
+  <div class="headline">Ela sempre<br>acordou <em>primeiro.</em></div>
+  <div class="accent-line"></div>
+  <div class="subtext">Desta vez, surpreenda ela antes das 8h.</div>
+
+  <div class="brand">Cold Brew Coffee Co.</div>
+  <div class="slide-number">01 / 05</div>
+</div>
+</body>
+</html>

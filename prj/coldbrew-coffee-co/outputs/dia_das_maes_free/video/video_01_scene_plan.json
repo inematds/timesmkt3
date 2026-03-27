@@ -1,0 +1,136 @@
+{
+  "titulo": "Domingo com Ela",
+  "video_length": 21,
+  "fps": 30,
+  "total_frames": 630,
+  "paleta_cores": {
+    "coffee_dark": "#2C1A0E",
+    "coffee_mid": "#4B2E1A",
+    "cold_blue": "#BFD9E8",
+    "amber": "#F5A623",
+    "off_white": "#F9F5F0"
+  },
+  "cta_final": "Presente perfeito para quem te deu tudo.",
+  "cta_acao": "Presentear Agora",
+  "narration_file": "audio/v1_full.mp3",
+  "narration_volume": 1,
+  "background_music": "audio/bgm_v1.mp3",
+  "background_music_volume": 0.2,
+  "remotion_config": {
+    "width": 1080,
+    "height": 1920
+  },
+  "scene_images": {
+    "hook": "pexels_cafe_beans.jpg",
+    "conexao_emocional": "pexels_mae_filha.jpg",
+    "produto_em_acao": "pexels_coldbrew.jpg",
+    "close_produto": "pexels_cozinha.jpg",
+    "cta": "pexels_abraco.jpg"
+  },
+  "scenes": [
+    {
+      "scene_id": 1,
+      "tipo": "hook",
+      "nome": "Manhã de Domingo",
+      "frame_inicio": 0,
+      "frame_fim": 90,
+      "duracao_frames": 90,
+      "descricao_visual": "Grãos de café com luz quente. Push in lento. Overlay escuro. Texto blur-in sincronizado com voz.",
+      "background_image": "pexels_cafe_beans.jpg",
+      "camera_effect": "push-in",
+      "overlay": "dark",
+      "overlay_opacity": 0.55,
+      "text_animation": "blur-in",
+      "text_overlay": {
+        "texto": "Domingos têm um cheiro especial.",
+        "entrada_frame": 10
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 2,
+      "tipo": "conexao_emocional",
+      "nome": "Mãe e Filha",
+      "frame_inicio": 90,
+      "frame_fim": 195,
+      "duracao_frames": 105,
+      "descricao_visual": "Mãe e filha com café. Drift suave. Overlay quente. Texto per-word acompanhando a voz.",
+      "background_image": "pexels_mae_filha.jpg",
+      "camera_effect": "drift",
+      "overlay": "warm",
+      "overlay_opacity": 0.35,
+      "text_animation": "per-word",
+      "text_overlay": {
+        "texto": "Ela ensinou tudo. Até o café perfeito.",
+        "entrada_frame": 15
+      },
+      "assets_remotion": [
+        "coffee_glass.png via staticFile()"
+      ]
+    },
+    {
+      "scene_id": 3,
+      "tipo": "produto_em_acao",
+      "nome": "Cold Brew",
+      "frame_inicio": 195,
+      "frame_fim": 285,
+      "duracao_frames": 90,
+      "descricao_visual": "Cold brew com gelo. Ken Burns zoom in. Produto com glow.",
+      "background_image": "pexels_coldbrew.jpg",
+      "camera_effect": "ken-burns-in",
+      "overlay": "cool",
+      "overlay_opacity": 0.3,
+      "text_animation": "slide-up",
+      "text_overlay": {
+        "texto": "Suave. Gelado. Perfeito.",
+        "entrada_frame": 15
+      },
+      "assets_remotion": [
+        "coffee_can.png via staticFile()"
+      ]
+    },
+    {
+      "scene_id": 4,
+      "tipo": "close_produto",
+      "nome": "O Brinde",
+      "frame_inicio": 285,
+      "frame_fim": 360,
+      "duracao_frames": 75,
+      "descricao_visual": "Cozinha juntas. Parallax zoom com vinheta. Momento íntimo.",
+      "background_image": "pexels_cozinha.jpg",
+      "camera_effect": "parallax-zoom",
+      "overlay": "dark",
+      "overlay_opacity": 0.45,
+      "blur": 1,
+      "text_animation": "fade",
+      "text_overlay": {
+        "texto": "Um brinde pra ela. ✨",
+        "entrada_frame": 10
+      },
+      "assets_remotion": [
+        "coffee_glass.png via staticFile()"
+      ]
+    },
+    {
+      "scene_id": 5,
+      "tipo": "cta",
+      "nome": "Presente Perfeito",
+      "frame_inicio": 360,
+      "frame_fim": 630,
+      "duracao_frames": 270,
+      "descricao_visual": "Abraço materno. Breathe sutil. Overlay claro. Produto + CTA. Hold longo — mensagem final fica na tela enquanto a voz termina e a música continua.",
+      "background_image": "pexels_abraco.jpg",
+      "camera_effect": "breathe",
+      "overlay": "light",
+      "overlay_opacity": 0.65,
+      "text_animation": "bounce-in",
+      "text_overlay": {
+        "texto": "Presente perfeito para quem te deu tudo.",
+        "entrada_frame": 10
+      },
+      "assets_remotion": [
+        "coffee_can.png via staticFile()"
+      ]
+    }
+  ]
+}

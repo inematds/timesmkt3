@@ -63,16 +63,19 @@ function validatePayload(payload) {
     errors.push('Missing or invalid field: platform_targets (must be an array)');
   }
 
+  if (!payload.project_dir) errors.push('Missing required field: project_dir (e.g. "prj/coldbrew-coffee-co")');
+
   // If skipping research, verify source folder exists
   if (payload.skip_research) {
+    const projectDir = payload.project_dir || '';
     const sourceFolder = payload.source_folder
       ? path.resolve(__dirname, '..', payload.source_folder)
-      : path.resolve(__dirname, '../assets', payload.task_name);
+      : path.resolve(__dirname, '..', projectDir, 'assets', payload.task_name);
 
     if (!fs.existsSync(sourceFolder)) {
       errors.push(
         `skip_research is true but source folder not found: ${sourceFolder}. ` +
-        `Upload assets to assets/${payload.task_name}/ before running.`
+        `Upload assets to ${projectDir}/assets/${payload.task_name}/ before running.`
       );
     }
   }
@@ -86,6 +89,7 @@ async function enqueueJobs(payload) {
   const {
     task_name,
     task_date,
+    project_dir,
     skip_research = false,
     skip_image = false,
     skip_video = false,
@@ -130,7 +134,8 @@ async function enqueueJobs(payload) {
       skip_image,
       skip_video,
       dependencies: activeDeps,
-      output_dir: `outputs/${task_name}_${task_date}`,
+      project_dir,
+      output_dir: `${project_dir}/outputs/${task_name}_${task_date}`,
     };
 
     // BullMQ job options — delay dependent jobs to allow dependencies to complete

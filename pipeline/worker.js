@@ -75,7 +75,7 @@ function runClaude(prompt, agentName, outputDir, timeoutMs = 600000) {
 // ── Agent Handlers ─────────────────────────────────────────────────────────────
 
 async function handleResearchAgent(job) {
-  const { task_name, task_date, output_dir, platform_targets, language, campaign_brief } = job.data;
+  const { task_name, task_date, output_dir, project_dir, platform_targets, language, campaign_brief } = job.data;
   const absOutputDir = path.resolve(PROJECT_ROOT, output_dir);
   fs.mkdirSync(absOutputDir, { recursive: true });
 
@@ -95,7 +95,7 @@ Platforms: ${platform_targets.join(', ')}
 Output directory: ${output_dir}/
 ${langInstruction}${briefInstruction}
 
-Read knowledge/brand_identity.md and knowledge/product_campaign.md for brand context.
+Read ${project_dir}/knowledge/brand_identity.md and ${project_dir}/knowledge/product_campaign.md for brand context.
 Run the 5 Tavily searches using the tavily-search.js script (read .env for the API key).
 Save these files to ${output_dir}/:
 - research_results.json (structured JSON)
@@ -110,7 +110,7 @@ Focus the research on the campaign theme: "${task_name}". This is a Cold Brew Co
 
 async function handleAdCreativeDesigner(job) {
   const {
-    task_name, task_date, output_dir, platform_targets,
+    task_name, task_date, output_dir, project_dir, platform_targets,
     language, campaign_brief,
     image_count = 1, image_formats = ['carousel_1080x1080'],
   } = job.data;
@@ -168,9 +168,9 @@ Platforms: ${platform_targets.join(', ')}
 Research input: ${output_dir}/research_results.json
 ${langInstruction}${briefInstruction}
 
-Read knowledge/brand_identity.md, knowledge/product_campaign.md, and knowledge/platform_guidelines.md.
+Read ${project_dir}/knowledge/brand_identity.md, ${project_dir}/knowledge/product_campaign.md, and ${project_dir}/knowledge/platform_guidelines.md.
 Read the research results from ${output_dir}/research_results.json for campaign context.
-Use assets from the assets/ directory for product images (use absolute paths for file:// URLs in the HTML).
+Use assets from the ${project_dir}/assets/ directory for product images (use absolute paths for file:// URLs in the HTML).
 ${imageInstructions}
 
 Save ALL files to ${output_dir}/ads/.
@@ -191,7 +191,7 @@ Make each image visually distinct with different colors, layouts, and compositio
 
 async function handleVideoAdSpecialist(job) {
   const {
-    task_name, task_date, output_dir, platform_targets,
+    task_name, task_date, output_dir, project_dir, platform_targets,
     language, campaign_brief,
     video_count = 1, video_briefs = [],
   } = job.data;
@@ -220,7 +220,7 @@ Platforms: ${platform_targets.join(', ')}
 Research input: ${output_dir}/research_results.json
 ${langInstruction}${briefInstruction}
 
-Read knowledge/brand_identity.md, knowledge/product_campaign.md, and knowledge/platform_guidelines.md.
+Read ${project_dir}/knowledge/brand_identity.md, ${project_dir}/knowledge/product_campaign.md, and ${project_dir}/knowledge/platform_guidelines.md.
 Read the research results from ${output_dir}/research_results.json for campaign context.
 
 Video briefs:
@@ -263,7 +263,7 @@ Each video must have a DIFFERENT creative angle and emotional tone.`;
 }
 
 async function handleCopywriterAgent(job) {
-  const { task_name, task_date, output_dir, platform_targets, language, campaign_brief } = job.data;
+  const { task_name, task_date, output_dir, project_dir, platform_targets, language, campaign_brief } = job.data;
   const absCopyDir = path.resolve(PROJECT_ROOT, output_dir, 'copy');
   fs.mkdirSync(absCopyDir, { recursive: true });
 
@@ -283,7 +283,7 @@ Platforms: ${platform_targets.join(', ')}
 Research input: ${output_dir}/research_results.json
 ${langInstruction}${briefInstruction}
 
-Read knowledge/brand_identity.md, knowledge/product_campaign.md, and knowledge/platform_guidelines.md.
+Read ${project_dir}/knowledge/brand_identity.md, ${project_dir}/knowledge/product_campaign.md, and ${project_dir}/knowledge/platform_guidelines.md.
 Read the research results from ${output_dir}/research_results.json to extract content_topics, marketing_angles, keywords, and ad_hooks.
 
 Select ONE consistent campaign angle and write copy for each platform:
@@ -302,7 +302,7 @@ Also write captions for each carousel slide and story:
 }
 
 async function handleDistributionAgent(job) {
-  const { task_name, task_date, output_dir, platform_targets, language } = job.data;
+  const { task_name, task_date, output_dir, project_dir, platform_targets, language } = job.data;
 
   const lang = language || 'en';
   const langInstruction = lang === 'pt-BR'
@@ -317,7 +317,7 @@ Platforms: ${platform_targets.join(', ')}
 Output directory: ${output_dir}/
 ${langInstruction}
 
-Read knowledge/brand_identity.md and knowledge/platform_guidelines.md.
+Read ${project_dir}/knowledge/brand_identity.md and ${project_dir}/knowledge/platform_guidelines.md.
 
 Steps:
 1. Upload ALL media files (PNG, MP4) from ${output_dir}/ads/ and ${output_dir}/video/ to the Supabase "campaign-uploads" bucket using supabase-upload.js. Use filename convention: ${task_name}_${task_date}_<original_filename>. Save public URLs to ${output_dir}/media_urls.json.

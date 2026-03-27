@@ -28,7 +28,7 @@ Conducts Tavily-powered market research for a business niche and outputs structu
 
 ## CRITICAL: Output Artifacts and Folder Structure
 
-The final output of this skill is a set of files generated in a **newly created folder** under the `outputs/` directory. For example, if researching "Cold Brew 2025", create the directory `outputs/market_research_2025/`.
+The final output of this skill is a set of files generated in a **newly created folder** under the `<project_dir>/outputs/` directory. For example, if researching "Cold Brew 2025", create the directory `<project_dir>/outputs/market_research_2025/`.
 
 Inside this isolated folder, you must output three deliverables:
 1. `research_results.json` (Structured JSON)
@@ -92,7 +92,7 @@ After reading the raw results, act as an expert marketer to synthesize the findi
 
 ## Step 4: Generate Output Deliverables
 
-Create a new directory in `outputs/` named after the research topic. Place the following three files inside it:
+Create a new directory in `<project_dir>/outputs/` named after the research topic. Place the following three files inside it:
 
 ### 1. Structured JSON (`research_results.json`)
 Output the pure synthesized data in strict, valid JSON format. All arrays must contain at least 3 items, and `video_concepts` must contain at least 2 objects.
@@ -104,7 +104,7 @@ Include at least two `mermaid` diagrams (e.g., an `xychart-beta` for market valu
 ### 3. Interactive HTML Report (`interactive_report.html`)
 Design an interactive, visually stunning HTML report serving as a strategic insight dashboard.
 **Crucial Styling Requirements:**
-- Must consult `knowledge/brand_identity.md` and `knowledge/product_campaign.md` (or the equivalent brand docs) to find **the EXACT brand color palette** and implement them via CSS `--variables`.
+- Must consult `<project_dir>/knowledge/brand_identity.md` and `<project_dir>/knowledge/product_campaign.md` (or the equivalent brand docs) to find **the EXACT brand color palette** and implement them via CSS `--variables`.
 - Implement **Premium UI/UX:** Use dark mode backgrounds, glassmorphism cards (using `backdrop-filter: blur()`), and ambient radiant gradient backgrounds.
 - **Stylized Custom Scrollbar:** You must implement a custom webkit scrollbar using the brand colors. Do not omit this. 
   Example using generic variable references:
@@ -129,7 +129,7 @@ After all output files and logs exist in their dedicated folder, provide a succi
 
 - The biggest market opportunity identified
 - The strongest 1–2 ad hooks and why they connect with the audience pain points
-- Confirmation that the three output deliverables are safely stored in their new `outputs/` folder
+- Confirmation that the three output deliverables are safely stored in their new `<project_dir>/outputs/` folder
 - Recommendation on which downstream agent should run next (Video Ad Agent or Image Ad Agent)
 
 ---
@@ -138,7 +138,7 @@ After all output files and logs exist in their dedicated folder, provide a succi
 
 Before finalizing output, verify:
 - [ ] No IDE Web Search used; SDK Node.js script ran locally and read the `.env` manually.
-- [ ] A new subfolder was created inside `outputs/`.
+- [ ] A new subfolder was created inside `<project_dir>/outputs/`.
 - [ ] JSON is valid machine-readable data.
 - [ ] Interactive HTML features a custom styled scrollbar using the brand palette.
 - [ ] Interactive HTML features animated Chart.js graphs mapping the findings.

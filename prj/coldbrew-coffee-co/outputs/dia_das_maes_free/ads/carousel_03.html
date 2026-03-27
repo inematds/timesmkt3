@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Carousel 03 - Momento Emocional</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_abraco.jpg');
+    background-size: cover;
+    background-position: center top;
+    filter: brightness(0.6) saturate(0.9);
+  }
+
+  .gradient-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(44, 26, 14, 0.1) 0%,
+      rgba(44, 26, 14, 0.15) 40%,
+      rgba(44, 26, 14, 0.85) 75%,
+      rgba(44, 26, 14, 0.97) 100%
+    );
+  }
+
+  .content {
+    position: relative;
+    z-index: 10;
+    padding: 0 80px 80px 80px;
+    width: 100%;
+  }
+
+  .quote-mark {
+    font-family: 'Playfair Display', serif;
+    font-size: 120px;
+    color: #F5A623;
+    line-height: 0.5;
+    margin-bottom: 10px;
+    opacity: 0.7;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 64px;
+    font-weight: 700;
+    font-style: italic;
+    color: #F9F5F0;
+    line-height: 1.15;
+    margin-bottom: 24px;
+  }
+
+  h2 em {
+    color: #F5A623;
+    font-style: italic;
+  }
+
+  .caption {
+    font-family: 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: #BFD9E8;
+    line-height: 1.6;
+    max-width: 680px;
+  }
+
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: #F5A623;
+    border-radius: 2px;
+    margin: 28px 0;
+  }
+
+  .logo {
+    position: absolute;
+    top: 50px;
+    right: 60px;
+    z-index: 20;
+    text-align: right;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: 1px;
+  }
+
+  .slide-indicator {
+    position: absolute;
+    top: 60px;
+    left: 60px;
+    display: flex;
+    gap: 8px;
+    z-index: 20;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(249,245,240,0.3);
+  }
+  .dot.active {
+    background: #F5A623;
+    width: 24px;
+    border-radius: 4px;
+  }
+
+  .product-accent {
+    position: absolute;
+    top: 50%;
+    right: 70px;
+    transform: translateY(-50%);
+    width: 180px;
+    opacity: 0.85;
+    filter: drop-shadow(0 10px 30px rgba(0,0,0,0.6));
+    z-index: 15;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bg"></div>
+  <div class="gradient-overlay"></div>
+
+  <div class="logo">
+    <div class="logo-text">Cold Brew Co.</div>
+  </div>
+
+  <div class="slide-indicator">
+    <div class="dot"></div>
+    <div class="dot"></div>
+    <div class="dot active"></div>
+    <div class="dot"></div>
+    <div class="dot"></div>
+  </div>
+
+  <img class="product-accent" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_can.png.jpeg" alt="Cold Brew Can">
+
+  <div class="content">
+    <div class="quote-mark">"</div>
+    <h2>Algumas manhãs valem<br><em>ser pausadas.</em></h2>
+    <div class="divider"></div>
+    <p class="caption">Aquele café do fim de semana, feito com calma,<br>tomado junto. Esses são os momentos que ficam.</p>
+  </div>
+</div>
+</body>
+</html>

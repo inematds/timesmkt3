@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* Background image */
+  .bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.45) saturate(0.8);
+  }
+
+  /* Warm gradient overlay */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      160deg,
+      rgba(44, 26, 14, 0.3) 0%,
+      rgba(75, 46, 26, 0.55) 50%,
+      rgba(44, 26, 14, 0.75) 100%
+    );
+  }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 80px;
+  }
+
+  .eyebrow {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #F5A623;
+    margin-bottom: 40px;
+  }
+
+  .quote-mark {
+    font-family: 'Georgia', serif;
+    font-size: 120px;
+    line-height: 0.5;
+    color: #F5A623;
+    opacity: 0.6;
+    margin-bottom: 20px;
+    display: block;
+  }
+
+  .headline {
+    font-family: 'Georgia', serif;
+    font-size: 72px;
+    font-weight: 700;
+    color: #F9F5F0;
+    line-height: 1.15;
+    margin-bottom: 12px;
+  }
+  .headline em {
+    color: #BFD9E8;
+    font-style: italic;
+  }
+
+  .sub-headline {
+    font-family: 'Georgia', serif;
+    font-size: 38px;
+    font-weight: 400;
+    color: #F5A623;
+    font-style: italic;
+    margin-bottom: 48px;
+  }
+
+  .divider {
+    width: 100px;
+    height: 2px;
+    background: rgba(249,245,240,0.4);
+    margin: 0 auto 40px;
+  }
+
+  .subtext {
+    font-size: 26px;
+    color: rgba(249,245,240,0.85);
+    line-height: 1.6;
+    max-width: 680px;
+    font-weight: 300;
+  }
+
+  .bottom-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(90deg, #F5A623, #BFD9E8, #F5A623);
+    z-index: 3;
+  }
+
+  .brand {
+    position: absolute;
+    bottom: 28px;
+    left: 60px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(249,245,240,0.45);
+    z-index: 3;
+  }
+
+  .slide-number {
+    position: absolute;
+    bottom: 28px;
+    right: 60px;
+    font-size: 14px;
+    color: rgba(249,245,240,0.35);
+    letter-spacing: 2px;
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+<div class="ad">
+  <img class="bg-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/morning_cafe.png.jpeg" alt="Morning cafe" />
+  <div class="overlay"></div>
+
+  <div class="content">
+    <div class="eyebrow">Dia das Mães · Cold Brew Co.</div>
+    <span class="quote-mark">"</span>
+    <div class="headline">Café é o pretexto.</div>
+    <div class="sub-headline">Conexão é o presente.</div>
+    <div class="divider"></div>
+    <div class="subtext">O momento de preparar juntos vale mais do que qualquer embrulho.</div>
+  </div>
+
+  <div class="bottom-bar"></div>
+  <div class="brand">Cold Brew Coffee Co.</div>
+  <div class="slide-number">03 / 05</div>
+</div>
+</body>
+</html>

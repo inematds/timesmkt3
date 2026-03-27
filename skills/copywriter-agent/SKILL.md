@@ -18,7 +18,7 @@ Transforms structured research output into platform-specific marketing copy for 
 
 - User asks to generate captions, posts, or copy for any platform
 - User says "write copy", "create social posts", "generate Instagram caption", "write YouTube description"
-- A research output exists in `outputs/` and needs to be turned into publishable content
+- A research output exists in `<project_dir>/outputs/` and needs to be turned into publishable content
 - The pipeline has progressed past the research phase and copy is the next step
 
 ---
@@ -27,9 +27,9 @@ Transforms structured research output into platform-specific marketing copy for 
 
 Before writing a single word of copy, read the following files:
 
-- `knowledge/brand_identity.md` — brand voice, tone, approved emojis, CTA patterns, hashtag strategy, what to avoid
-- `knowledge/platform_guidelines.md` — per-platform formatting rules, caption length, hashtag count, CTA requirements
-- `knowledge/product_campaign.md` — product features, selling points, campaign ideas
+- `<project_dir>/knowledge/brand_identity.md` — brand voice, tone, approved emojis, CTA patterns, hashtag strategy, what to avoid
+- `<project_dir>/knowledge/platform_guidelines.md` — per-platform formatting rules, caption length, hashtag count, CTA requirements
+- `<project_dir>/knowledge/product_campaign.md` — product features, selling points, campaign ideas
 
 **Brand guidelines override generic copy instincts. If in conflict, always defer to the knowledge files.**
 
@@ -41,7 +41,7 @@ Collect or confirm the following:
 
 | Input | Source | Example |
 |---|---|---|
-| Campaign or research output | `outputs/{campaign_name}/research_results.json` | `outputs/coldbrew_campaign_2026-03-15/` |
+| Campaign or research output | `<project_dir>/outputs/{campaign_name}/research_results.json` | `<project_dir>/outputs/coldbrew_campaign_2026-03-15/` |
 | Business niche / product | Research JSON or user prompt | "Cold Brew Coffee" |
 | Campaign goal | Research JSON or user prompt | "brand awareness" |
 | Target audience | Research JSON or user prompt | "millennials, young professionals" |
@@ -73,7 +73,7 @@ From the research output (or user input), select **one** of each:
 
 ## Step 3: Generate Platform-Specific Copy
 
-Using the selected angle, topic, and benefit — plus brand guidelines from `knowledge/brand_identity.md` and `knowledge/platform_guidelines.md` — generate copy for all three platforms.
+Using the selected angle, topic, and benefit — plus brand guidelines from `<project_dir>/knowledge/brand_identity.md` and `<project_dir>/knowledge/platform_guidelines.md` — generate copy for all three platforms.
 
 ---
 
@@ -200,7 +200,7 @@ outputs/{campaign_name}/copy/
 └── youtube_metadata.json
 ```
 
-The `copy/` folder must be created inside the same campaign folder as the research output. If no campaign folder exists, create one following the naming convention: `outputs/{topic}_{date}/`.
+The `copy/` folder must be created inside the same campaign folder as the research output. If no campaign folder exists, create one following the naming convention: `<project_dir>/outputs/{topic}_{date}/`.
 
 Write each file:
 - `threads_post.txt` — plain text, exactly as written
@@ -250,11 +250,11 @@ Return to `ad_hooks` in the research output. Replace the hook with the strongest
 
 Before finalizing output, verify:
 
-- [ ] `knowledge/brand_identity.md` consulted — tone, CTAs, emojis, and hashtags all match brand rules
-- [ ] `knowledge/platform_guidelines.md` consulted — each platform follows its formatting spec
+- [ ] `<project_dir>/knowledge/brand_identity.md` consulted — tone, CTAs, emojis, and hashtags all match brand rules
+- [ ] `<project_dir>/knowledge/platform_guidelines.md` consulted — each platform follows its formatting spec
 - [ ] Single campaign angle used consistently across all three platforms
 - [ ] Threads: under 500 characters, no hard sell, sounds human
 - [ ] Instagram: hook + benefit + CTA + 3–5 hashtags, 1–2 approved emojis only
 - [ ] YouTube: title 60–70 chars, no emojis in title, description has CTA, tags include research keywords
 - [ ] Structured JSON output is valid
-- [ ] All three files saved to `outputs/{campaign_name}/copy/`
+- [ ] All three files saved to `<project_dir>/outputs/{campaign_name}/copy/`

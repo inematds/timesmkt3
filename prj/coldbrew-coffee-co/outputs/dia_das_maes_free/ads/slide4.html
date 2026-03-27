@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400;1,700&family=Inter:wght@300;400;500;600&display=swap');
+
+  html, body {
+    width: 1080px;
+    height: 1080px;
+    overflow: hidden;
+  }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/img/ChatGPT%20Image%2026%20de%20mar.%20de%202026%2C%2023_57_50.png');
+    background-size: cover;
+    background-position: center;
+  }
+
+  /* Gradiente: vinheta suave nas bordas, central aberto */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at center, rgba(44,26,14,0.0) 30%, rgba(44,26,14,0.65) 100%),
+      linear-gradient(to bottom, rgba(44,26,14,0.40) 0%, transparent 35%, transparent 60%, rgba(44,26,14,0.80) 100%);
+  }
+
+  /* Citação centralizada no meio-superior */
+  .quote-block {
+    position: absolute;
+    top: 120px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 100px;
+  }
+
+  .quote-mark {
+    font-family: 'Playfair Display', serif;
+    font-size: 100px;
+    font-style: italic;
+    color: #F5A623;
+    line-height: 0.6;
+    opacity: 0.7;
+    display: block;
+    margin-bottom: 8px;
+  }
+
+  .quote-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 62px;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1.12;
+    color: #F9F5F0;
+    text-shadow: 0 2px 28px rgba(44,26,14,0.55);
+  }
+
+  /* Rodapé */
+  .content-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 0 72px 72px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+  }
+
+  .subtext {
+    font-family: 'Inter', sans-serif;
+    font-size: 26px;
+    font-weight: 300;
+    color: #F9F5F0;
+    opacity: 0.88;
+    line-height: 1.5;
+    max-width: 460px;
+  }
+
+  .subtext strong {
+    font-weight: 600;
+    color: #F5A623;
+  }
+
+  /* Ornamento lateral */
+  .side-ornament {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.6;
+  }
+  .orn-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #F5A623;
+  }
+  .orn-line {
+    width: 1.5px;
+    height: 48px;
+    background: #F5A623;
+  }
+
+  .counter {
+    position: absolute;
+    bottom: 44px;
+    right: 72px;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: #F9F5F0;
+    opacity: 0.45;
+    letter-spacing: 2px;
+  }
+
+  .logo {
+    position: absolute;
+    top: 48px;
+    right: 64px;
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: #F9F5F0;
+    opacity: 0.70;
+    text-align: right;
+    line-height: 1.3;
+  }
+  .logo span {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #F5A623;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="overlay"></div>
+
+  <div class="logo">
+    Cold Brew Co.
+    <span>Since 2018</span>
+  </div>
+
+  <div class="quote-block">
+    <span class="quote-mark">"</span>
+    <div class="quote-text">Com você,<br>tudo faz<br>sentido</div>
+  </div>
+
+  <div class="content-bottom">
+    <div class="subtext">
+      Momentos que ficam<br>
+      para sempre.<br>
+      <strong>Feliz Dia das Mães.</strong>
+    </div>
+    <div class="side-ornament">
+      <div class="orn-dot"></div>
+      <div class="orn-line"></div>
+      <div class="orn-dot"></div>
+    </div>
+  </div>
+
+  <div class="counter">04 / 05</div>
+</div>
+</body>
+</html>

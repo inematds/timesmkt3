@@ -19,7 +19,7 @@ Handles Supabase media hosting, publishing metadata assembly, and post schedulin
 
 - User asks to distribute, host, or publish campaign outputs
 - User says "upload media", "prepare for publishing", "generate a publish file", "schedule posts"
-- Campaign outputs exist in `outputs/` and are ready for distribution
+- Campaign outputs exist in `<project_dir>/outputs/` and are ready for distribution
 - User explicitly references a `Publish <task_name> <date>.md` file to trigger posting
 
 ---
@@ -39,12 +39,12 @@ All other steps (hosting, metadata assembly, scheduling advisory) can run withou
 
 Before generating any metadata or scheduling recommendations, read:
 
-- `knowledge/brand_identity.md` — tone, CTA style, hashtag strategy, emoji rules
-- `knowledge/platform_guidelines.md` — per-platform formatting constraints
-- `outputs/<task_name>_<date>/research_results.json` — trends, keywords, topics from Research Agent
-- `outputs/<task_name>_<date>/copy/instagram_caption.txt` — final Instagram copy
-- `outputs/<task_name>_<date>/copy/threads_post.txt` — final Threads copy
-- `outputs/<task_name>_<date>/copy/youtube_metadata.json` — YouTube title, description, tags
+- `<project_dir>/knowledge/brand_identity.md` — tone, CTA style, hashtag strategy, emoji rules
+- `<project_dir>/knowledge/platform_guidelines.md` — per-platform formatting constraints
+- `<project_dir>/outputs/<task_name>_<date>/research_results.json` — trends, keywords, topics from Research Agent
+- `<project_dir>/outputs/<task_name>_<date>/copy/instagram_caption.txt` — final Instagram copy
+- `<project_dir>/outputs/<task_name>_<date>/copy/threads_post.txt` — final Threads copy
+- `<project_dir>/outputs/<task_name>_<date>/copy/youtube_metadata.json` — YouTube title, description, tags
 
 If copy outputs don't exist, ask the user to run the Copywriter Agent first.
 
@@ -58,9 +58,9 @@ Collect or confirm the following before proceeding:
 |---|---|---|
 | Task name | User prompt | `coldbrew_campaign` |
 | Task date | User prompt or folder name | `2026-03-15` |
-| Media files | `outputs/<task_name>_<date>/` | `video1.mp4`, `ad1.png` |
-| Research JSON | `outputs/<task_name>_<date>/research_results.json` | — |
-| Copy outputs | `outputs/<task_name>_<date>/copy/` | `instagram_caption.txt`, `youtube_metadata.json` |
+| Media files | `<project_dir>/outputs/<task_name>_<date>/` | `video1.mp4`, `ad1.png` |
+| Research JSON | `<project_dir>/outputs/<task_name>_<date>/research_results.json` | — |
+| Copy outputs | `<project_dir>/outputs/<task_name>_<date>/copy/` | `instagram_caption.txt`, `youtube_metadata.json` |
 
 Scan the campaign folder and list all media files found (images and videos). Confirm with the user before uploading if any files are ambiguous.
 
@@ -117,7 +117,7 @@ Produce a media URL map after all uploads complete:
 }
 ```
 
-Save this map as `outputs/<task_name>_<date>/media_urls.json`.
+Save this map as `<project_dir>/outputs/<task_name>_<date>/media_urls.json`.
 
 ---
 
@@ -167,7 +167,7 @@ Create the following file in the campaign folder:
 outputs/<task_name>_<date>/Publish <task_name> <date>.md
 ```
 
-Example: `outputs/coldbrew_campaign_2026-03-15/Publish coldbrew_campaign 2026-03-15.md`
+Example: `<project_dir>/outputs/coldbrew_campaign_2026-03-15/Publish coldbrew_campaign 2026-03-15.md`
 
 The file must contain all of the following sections:
 
@@ -332,7 +332,7 @@ The media URL may not be publicly accessible. Verify the Supabase public URL loa
 Mock the response and log the title, description, and tags to the Publish MD. Notify the user that `YOUTUBE_REFRESH_TOKEN` needs to be set to enable real posting.
 
 ### Copy outputs missing
-Do not proceed with metadata assembly. Inform the user: *"Copy outputs not found in `outputs/<task_name>_<date>/copy/`. Run the Copywriter Agent first."*
+Do not proceed with metadata assembly. Inform the user: *"Copy outputs not found in `<project_dir>/outputs/<task_name>_<date>/copy/`. Run the Copywriter Agent first."*
 
 ---
 

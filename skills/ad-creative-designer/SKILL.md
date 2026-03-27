@@ -24,9 +24,9 @@ Generates programmatic static ad creative layouts for Cold Brew Coffee Co. as st
 
 Always reference these files before producing any output:
 
-- `knowledge/brand_identity.md` — tone, brand voice, CTA style, color palette, typography
-- `knowledge/product_campaign.md` — product features, selling points, visual asset references
-- `knowledge/platform_guidelines.md` — format specs for Instagram, Stories, YouTube
+- `<project_dir>/knowledge/brand_identity.md` — tone, brand voice, CTA style, color palette, typography
+- `<project_dir>/knowledge/product_campaign.md` — product features, selling points, visual asset references
+- `<project_dir>/knowledge/platform_guidelines.md` — format specs for Instagram, Stories, YouTube
 
 These files govern headline tone, CTA language, image asset names, and layout constraints.
 
@@ -107,7 +107,7 @@ Specify the exact layout plan including:
 - `cta_position` — always `bottom` unless layout requires otherwise
 - `format` — `square`, `vertical`, or `landscape`
 
-Reference available assets from `knowledge/product_campaign.md` for valid filenames.
+Reference available assets from `<project_dir>/knowledge/product_campaign.md` for valid filenames.
 
 ---
 
@@ -214,7 +214,7 @@ Typography scale example:
 .cta      { font-size: 32px; padding: 20px 48px; border-radius: 8px; }
 ```
 
-Apply brand colors and fonts from `knowledge/brand_identity.md`.
+Apply brand colors and fonts from `<project_dir>/knowledge/brand_identity.md`.
 
 ---
 
@@ -240,11 +240,11 @@ const path = require('path');
   const browser = await chromium.launch();
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1080, height: 1080 });
-  await page.goto('file://' + path.resolve('outputs/TASKNAME_DATE/ads/ad.html'), {
+  await page.goto('file://' + path.resolve('<project_dir>/outputs/TASKNAME_DATE/ads/ad.html'), {
     waitUntil: 'networkidle'
   });
   await page.screenshot({
-    path: 'outputs/TASKNAME_DATE/ads/instagram_ad.png',
+    path: '<project_dir>/outputs/TASKNAME_DATE/ads/instagram_ad.png',
     clip: { x: 0, y: 0, width: 1080, height: 1080 }
   });
   await browser.close();
@@ -263,12 +263,12 @@ All generated files must be saved to a task-specific output folder.
 
 Create the folder using this naming pattern:
 ```
-outputs/TASKNAME_DATE/ads/
+<project_dir>/outputs/TASKNAME_DATE/ads/
 ```
 
 Example:
 ```
-outputs/cold_brew_instagram_20260314/ads/
+<project_dir>/outputs/cold_brew_instagram_20260314/ads/
 ```
 
 - `TASKNAME` — short descriptor of the ad task (snake_case)
@@ -374,4 +374,4 @@ Before finalizing output, verify:
 - [ ] `styles.css` enforces 1080x1080, typography hierarchy, and CTA button styling
 - [ ] Playwright script runs without errors and produces a screenshot
 - [ ] `instagram_ad.png` captured at full 1080x1080 frame
-- [ ] All three files saved inside `outputs/TASKNAME_DATE/ads/`
+- [ ] All three files saved inside `<project_dir>/outputs/TASKNAME_DATE/ads/`

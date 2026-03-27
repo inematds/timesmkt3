@@ -1,0 +1,238 @@
+{
+  "campanha": "dia_das_maes",
+  "data": "2026-05-10",
+  "marca": "Cold Brew Coffee Co.",
+  "plataformas_alvo": ["instagram", "threads", "youtube"],
+  "resumo_campanha": "Campanha de Dia das Mães centrada no momento de conexão entre mãe e filhos através do cold brew. Público: filhos adultos que querem presentear suas mães com uma experiência premium e afetuosa.",
+
+  "tendencias_mercado": {
+    "titulo": "Tendências do Mercado de Cold Brew 2025–2032",
+    "dados": [
+      {
+        "insight": "O mercado global de cold brew deve crescer de USD 2,39 bilhões em 2025 para USD 9,76 bilhões até 2032, com CAGR de 22,26%.",
+        "relevancia": "Alta — validação de que o segmento é premium e em expansão"
+      },
+      {
+        "insight": "Formatos RTD (prontos para beber) dominam mais de 60% da receita do mercado de cold brew em 2025.",
+        "relevancia": "Alta — diretamente alinhado ao posicionamento do produto Cold Brew Coffee Co."
+      },
+      {
+        "insight": "O grupo de 18 a 34 anos representa ~40% dos consumidores de cold brew e é o alvo principal de estratégias digitais.",
+        "relevancia": "Alta — filhos adultos jovens são exatamente o público comprador da campanha"
+      },
+      {
+        "insight": "Cold brew deixou de ser bebida sazonal e tornou-se consumo diário o ano todo, impulsionado por conveniência e premiumização.",
+        "relevancia": "Média — reforça posicionamento de rotina matinal premium"
+      },
+      {
+        "insight": "Marcas como Chameleon Organic lançaram latas RTD 8oz em versões orgânicas, intensificando a diversificação no segmento.",
+        "relevancia": "Média — sinaliza que o mercado está amadurecendo e exigindo diferenciação emocional"
+      }
+    ],
+    "projecao_mercado_bilhoes_usd": {
+      "2025": 2.39,
+      "2026": 2.92,
+      "2027": 3.57,
+      "2028": 4.36,
+      "2029": 5.33,
+      "2030": 6.51,
+      "2031": 7.95,
+      "2032": 9.76
+    }
+  },
+
+  "motivacoes_consumidor": {
+    "titulo": "Motivações e Dores do Público-Alvo",
+    "publico_primario": "Filhos adultos (18–35 anos) que desejam presentear suas mães",
+    "dores": [
+      "Flores e flores murcham em dias — querem um presente que dure e gere memória",
+      "Dificuldade em encontrar presentes que sejam ao mesmo tempo premium e práticos",
+      "Desejam criar um momento de conexão real com a mãe, não apenas dar um objeto",
+      "Sentem que presentes genéricos não expressam o quanto a mãe é especial"
+    ],
+    "desejos": [
+      "Um presente que a mãe use e lembre deles todos os dias (ritual matinal)",
+      "Uma experiência compartilhada — preparar cold brew juntos, conversa de manhã cedo",
+      "Sentir que estão dando algo sofisticado e pensado, não apenas prático",
+      "Uma conexão emocional genuína que vai além do presente físico"
+    ],
+    "gatilhos_emocionais": [
+      "Nostalgia — memórias de café da manhã juntos quando eram crianças",
+      "Gratidão — 'ela sempre cuidou de você, agora cuide do momento dela'",
+      "Conexão — 'o café é o pretexto, o abraço é o presente'",
+      "Upgrade — 'melhore o ritual matinal dela com algo que ela realmente vai amar'"
+    ]
+  },
+
+  "mensagens_concorrentes": {
+    "titulo": "Estratégias de Comunicação dos Concorrentes",
+    "concorrentes_analisados": [
+      {
+        "marca": "Tata Starbucks",
+        "campanha": "It Starts With Your Mom",
+        "abordagem": "Personalização + terceiro lugar (comunidade e conexão em loja). Baristas escreviam notas carinhosas nos copos. Parceria com floricultura para surpresas em loja.",
+        "aprendizado": "Pequenos gestos personalizados criam vínculos emocionais fortes. A experiência supera o produto."
+      },
+      {
+        "marca": "Olympia Coffee",
+        "campanha": "Kit Presente Dia das Mães",
+        "abordagem": "Kit curado com tumbler, café colombiano e chocolate com sal marinho. Posicionamento de 'manhã transformada'.",
+        "aprendizado": "Bundle de produto + acessório elevam o ticket médio e a percepção de valor do presente."
+      },
+      {
+        "marca": "AeroPress",
+        "campanha": "Presentes para Mães Amantes de Café 2025",
+        "abordagem": "Destaque de praticidade e variedade de receitas. Cold brew caseiro como forma de cuidado.",
+        "aprendizado": "O ângulo 'faça você mesmo' ressoa com filhos que querem uma experiência compartilhada."
+      },
+      {
+        "marca": "42 Days Coffee",
+        "campanha": "Subscription Gift — Saúde Materna",
+        "abordagem": "Assinatura com missão social ligada à saúde materna. Tom de propósito e impacto.",
+        "aprendizado": "Presentes com propósito ou causa ressoanm com filhos adultos conscientes."
+      }
+    ],
+    "lacuna_identificada": "Nenhum concorrente explora o momento de preparar cold brew JUNTO com a mãe como ritual de conexão. A maioria foca no produto como presente isolado, não como catalisador de experiência afetiva."
+  },
+
+  "topicos_conteudo": {
+    "titulo": "Tópicos de Conteúdo com Alto Potencial Viral",
+    "organico": [
+      "Vídeo mostrando mãe e filho preparando cold brew juntos em uma manhã de fim de semana",
+      "'O café que a gente faz junto' — UGC incentivando clientes a postarem o momento com a mãe",
+      "Antes e depois: manhã corrida vs. manhã com cold brew e pausa para conversar com a mãe",
+      "Mini-série de Reels: 'O que sua mãe diria se recebesse esse presente?' — humor leve e carinho",
+      "Conteúdo nostálgico: 'Esse cheiro de café da manhã...' — memórias afetivas com café"
+    ],
+    "hashtags_recomendadas": [
+      "#DiadasMães",
+      "#ColdBrewCoffeeCo",
+      "#MomMoment",
+      "#ColdBrew",
+      "#ManhãComAmor",
+      "#PresenteParaMãe",
+      "#CaféComCarinho"
+    ],
+    "formatos_prioritarios": [
+      "Reels emocionais (15–30s) com cenas de conexão mãe-filho",
+      "Stories interativos: 'Qual o momento favorito com sua mãe de manhã?'",
+      "Carrossel com guia de presente: 'Como transformar a manhã da sua mãe'",
+      "YouTube Shorts: ritual matinal com cold brew, narrado pelo filho"
+    ]
+  },
+
+  "angulos_marketing": {
+    "titulo": "Ângulos de Posicionamento Estratégico",
+    "angulos": [
+      {
+        "nome": "O Presente que Volta Todo Dia",
+        "descricao": "Enquanto flores murcham em dias, o cold brew está lá toda manhã. Posicionar o produto como um presente que se renova diariamente no ritual matinal da mãe.",
+        "forca": "Alta — combate a principal objeção de quem quer um presente duradouro"
+      },
+      {
+        "nome": "Café como Pretexto para Conexão",
+        "descricao": "O cold brew não é só uma bebida — é o motivo para sentar, conversar e estar presente. O produto vira catalisador de momentos afetivos entre mãe e filhos.",
+        "forca": "Muito Alta — alinha emoção, produto e ritual num só conceito"
+      },
+      {
+        "nome": "Upgrade da Manhã Dela",
+        "descricao": "Ela sempre cuidou do seu café da manhã. Agora é a sua vez de elevar o dela. Reframing de cuidado e reciprocidade.",
+        "forca": "Alta — cria urgência emocional e inversão de papéis afetiva"
+      },
+      {
+        "nome": "Premium sem Complicação",
+        "descricao": "Café de qualidade de cafeteria, sem precisar sair de casa. Um presente que ela vai usar, vai adorar, e não vai precisar aprender nada novo.",
+        "forca": "Média — apela para quem a mãe é prática e apreciadora de qualidade"
+      }
+    ]
+  },
+
+  "palavras_chave": [
+    "cold brew dia das mães",
+    "presente de dia das mães café",
+    "cold brew presente premium",
+    "café gelado presente mãe",
+    "ritual matinal presente especial",
+    "cold brew conexão família",
+    "cold brew coffee presentes 2026",
+    "presente que dura todo dia",
+    "cold brew pronto para beber presente",
+    "café afetuoso mãe filhos"
+  ],
+
+  "conceitos_video": [
+    {
+      "titulo": "Manhã Com Ela",
+      "gancho": "Você lembra do cheiro do café dela na sua infância? Agora é a sua vez.",
+      "arco_emocional": "Nostalgia → Gratidão → Ação (presente)",
+      "formato": "Reel emocional — 20–25 segundos",
+      "plataforma": "Instagram / YouTube Shorts",
+      "cenas": [
+        "Cena 1 (0–5s): Imagem de criança brincando enquanto mãe prepara café — ilustração flat sepia",
+        "Cena 2 (5–12s): Adulto abre embalagem de Cold Brew Co. — cor volta, ambiente quente",
+        "Cena 3 (12–18s): Mãe e filho adulto sentados, copos na mão, sorrindo",
+        "Cena 4 (18–22s): CTA animado: 'Presenteie ela. Start Brewing.'"
+      ],
+      "cta": "Presenteie Ela"
+    },
+    {
+      "titulo": "O Café Que Faz Questão",
+      "gancho": "Ela sempre acordou primeiro. Agora, surpreenda ela antes das 8h.",
+      "arco_emocional": "Reconhecimento → Surpresa → Conexão",
+      "formato": "Reel dinâmico — 15 segundos",
+      "plataforma": "Instagram Stories / Threads",
+      "cenas": [
+        "Cena 1 (0–4s): Texto animado: 'Ela sempre acordou primeiro.' — fundo escuro #2C1A0E",
+        "Cena 2 (4–10s): Mão estendendo lata de cold brew para mãe acordando — close afetivo",
+        "Cena 3 (10–15s): Mãe sorri, bebe, texto: 'Presenteie com Cold Brew Co.'"
+      ],
+      "cta": "Grab Yours"
+    },
+    {
+      "titulo": "Juntos na Cozinha",
+      "gancho": "O melhor presente? Tempo. E cold brew é o pretexto perfeito.",
+      "arco_emocional": "Cotidiano → Afeto → Memória",
+      "formato": "Mini-documentário — 30 segundos",
+      "plataforma": "YouTube / Instagram Reels",
+      "cenas": [
+        "Cena 1 (0–6s): Filho adulto chega cedo em casa da mãe com embalagem de Cold Brew Co.",
+        "Cena 2 (6–18s): Os dois na cozinha, copos com gelo, rindo, conversando",
+        "Cena 3 (18–24s): Close do copo, texto: 'Suave como o momento.'",
+        "Cena 4 (24–30s): CTA: 'Presenteie sua mãe. Cold Brew Coffee Co.'"
+      ],
+      "cta": "Presenteie Sua Mãe"
+    }
+  ],
+
+  "hooks_anuncio": [
+    "Ela sempre acordou primeiro. Desta vez, surpreenda ela.",
+    "O café dela de toda manhã — agora premium, com carinho seu.",
+    "Mais duradouro que flores. Mais saboroso que qualquer coisa.",
+    "O presente que ela vai usar todo dia — e lembrar de você.",
+    "Café é pretexto. Conexão é o presente de verdade.",
+    "Sua mãe merece mais do que manhãs corridas.",
+    "Dê a ela o cold brew que ela nunca soube que precisava.",
+    "Cada gole, ela vai lembrar de você. ☕"
+  ],
+
+  "segmentacao_distribuicao": {
+    "instagram": {
+      "formato_principal": "Reels emocionais 15–30s",
+      "publico_alvo": "Filhos adultos 20–35 anos, interessados em café, lifestyle, presentes",
+      "timing": "Campanhas a partir de 28 de abril, pico em 7–10 de maio",
+      "tom": "Emocional, afetuoso, visual premium"
+    },
+    "threads": {
+      "formato_principal": "Posts curtos com gancho emocional + CTA direto",
+      "publico_alvo": "Audiência jovem, urbana, cultura de café",
+      "timing": "Posts diários na semana do Dia das Mães",
+      "tom": "Casual, witty, íntimo"
+    },
+    "youtube": {
+      "formato_principal": "Shorts (60s) e mini-documentário emocional (30s)",
+      "publico_alvo": "Adultos 25–40, buscando ideias de presente + conteúdo lifestyle",
+      "timing": "Publicar em 1 de maio para capturar busca orgânica",
+      "tom": "Narrativo, emocional, autêntico"
+    }
+  }
+}

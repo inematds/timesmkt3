@@ -11,17 +11,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const TASK_NAME = 'dia_das_maes';
 const TASK_DATE = '2026-05-10';
+const PROJECT_DIR = 'prj/coldbrew-coffee-co';
 const BUCKET = 'campaign-uploads';
 
 const files = [
   {
-    localPath: `outputs/dia_das_maes_2026-05-10/ads/carousel_01.png`,
+    localPath: `${PROJECT_DIR}/outputs/dia_das_maes_2026-05-10/ads/carousel_01.png`,
     uploadName: `${TASK_NAME}_${TASK_DATE}_carousel_01.png`,
     contentType: 'image/png',
     platform: 'instagram',
   },
   {
-    localPath: `outputs/dia_das_maes_2026-05-10/video/ad_01.mp4`,
+    localPath: `${PROJECT_DIR}/outputs/dia_das_maes_2026-05-10/video/ad_01.mp4`,
     uploadName: `${TASK_NAME}_${TASK_DATE}_ad_01.mp4`,
     contentType: 'video/mp4',
     platform: 'youtube',
@@ -63,7 +64,7 @@ async function uploadFiles() {
   }
 
   // Save media_urls.json
-  const outputPath = path.resolve(__dirname, '..', 'outputs/dia_das_maes_2026-05-10/media_urls.json');
+  const outputPath = path.resolve(__dirname, '..', `${PROJECT_DIR}/outputs/dia_das_maes_2026-05-10/media_urls.json`);
   fs.writeFileSync(outputPath, JSON.stringify(urlMap, null, 2));
   console.log(`\nMedia URL map saved to: ${outputPath}`);
 

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1080px;
+    background: #F9F5F0;
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Left panel — text */
+  .left-panel {
+    width: 520px;
+    height: 1080px;
+    background: #F9F5F0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 80px 60px;
+    z-index: 2;
+  }
+
+  /* Right panel — product */
+  .right-panel {
+    width: 560px;
+    height: 1080px;
+    background: #4B2E1A;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .right-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #4B2E1A 0%, #2C1A0E 100%);
+  }
+
+  .right-panel img {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 420px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 20px 60px rgba(0,0,0,0.6));
+  }
+
+  .diagonal-accent {
+    position: absolute;
+    left: 510px;
+    top: 0;
+    width: 80px;
+    height: 1080px;
+    background: #F5A623;
+    transform: skewX(-4deg);
+    transform-origin: top left;
+    z-index: 3;
+  }
+
+  .tag {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #F5A623;
+    margin-bottom: 32px;
+  }
+
+  .headline {
+    font-family: 'Georgia', serif;
+    font-size: 68px;
+    font-weight: 700;
+    color: #2C1A0E;
+    line-height: 1.0;
+    margin-bottom: 28px;
+  }
+  .headline span {
+    display: block;
+    font-size: 48px;
+    font-style: italic;
+    color: #4B2E1A;
+  }
+
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: #F5A623;
+    border-radius: 2px;
+    margin-bottom: 28px;
+  }
+
+  .subtext {
+    font-size: 22px;
+    color: #4B2E1A;
+    line-height: 1.6;
+    margin-bottom: 48px;
+    font-weight: 300;
+  }
+
+  .cta {
+    display: inline-block;
+    background: #2C1A0E;
+    color: #F9F5F0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 20px 44px;
+    border-radius: 4px;
+    align-self: flex-start;
+  }
+
+  .brand {
+    position: absolute;
+    bottom: 40px;
+    left: 60px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(44,26,14,0.3);
+    z-index: 5;
+  }
+
+  .slide-number {
+    position: absolute;
+    bottom: 40px;
+    right: 40px;
+    font-size: 14px;
+    color: rgba(249,245,240,0.4);
+    letter-spacing: 2px;
+    z-index: 5;
+  }
+
+  .amber-tag {
+    position: absolute;
+    top: 80px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 16px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #F9F5F0;
+    z-index: 5;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="left-panel">
+    <div class="tag">O Presente Perfeito</div>
+    <div class="headline">
+      Mais duradouro
+      <span>do que flores.</span>
+    </div>
+    <div class="divider"></div>
+    <div class="subtext">Um presente que ela vai usar todo dia — e lembrar de você a cada gole.</div>
+    <div class="cta">Presenteie Ela</div>
+  </div>
+
+  <div class="diagonal-accent"></div>
+
+  <div class="right-panel">
+    <div class="amber-tag">Cold Brew Coffee Co.</div>
+    <img src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_can.png.jpeg" alt="Cold Brew Can" />
+  </div>
+
+  <div class="brand">Cold Brew Coffee Co.</div>
+  <div class="slide-number">02 / 05</div>
+</div>
+</body>
+</html>

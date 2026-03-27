@@ -1,0 +1,39 @@
+{
+  "campaign": "dia_das_maes",
+  "date": "2026-05-10",
+  "brand": "Cold Brew Coffee Co.",
+  "language": "pt-BR",
+  "campaign_angle": "Café como Pretexto para Conexão",
+  "topic": "ritual matinal de conexão mãe-filhos no Dia das Mães",
+  "key_benefit": "cold brew premium que transforma a manhã comum em momento afetivo inesquecível",
+  "threads_post": "Ela sempre acordou primeiro. Desta vez, chegue na frente com um cold brew. ☕\n\nO presente que ela vai usar todo dia — e lembrar de você.",
+  "instagram_caption": "Café é pretexto. O abraço é o presente de verdade. ☕\n\nCold brew suave e premium que transforma a manhã dela num momento de vocês dois — todo dia.\n\nPresenteie sua mãe com Cold Brew Coffee Co.\n\n#DiadasMães #ColdBrewCoffeeCo #CaféComCarinho #ManhãComAmor #PresenteParaMãe",
+  "youtube": {
+    "title": "Cold Brew no Dia das Mães: O Presente Perfeito | Cold Brew Coffee Co.",
+    "description": "Descubra como transformar a manhã da sua mãe num momento inesquecível com cold brew premium. Suave, pronto para beber, sem amargura — o presente que ela vai usar todo dia e lembrar de você. Presenteie agora em [link].",
+    "tags": [
+      "cold brew dia das mães",
+      "presente dia das mães café",
+      "cold brew presente premium",
+      "café gelado presente mãe",
+      "ritual matinal presente especial",
+      "cold brew coffee co",
+      "presente que dura todo dia",
+      "café afetuoso mãe filhos"
+    ]
+  },
+  "carousel_captions": [
+    { "slide": 1, "label": "Capa", "caption": "O presente que ela vai amar todo dia. ☕" },
+    { "slide": 2, "label": "O Problema", "caption": "Flores murcham em dias. Cold brew está lá toda manhã — suave, pronto, com carinho seu." },
+    { "slide": 3, "label": "O Produto", "caption": "Sem amargura. Sem complicação. Só o cold brew premium mais suave que ela já provou." },
+    { "slide": 4, "label": "O Momento", "caption": "Ela sempre cuidou do seu café da manhã. Agora é a sua vez de elevar o dela." },
+    { "slide": 5, "label": "A Conexão", "caption": "Café é pretexto. O momento que vocês dois dividem — esse é o presente de verdade." },
+    { "slide": 6, "label": "CTA", "caption": "Presenteie sua mãe com Cold Brew Coffee Co. — link na bio. ✨" }
+  ],
+  "story_captions": [
+    { "story": 1, "label": "Gancho Nostálgico", "caption": "Você lembra do cheiro do café dela quando era criança? ☕", "formato": "Texto sobre fundo escuro #2C1A0E" },
+    { "story": 2, "label": "Reconhecimento", "caption": "Ela sempre acordou primeiro. Desta vez, surpreenda ela antes das 8h.", "formato": "Texto animado com fade-in" },
+    { "story": 3, "label": "Produto", "caption": "Cold brew premium. Suave, pronto para beber, cheio de carinho.", "formato": "Produto em destaque com texto embaixo" },
+    { "story": 4, "label": "CTA Swipe-Up", "caption": "O presente que ela vai usar todo dia. Presenteie sua mãe → Cold Brew Coffee Co.", "formato": "CTA com seta e link" }
+  ]
+}

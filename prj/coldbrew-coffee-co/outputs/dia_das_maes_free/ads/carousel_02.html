@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Carousel 02 - Benefício</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; font-family: 'Inter', sans-serif; }
+
+  .slide {
+    width: 1080px;
+    height: 1080px;
+    position: relative;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* Left panel - photo */
+  .panel-left {
+    width: 540px;
+    height: 1080px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel-left .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_coldbrew.jpg');
+    background-size: cover;
+    background-position: center;
+  }
+
+  .panel-left::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to right, transparent 60%, #2C1A0E 100%);
+  }
+
+  /* Right panel - content */
+  .panel-right {
+    width: 540px;
+    height: 1080px;
+    background: #2C1A0E;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 70px 60px 70px 50px;
+    position: relative;
+  }
+
+  .tag {
+    display: inline-block;
+    background: transparent;
+    border: 2px solid #F5A623;
+    color: #F5A623;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border-radius: 100px;
+    margin-bottom: 36px;
+    width: fit-content;
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 58px;
+    font-weight: 900;
+    color: #F9F5F0;
+    line-height: 1.1;
+    margin-bottom: 28px;
+  }
+
+  h2 span {
+    color: #F5A623;
+  }
+
+  .desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: #BFD9E8;
+    line-height: 1.7;
+    margin-bottom: 50px;
+  }
+
+  .features {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .feature-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(245, 166, 35, 0.15);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .feature-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #F9F5F0;
+    letter-spacing: 0.3px;
+  }
+
+  .logo {
+    position: absolute;
+    top: 50px;
+    right: 60px;
+    text-align: right;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: 1px;
+  }
+
+  .slide-indicator {
+    position: absolute;
+    bottom: 50px;
+    left: 50px;
+    display: flex;
+    gap: 8px;
+  }
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(249,245,240,0.25);
+  }
+  .dot.active {
+    background: #F5A623;
+    width: 24px;
+    border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="panel-left">
+    <div class="bg"></div>
+  </div>
+
+  <div class="panel-right">
+    <div class="logo">
+      <div class="logo-text">Cold Brew Co.</div>
+    </div>
+
+    <div class="tag">Por que Cold Brew?</div>
+
+    <h2>Brewed slow.<br><span>Served cold.</span><br>Always perfect.</h2>
+
+    <p class="desc">Cada gota extraída por 24 horas.<br>
+    Sem amargor. Só o melhor do café.</p>
+
+    <div class="features">
+      <div class="feature-item">
+        <div class="feature-icon">✨</div>
+        <div class="feature-text">Extração a frio por 24 horas</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">☕</div>
+        <div class="feature-text">Sem amargor, sabor naturalmente suave</div>
+      </div>
+      <div class="feature-item">
+        <div class="feature-icon">🚀</div>
+        <div class="feature-text">Energia que dura o dia todo</div>
+      </div>
+    </div>
+
+    <div class="slide-indicator">
+      <div class="dot"></div>
+      <div class="dot active"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

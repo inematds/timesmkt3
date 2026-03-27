@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1080px; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1080px;
+    background: #F5A623;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Diagonal dark background */
+  .dark-half {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0 0 620px 1080px;
+    border-color: transparent transparent #2C1A0E transparent;
+  }
+
+  /* Decorative arcs */
+  .arc {
+    position: absolute;
+    border-radius: 50%;
+    border: 3px solid rgba(249,245,240,0.12);
+  }
+  .arc-1 { width: 700px; height: 700px; top: -200px; right: -100px; }
+  .arc-2 { width: 400px; height: 400px; top: -80px; right: 80px; }
+
+  .content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .tag {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    color: #2C1A0E;
+    margin-bottom: 24px;
+    background: rgba(44,26,14,0.1);
+    padding: 10px 28px;
+    border-radius: 100px;
+  }
+
+  .headline {
+    font-family: 'Georgia', serif;
+    font-size: 86px;
+    font-weight: 700;
+    color: #2C1A0E;
+    line-height: 1.0;
+    margin-bottom: 12px;
+  }
+
+  .subline {
+    font-family: 'Georgia', serif;
+    font-size: 42px;
+    font-weight: 400;
+    color: #2C1A0E;
+    font-style: italic;
+    opacity: 0.75;
+    margin-bottom: 40px;
+  }
+
+  .product-img {
+    width: 280px;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 40px;
+    filter: drop-shadow(0 20px 50px rgba(44,26,14,0.4));
+  }
+
+  .cta-btn {
+    background: #F9F5F0;
+    color: #2C1A0E;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 24px 72px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  .cta-sub {
+    font-size: 16px;
+    color: rgba(44,26,14,0.55);
+    letter-spacing: 1px;
+  }
+
+  .brand {
+    position: absolute;
+    bottom: 32px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #F9F5F0;
+    opacity: 0.5;
+    z-index: 3;
+  }
+
+  .slide-number {
+    position: absolute;
+    bottom: 32px;
+    right: 60px;
+    font-size: 14px;
+    color: rgba(249,245,240,0.4);
+    letter-spacing: 2px;
+    z-index: 3;
+  }
+
+  /* Stars */
+  .star {
+    position: absolute;
+    color: #2C1A0E;
+    opacity: 0.12;
+    font-size: 60px;
+  }
+  .star-1 { top: 60px; left: 80px; }
+  .star-2 { top: 200px; right: 60px; font-size: 40px; opacity: 0.08; }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="dark-half"></div>
+  <div class="arc arc-1"></div>
+  <div class="arc arc-2"></div>
+  <div class="star star-1">✦</div>
+  <div class="star star-2">✦</div>
+
+  <div class="content">
+    <div class="tag">Dia das Mães · 10 de Maio</div>
+    <div class="headline">Presenteie<br>Sua Mãe.</div>
+    <div class="subline">Ela merece o melhor café.</div>
+    <img class="product-img" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/product_square.png" alt="Cold Brew" />
+    <button class="cta-btn">Comprar Agora</button>
+    <div class="cta-sub">coldbrewcoffeeco.com.br</div>
+  </div>
+
+  <div class="brand">Cold Brew Coffee Co.</div>
+  <div class="slide-number">05 / 05</div>
+</div>
+</body>
+</html>

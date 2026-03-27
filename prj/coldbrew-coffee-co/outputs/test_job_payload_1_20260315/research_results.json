@@ -1,0 +1,97 @@
+{
+  "task_name": "test_job_payload_1",
+  "task_date": "2026-03-15",
+  "business": "Cold Brew Coffee Co.",
+  "niche": "cold brew coffee",
+  "target_audience": "busy professionals, millennials, morning routine seekers",
+  "campaign_goal": "brand awareness and conversions",
+
+  "industry_trends": [
+    "Cold brew market grew 22.1% YoY (2023–2024), from $2.59B to $3.16B — outpacing overall coffee industry growth (5.4%) by 4×",
+    "Global market projected to grow from $2.39B (2025) to $9.76B by 2032 at 22%+ CAGR",
+    "RTD (ready-to-drink) formats dominate with 75.11% market share — grab-and-go is the primary consumer behaviour driver",
+    "Cold brew is becoming a year-round staple, not a seasonal product — driven by Gen Z and millennial daily habit formation",
+    "Functional cold brew (with protein, adaptogens, collagen) is the next frontier — 58% of millennials/Gen Z willing to pay more for health-benefit beverages",
+    "The 18–34 age group makes up ~40% of all cold brew consumers — digital-first marketing is essential for this segment"
+  ],
+
+  "consumer_motivations": [
+    "Clean morning energy with no crash — smooth caffeine without bitterness or acidity is the #1 taste driver",
+    "Convenience is non-negotiable — busy professionals want grab-and-go, zero preparation required",
+    "Health-conscious positioning — low acidity, no added sugar, 'clean energy' label resonates strongly",
+    "Social shareability — cold brew is inherently photogenic; Instagram and TikTok amplify organic reach",
+    "Premium at-home experience — café-quality without the $7 price tag or the commute",
+    "Personalisation and self-expression — cold brew is a canvas for flavour customisation among Gen Z"
+  ],
+
+  "competitor_messaging": [
+    "Starbucks: Premiumisation + Nitro innovation + seasonal limited drops — $1.8B cold brew revenue in 2025; owns shelf presence via Nestlé RTD partnership",
+    "Chameleon Organic: '100% organic specialty-grade' — ethical sourcing and clean-label positioning for eco-conscious buyers",
+    "High Brew Coffee / RISE Brewing Co.: Functional energy positioning — caffeine numbers front-and-centre, fitness-adjacent branding",
+    "La Colombe / Blue Bottle: Craft + origin storytelling — premium roaster credibility as competitive moat",
+    "White space identified: emotional morning routine angle is underexploited — most competitors compete on craft or function, not on the feeling of a better morning"
+  ],
+
+  "content_topics": [
+    "Your morning routine, upgraded — how cold brew replaces the sluggish start with clean, confident energy",
+    "Smooth vs. bitter — a simple visual explanation of why cold brew tastes different from hot-brewed coffee",
+    "Cold brew for busy professionals — productivity, focus, and convenience in one bottle",
+    "Year-round cold brew — debunking the seasonal myth; cold brew is a daily ritual, not a summer treat",
+    "The $7 café alternative — premium coffee experience at home, without the price or the wait",
+    "Cold brew customisation culture — build your own cold brew moment (flavours, milks, add-ins)"
+  ],
+
+  "marketing_angles": [
+    "The Smooth Energy Upgrade — position cold brew as the superior alternative to bitter, harsh hot coffee; lead with the taste difference",
+    "Built for Busy — for the professional who has no time to wait for coffee to brew or cool down; convenience is the hero",
+    "Café Quality, Home Price — premium coffee experience without leaving the house or spending $7; accessible luxury framing",
+    "Clean Caffeine Culture — health-conscious positioning against sugar-laden alternatives; aligns with millennial wellness values"
+  ],
+
+  "keywords": [
+    "cold brew coffee",
+    "ready to drink coffee",
+    "smooth coffee",
+    "morning routine coffee",
+    "cold brew energy",
+    "no bitterness coffee",
+    "low acidity coffee",
+    "cold brew at home",
+    "RTD cold brew",
+    "cold brew for professionals",
+    "morning energy boost",
+    "clean caffeine",
+    "grab and go coffee",
+    "cold brew benefits"
+  ],
+
+  "video_concepts": [
+    {
+      "title": "Your Morning, Upgraded",
+      "hook": "Still dragging this morning?",
+      "format": "flat SVG animation — Kurzgesagt style",
+      "platform": "instagram_reels",
+      "duration": "20 seconds",
+      "arc": "Tired character → Cold Brew reveals → energy surge → CTA: Upgrade Your Morning",
+      "key_emotion": "empowerment, transformation, delight"
+    },
+    {
+      "title": "Smooth vs. Bitter — The Cold Brew Difference",
+      "hook": "Why does cold brew taste smoother? Here's the science in 15 seconds.",
+      "format": "explainer animation — molecule diagram style",
+      "platform": "youtube_shorts",
+      "duration": "15 seconds",
+      "arc": "Hot brew = jagged bitter molecules → Cold brew = smooth round molecules → Product reveal → Try It Today",
+      "key_emotion": "curiosity, clarity, confidence"
+    }
+  ],
+
+  "ad_hooks": [
+    "Still dragging this morning?",
+    "Your 9AM just called. It wants an upgrade.",
+    "Bitter coffee is a choice. Make a different one.",
+    "No brewing. No waiting. Just smooth cold brew energy.",
+    "The smoothest morning you'll ever have — grab-and-go.",
+    "Life's too short for bad coffee. ☕"
+  ]
+}

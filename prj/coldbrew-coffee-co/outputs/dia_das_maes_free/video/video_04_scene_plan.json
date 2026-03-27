@@ -1,0 +1,120 @@
+{
+  "titulo": "Anos de Café (v2 — imagens da campanha)",
+  "video_length": 19,
+  "fps": 30,
+  "total_frames": 570,
+  "paleta_cores": {
+    "coffee_dark": "#2C1A0E",
+    "coffee_mid": "#4B2E1A",
+    "cold_blue": "#BFD9E8",
+    "amber": "#F5A623",
+    "off_white": "#F9F5F0"
+  },
+  "cta_final": "Cada gole é um abraço.",
+  "cta_acao": "Presenteie Ela",
+  "narration_file": "audio/v2_full.mp3",
+  "narration_volume": 1,
+  "background_music": "audio/bgm_v2.mp3",
+  "background_music_volume": 0.2,
+  "remotion_config": {
+    "width": 1080,
+    "height": 1920
+  },
+  "scenes": [
+    {
+      "scene_id": 1,
+      "tipo": "hook",
+      "nome": "Dia das Mães",
+      "frame_inicio": 0,
+      "frame_fim": 80,
+      "duracao_frames": 80,
+      "descricao_visual": "Lata com presente e grãos. Push in de impacto. Texto punch-in sobre a imagem.",
+      "background_image": "img_dia_das_maes.png",
+      "camera_effect": "push-in",
+      "overlay": "dark",
+      "overlay_opacity": 0.4,
+      "text_animation": "punch-in",
+      "text_overlay": {
+        "texto": "Ela sempre teve um café pra te oferecer.",
+        "entrada_frame": 5
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 2,
+      "tipo": "flashback_infancia",
+      "nome": "Quando Você Tinha 5 Anos",
+      "frame_inicio": 80,
+      "frame_fim": 175,
+      "duracao_frames": 95,
+      "descricao_visual": "Mãe servindo cold brew pra filha. Sépia quente. Ken Burns out revelando o momento.",
+      "background_image": "img_servindo_coldbrew.png",
+      "camera_effect": "ken-burns-out",
+      "overlay": "sepia",
+      "overlay_opacity": 0.3,
+      "text_animation": "typewriter",
+      "text_overlay": {
+        "texto": "Quando você tinha 5 anos...",
+        "entrada_frame": 12
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 3,
+      "tipo": "flashback_adolescencia",
+      "nome": "Quando Você Tinha 17",
+      "frame_inicio": 175,
+      "frame_fim": 265,
+      "duracao_frames": 90,
+      "descricao_visual": "Mãe e filha no café com bilhete. Sépia mais claro. Pan left cinematográfico.",
+      "background_image": "img_mae_filha_cafe.png",
+      "camera_effect": "pan-left",
+      "overlay": "sepia",
+      "overlay_opacity": 0.25,
+      "text_animation": "typewriter",
+      "text_overlay": {
+        "texto": "...e quando você tinha 17.",
+        "entrada_frame": 12
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 4,
+      "tipo": "presente",
+      "nome": "Hoje: Abraço com Cold Brew",
+      "frame_inicio": 265,
+      "frame_fim": 360,
+      "duracao_frames": 95,
+      "descricao_visual": "Flash branco quebra o sépia. Mãe e filha abraçadas com cold brew. Cores vibrantes. Push in emocional.",
+      "background_image": "img_mae_filha_abraco.png",
+      "camera_effect": "push-in",
+      "overlay": "warm",
+      "overlay_opacity": 0.15,
+      "text_animation": "punch-in",
+      "text_overlay": {
+        "texto": "Hoje é a sua vez de cuidar dela. ✨",
+        "entrada_frame": 15
+      },
+      "assets_remotion": []
+    },
+    {
+      "scene_id": 5,
+      "tipo": "cta",
+      "nome": "Cada Gole É um Abraço",
+      "frame_inicio": 360,
+      "frame_fim": 570,
+      "duracao_frames": 210,
+      "descricao_visual": "Lata Cold Brew Co. com caixa de presente. Breathe sutil. Hold longo. Voz termina e música segura.",
+      "background_image": "img_cta_presente.png",
+      "camera_effect": "breathe",
+      "overlay": "dark",
+      "overlay_opacity": 0.2,
+      "text_animation": "bounce-in",
+      "text_overlay": {
+        "texto": "Cada gole é um abraço.",
+        "entrada_frame": 10
+      },
+      "assets_remotion": []
+    }
+  ]
+}

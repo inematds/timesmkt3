@@ -6,14 +6,15 @@
   "simulate_uploads": false,
   "dry_run": false,
 
-  "output_folder": "outputs/test_job_payload_1_20260315",
+  "project_dir": "prj/coldbrew-coffee-co",
+  "output_folder": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315",
 
   "platform_targets": ["instagram", "youtube"],
 
   "knowledge_files": [
-    "knowledge/brand_identity.md",
-    "knowledge/product_campaign.md",
-    "knowledge/platform_guidelines.md"
+    "prj/coldbrew-coffee-co/knowledge/brand_identity.md",
+    "prj/coldbrew-coffee-co/knowledge/product_campaign.md",
+    "prj/coldbrew-coffee-co/knowledge/platform_guidelines.md"
   ],
 
   "pipeline": {
@@ -38,7 +39,7 @@
         ]
       },
       "outputs": {
-        "folder": "outputs/test_job_payload_1_20260315",
+        "folder": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315",
         "files": [
           "research_results.json",
           "research_brief.md",
@@ -72,7 +73,7 @@
         "nanobanana_note": "Use a solid brand-color background for the product frame. Apply a circular CSS crop with a premium border. Do not tilt the product image."
       },
       "outputs": {
-        "folder": "outputs/test_job_payload_1_20260315/ads",
+        "folder": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/ads",
         "files": [
           "ad_layout.json",
           "ad.html",
@@ -182,7 +183,7 @@
         "entry_point": "remotion-ad/src/index.ts"
       },
       "outputs": {
-        "folder": "outputs/test_job_payload_1_20260315/video",
+        "folder": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/video",
         "files": [
           "scene_plan.json",
           "video_ad.mp4"
@@ -195,7 +196,7 @@
       "agent": "copywriter-agent",
       "skill": "skills/copywriter-agent/SKILL.md",
       "inputs": {
-        "research_source": "outputs/test_job_payload_1_20260315/research_results.json",
+        "research_source": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/research_results.json",
         "campaign_angle": "Upgrade Your Morning",
         "topic": "morning productivity",
         "key_benefit": "smooth energy without bitterness",
@@ -218,7 +219,7 @@
         }
       },
       "outputs": {
-        "folder": "outputs/test_job_payload_1_20260315/copy",
+        "folder": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/copy",
         "files": [
           "instagram_caption.txt",
           "threads_post.txt",
@@ -234,13 +235,13 @@
       "skill": "skills/distribution-agent/SKILL.md",
       "inputs": {
         "media_sources": {
-          "instagram_image": "outputs/test_job_payload_1_20260315/ads/instagram_ad.png",
-          "youtube_video": "outputs/test_job_payload_1_20260315/video/video_ad.mp4"
+          "instagram_image": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/ads/instagram_ad.png",
+          "youtube_video": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/video/video_ad.mp4"
         },
         "copy_sources": {
-          "instagram_caption": "outputs/test_job_payload_1_20260315/copy/instagram_caption.txt",
-          "threads_post": "outputs/test_job_payload_1_20260315/copy/threads_post.txt",
-          "youtube_metadata": "outputs/test_job_payload_1_20260315/copy/youtube_metadata.json"
+          "instagram_caption": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/copy/instagram_caption.txt",
+          "threads_post": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/copy/threads_post.txt",
+          "youtube_metadata": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315/copy/youtube_metadata.json"
         },
         "simulate_uploads": false,
         "use_placeholder_urls": false,
@@ -275,7 +276,7 @@
         "note": "Posting will NOT execute without explicit user reference to the Publish MD file."
       },
       "outputs": {
-        "folder": "outputs/test_job_payload_1_20260315",
+        "folder": "prj/coldbrew-coffee-co/outputs/test_job_payload_1_20260315",
         "files": [
           "media_urls.json",
           "Publish test_job_payload_1 2026-03-15.md"

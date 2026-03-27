@@ -1,0 +1,39 @@
+{
+  "platform": "instagram",
+  "format": "square",
+  "campaign": "pascoa_coldbrew",
+  "date": "2026-03-26",
+  "headline": "Easter, Upgraded.",
+  "subtext": "Smooth cold brew for your best Easter morning.",
+  "cta": "Shop Now",
+  "angle": "Easter Morning, Upgraded",
+  "layout": {
+    "type": "lifestyle",
+    "background": "morning_cafe.png.jpeg",
+    "product_image": "coffee_can.png.jpeg",
+    "text_position": "top",
+    "cta_position": "bottom"
+  },
+  "colors": {
+    "headline": "#F5A623",
+    "subtext": "#F9F5F0",
+    "cta_background": "#F5A623",
+    "cta_text": "#2C1A0E",
+    "overlay": "#2C1A0E",
+    "accent": "#BFD9E8"
+  },
+  "typography": {
+    "headline_size": "108px",
+    "headline_weight": "900",
+    "subtext_size": "36px",
+    "cta_size": "32px"
+  },
+  "assumptions": [
+    "Primary platform is Instagram feed (1080x1080 square)",
+    "Lifestyle layout chosen for emotional connection and Easter morning aesthetic",
+    "morning_cafe.png.jpeg used as full-bleed background with dark overlay for legibility",
+    "coffee_can.png.jpeg displayed in circular amber-bordered frame per premium design rules",
+    "Headline derived from top research angle: Easter Morning Upgraded",
+    "CTA 'Shop Now' selected from approved brand CTA list"
+  ]
+}

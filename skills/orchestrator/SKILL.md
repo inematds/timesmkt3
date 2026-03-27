@@ -48,6 +48,7 @@ Accept a Job Payload as JSON. Required and optional fields:
 {
   "task_name": "coldbrew_campaign",
   "task_date": "2026-03-15",
+  "project_dir": "prj/coldbrew-coffee-co",
   "platform_targets": ["instagram", "youtube"],
   "skip_research": false,
   "skip_image": false,
@@ -63,7 +64,7 @@ Accept a Job Payload as JSON. Required and optional fields:
 | `task_name` | Yes | Non-empty string, used in folder names and job IDs |
 | `task_date` | Yes | Format `YYYY-MM-DD` |
 | `platform_targets` | Yes | Array containing at least one of: `instagram`, `youtube` |
-| `skip_research` | No | Default `false`. If `true`, `source_folder` or `assets/<task_name>/` must exist |
+| `skip_research` | No | Default `false`. If `true`, `source_folder` or `<project_dir>/assets/<task_name>/` must exist |
 | `skip_image` | No | Default `false`. If `true`, Ad Creative Designer is marked complete without running |
 | `skip_video` | No | Default `false`. If `true`, Video Ad Specialist is marked complete without running |
 | `source_folder` | No | Path to pre-existing assets folder if skipping research |
@@ -71,7 +72,7 @@ Accept a Job Payload as JSON. Required and optional fields:
 ### Skip Research Validation
 
 If `skip_research` is `true`:
-- Check if `assets/<task_name>/` exists in the project root
+- Check if `<project_dir>/assets/<task_name>/` exists in the project root
 - If not found, **block the pipeline** and return:
   ```
   Task cannot proceed until source folder is uploaded.
@@ -156,7 +157,7 @@ The worker processes up to 3 jobs concurrently (configurable in `pipeline/worker
 Monitor job progress by reading log files generated per agent:
 
 ```
-outputs/<task_name>_<date>/logs/
+<project_dir>/outputs/<task_name>_<date>/logs/
 ├── research_agent.log
 ├── ad_creative_designer.log
 ├── video_ad_specialist.log
@@ -190,11 +191,11 @@ Once all jobs reach `complete` (or `complete/skipped`), generate a final pipelin
 ```
 ── Pipeline Complete: coldbrew_campaign (2026-03-15) ──────────────────
 
-  research_agent         ✅ complete  → outputs/coldbrew_campaign_2026-03-15/research_results.json
-  ad_creative_designer   ✅ complete  → outputs/coldbrew_campaign_2026-03-15/ads/layout.json
+  research_agent         ✅ complete  → <project_dir>/outputs/coldbrew_campaign_2026-03-15/research_results.json
+  ad_creative_designer   ✅ complete  → <project_dir>/outputs/coldbrew_campaign_2026-03-15/ads/layout.json
   video_ad_specialist    ⏭  skipped   → skip_video flag
-  copywriter_agent       ✅ complete  → outputs/coldbrew_campaign_2026-03-15/copy/
-  distribution_agent     ✅ complete  → outputs/coldbrew_campaign_2026-03-15/Publish coldbrew_campaign 2026-03-15.md
+  copywriter_agent       ✅ complete  → <project_dir>/outputs/coldbrew_campaign_2026-03-15/copy/
+  distribution_agent     ✅ complete  → <project_dir>/outputs/coldbrew_campaign_2026-03-15/Publish coldbrew_campaign 2026-03-15.md
 
   Next step: Reference "Publish coldbrew_campaign 2026-03-15.md" to trigger publishing.
 
@@ -206,7 +207,7 @@ Once all jobs reach `complete` (or `complete/skipped`), generate a final pipelin
 ## Pipeline Output Folder Structure
 
 ```
-outputs/<task_name>_<date>/
+<project_dir>/outputs/<task_name>_<date>/
 ├── research_results.json
 ├── research_brief.md
 ├── interactive_report.html
@@ -233,7 +234,7 @@ outputs/<task_name>_<date>/
 | Scenario | Flags | What Happens |
 |---|---|---|
 | Full pipeline | all false | All 5 agents run in order |
-| Skip research, have assets | `skip_research: true` | Verify `assets/<task_name>/`, then run remaining agents |
+| Skip research, have assets | `skip_research: true` | Verify `<project_dir>/assets/<task_name>/`, then run remaining agents |
 | Image-only campaign | `skip_video: true` | Video job marked complete, pipeline continues |
 | Video-only campaign | `skip_image: true` | Image job marked complete, pipeline continues |
 | Copy + distribute only | `skip_research`, `skip_image`, `skip_video` all true | Runs Copywriter + Distribution only |
@@ -249,7 +250,7 @@ Check that `UPSTASH_REDIS_ENDPOINT` and `UPSTASH_REDIS_PASSWORD` are set correct
 The worker is not running. Start it in a separate terminal: `npm run pipeline:worker`.
 
 ### Research skip fails — source folder missing
-Upload media assets to `assets/<task_name>/` before re-running. The pipeline will not proceed until this folder exists.
+Upload media assets to `<project_dir>/assets/<task_name>/` before re-running. The pipeline will not proceed until this folder exists.
 
 ### Distribution Agent runs before copy is ready
 BullMQ concurrency may have advanced it too quickly. Check that `copywriter_agent` shows `complete` in logs before Distribution starts. Adjust worker concurrency in `pipeline/worker.js` if needed.
@@ -261,9 +262,9 @@ BullMQ concurrency may have advanced it too quickly. Check that `copywriter_agen
 Before reporting pipeline complete, verify:
 
 - [ ] Job payload validated — no missing required fields
-- [ ] `skip_research` validated against `assets/<task_name>/` if true
+- [ ] `skip_research` validated against `<project_dir>/assets/<task_name>/` if true
 - [ ] All jobs enqueued successfully with correct dependencies
 - [ ] Worker running and processing jobs
-- [ ] Logs written for each agent to `outputs/<task_name>_<date>/logs/`
+- [ ] Logs written for each agent to `<project_dir>/outputs/<task_name>_<date>/logs/`
 - [ ] Distribution Agent ran last and Publish MD exists
 - [ ] User notified of Publish MD location and how to trigger publishing

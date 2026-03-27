@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<title>Story 03 - CTA Final</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,900&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1920px; overflow: hidden; }
+
+  .slide {
+    width: 1080px;
+    height: 1920px;
+    position: relative;
+    overflow: hidden;
+    background: #2C1A0E;
+  }
+
+  /* BG texture */
+  .bg {
+    position: absolute;
+    inset: 0;
+    background-image: url('file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_cafe_beans.jpg');
+    background-size: cover;
+    background-position: center;
+    opacity: 0.12;
+    filter: saturate(0.3);
+  }
+
+  /* Large photo - right side offset */
+  .side-photo {
+    position: absolute;
+    right: -60px;
+    top: 0;
+    width: 660px;
+    height: 1000px;
+    overflow: hidden;
+  }
+
+  .side-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    filter: brightness(0.5) saturate(0.7);
+  }
+
+  .side-photo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      to left,
+      transparent 0%,
+      rgba(44,26,14,0.6) 50%,
+      #2C1A0E 85%
+    );
+  }
+
+  .side-photo::before {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 300px;
+    background: linear-gradient(to bottom, transparent, #2C1A0E);
+    z-index: 1;
+  }
+
+  /* Radial glow bottom */
+  .glow {
+    position: absolute;
+    bottom: 400px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 600px;
+    background: radial-gradient(ellipse, rgba(245,166,35,0.15) 0%, transparent 70%);
+    z-index: 5;
+  }
+
+  /* Decorative lines */
+  .deco-line-h {
+    position: absolute;
+    left: 60px;
+    right: 60px;
+    height: 1px;
+    background: linear-gradient(to right, #F5A623, transparent);
+    z-index: 10;
+  }
+
+  .line-top { top: 200px; }
+  .line-mid { top: 1050px; }
+
+  /* Top bar */
+  .top-bar {
+    position: absolute;
+    top: 80px;
+    left: 60px;
+    right: 60px;
+    z-index: 30;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: #F5A623;
+    letter-spacing: 2px;
+  }
+
+  .badge {
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.3);
+    color: #F5A623;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    text-transform: uppercase;
+  }
+
+  /* Hero text - upper area */
+  .hero-area {
+    position: absolute;
+    top: 240px;
+    left: 60px;
+    right: 60px;
+    z-index: 20;
+  }
+
+  .hero-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #BFD9E8;
+    margin-bottom: 20px;
+  }
+
+  .hero-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 100px;
+    font-weight: 900;
+    color: #F9F5F0;
+    line-height: 0.95;
+    margin-bottom: 30px;
+  }
+
+  .hero-title em {
+    color: #F5A623;
+    font-style: italic;
+  }
+
+  .hero-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 22px;
+    color: rgba(249,245,240,0.65);
+    font-weight: 400;
+    line-height: 1.5;
+    max-width: 560px;
+  }
+
+  /* Product showcase - center */
+  .product-showcase {
+    position: absolute;
+    top: 900px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 40px;
+    z-index: 20;
+    padding: 0 80px;
+  }
+
+  .product-card {
+    flex: 1;
+    background: rgba(249,245,240,0.05);
+    border: 1px solid rgba(245,166,35,0.15);
+    border-radius: 24px;
+    padding: 36px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(to right, #F5A623, transparent);
+  }
+
+  .product-img-card {
+    width: 120px;
+    margin: 0 auto 24px;
+    display: block;
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5));
+  }
+
+  .product-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #F9F5F0;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+
+  .product-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: rgba(191,217,232,0.8);
+    text-align: center;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  /* Bottom CTA */
+  .bottom-cta {
+    position: absolute;
+    bottom: 120px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    padding: 0 80px;
+    z-index: 30;
+  }
+
+  .cta-main {
+    display: inline-block;
+    background: #F5A623;
+    color: #2C1A0E;
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    padding: 28px 80px;
+    border-radius: 100px;
+    box-shadow: 0 12px 50px rgba(245,166,35,0.4);
+    margin-bottom: 20px;
+    width: 100%;
+    max-width: 760px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+  }
+
+  .cta-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    color: rgba(191,217,232,0.6);
+    font-weight: 500;
+  }
+
+  .hashtags {
+    margin-top: 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: rgba(245,166,35,0.5);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="bg"></div>
+
+  <div class="side-photo">
+    <img src="file:///home/nmaldaner/projetos/timesmkt/cbcc/outputs/dia_das_maes_free/ads/pexels_cozinha.jpg" alt="Mãe e filho">
+  </div>
+
+  <div class="glow"></div>
+
+  <div class="deco-line-h line-top"></div>
+  <div class="deco-line-h line-mid"></div>
+
+  <div class="top-bar">
+    <div class="logo-text">Cold Brew Co.</div>
+    <div class="badge">Dia das Mães</div>
+  </div>
+
+  <div class="hero-area">
+    <div class="hero-label">Edição Especial · 2026</div>
+    <div class="hero-title">O melhor<br>presente.<br><em>Ponto.</em></div>
+    <p class="hero-sub">Para quem faz tudo por você.<br>Cold Brew premium, entregue com amor.</p>
+  </div>
+
+  <div class="product-showcase">
+    <div class="product-card">
+      <img class="product-img-card" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_glass.png.jpeg" alt="Cold Brew Glass">
+      <div class="product-name">Cold Brew<br>Original</div>
+      <div class="product-desc">Suave, cremoso<br>e sem amargor</div>
+    </div>
+    <div class="product-card">
+      <img class="product-img-card" src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_can.png.jpeg" alt="Cold Brew Can">
+      <div class="product-name">Cold Brew<br>Premium Can</div>
+      <div class="product-desc">Para o dia a dia<br>sem abrir mão do sabor</div>
+    </div>
+  </div>
+
+  <div class="bottom-cta">
+    <div class="cta-main">Compre o Presente Dela ☕</div>
+    <p class="cta-sub">coldbrewcoffee.co · Frete grátis no Dia das Mães</p>
+    <p class="hashtags">#ColdBrewCoffeeCo · #DiaDasMaes · #ColdBrew</p>
+  </div>
+</div>
+</body>
+</html>

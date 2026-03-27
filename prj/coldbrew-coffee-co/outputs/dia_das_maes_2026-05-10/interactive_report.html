@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório de Pesquisa — Dia das Mães 2026 · Cold Brew Coffee Co.</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* ─── Brand Color Palette ─── */
+    :root {
+      --coffee-dark:   #2C1A0E;
+      --coffee-mid:    #4B2E1A;
+      --coffee-light:  #6B4226;
+      --cold-blue:     #BFD9E8;
+      --amber:         #F5A623;
+      --amber-light:   #FFCA6E;
+      --off-white:     #F9F5F0;
+      --card-bg:       rgba(75, 46, 26, 0.45);
+      --card-border:   rgba(245, 166, 35, 0.18);
+      --text-muted:    rgba(249, 245, 240, 0.6);
+      --text-primary:  #F9F5F0;
+      --gradient-hero: linear-gradient(135deg, #2C1A0E 0%, #4B2E1A 50%, #1a0f07 100%);
+      --gradient-amber: linear-gradient(90deg, #F5A623, #FFCA6E);
+      --gradient-blue:  linear-gradient(90deg, #BFD9E8, #89b8d4);
+    }
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--coffee-dark);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ─── Custom Scrollbar ─── */
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: var(--coffee-dark); }
+    ::-webkit-scrollbar-thumb {
+      background: var(--card-bg);
+      border-radius: 6px;
+      border: 2px solid var(--coffee-dark);
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    /* ─── Ambient Background ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 10% 20%, rgba(245,166,35,0.08) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 90% 70%, rgba(191,217,232,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(75,46,26,0.4) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── Layout ─── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── Hero Header ─── */
+    .hero {
+      padding: 64px 0 48px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-radius: 100px;
+      padding: 6px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: clamp(32px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .hero h1 .gradient-text {
+      background: var(--gradient-amber);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero-meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .hero-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .hero-meta-item .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--amber);
+    }
+
+    /* ─── Section ─── */
+    section {
+      margin-bottom: 64px;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .section-label .line {
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--card-border), transparent);
+    }
+
+    .section-label h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--amber);
+      white-space: nowrap;
+    }
+
+    /* ─── Glassmorphism Card ─── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 28px;
+      transition: border-color 0.3s, transform 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(245,166,35,0.35);
+      transform: translateY(-2px);
+    }
+
+    .card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ─── Grid Layouts ─── */
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(480px, 1fr)); gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+
+    /* ─── KPI Cards ─── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 24px;
+      text-align: center;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245,166,35,0.4);
+    }
+
+    .kpi-value {
+      font-size: 36px;
+      font-weight: 800;
+      background: var(--gradient-amber);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 600;
+    }
+
+    /* ─── Chart Container ─── */
+    .chart-wrapper {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 32px;
+    }
+
+    .chart-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .chart-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .chart-canvas-wrap {
+      position: relative;
+      height: 280px;
+    }
+
+    /* ─── Hook Cards ─── */
+    .hook-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 14px;
+      padding: 20px 24px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+
+    .hook-card:hover {
+      transform: translateX(4px);
+      border-color: rgba(245,166,35,0.35);
+    }
+
+    .hook-number {
+      min-width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(245,166,35,0.15);
+      border: 1px solid rgba(245,166,35,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--amber);
+    }
+
+    .hook-text {
+      font-size: 15px;
+      font-weight: 500;
+      line-height: 1.5;
+      color: var(--off-white);
+    }
+
+    .hook-platform {
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--cold-blue);
+      font-weight: 600;
+    }
+
+    /* ─── Angle Cards ─── */
+    .angle-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+
+    .angle-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(245,166,35,0.35);
+    }
+
+    .angle-name {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--amber);
+      margin-bottom: 10px;
+    }
+
+    .angle-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.65;
+      margin-bottom: 12px;
+    }
+
+    .angle-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .badge-high {
+      background: rgba(245,166,35,0.15);
+      border: 1px solid rgba(245,166,35,0.4);
+      color: var(--amber);
+    }
+
+    .badge-very-high {
+      background: rgba(191,217,232,0.15);
+      border: 1px solid rgba(191,217,232,0.4);
+      color: var(--cold-blue);
+    }
+
+    .badge-medium {
+      background: rgba(249,245,240,0.08);
+      border: 1px solid rgba(249,245,240,0.2);
+      color: var(--text-muted);
+    }
+
+    /* ─── Video Concept Cards ─── */
+    .video-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 24px;
+      transition: transform 0.3s, border-color 0.3s;
+    }
+
+    .video-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(191,217,232,0.4);
+    }
+
+    .video-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+      gap: 12px;
+    }
+
+    .video-title {
+      font-size: 16px;
+      font-weight: 800;
+    }
+
+    .video-format {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--cold-blue);
+      background: rgba(191,217,232,0.12);
+      border: 1px solid rgba(191,217,232,0.25);
+      border-radius: 100px;
+      padding: 4px 12px;
+      white-space: nowrap;
+    }
+
+    .video-hook {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--off-white);
+      line-height: 1.5;
+      margin-bottom: 14px;
+      padding-left: 12px;
+      border-left: 2px solid var(--amber);
+    }
+
+    .video-scenes {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .video-scenes li {
+      font-size: 13px;
+      color: var(--text-muted);
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.04);
+      border-radius: 8px;
+      line-height: 1.4;
+    }
+
+    .video-cta {
+      margin-top: 16px;
+      display: inline-block;
+      padding: 8px 20px;
+      background: rgba(245,166,35,0.15);
+      border: 1px solid var(--amber);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--amber);
+    }
+
+    /* ─── Insight Banner ─── */
+    .insight-banner {
+      background: linear-gradient(135deg, rgba(245,166,35,0.1), rgba(191,217,232,0.08));
+      border: 1px solid rgba(245,166,35,0.25);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 32px;
+      text-align: center;
+      margin-bottom: 64px;
+    }
+
+    .insight-banner h3 {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 12px;
+    }
+
+    .insight-banner p {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 720px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ─── Competitor Table ─── */
+    .competitor-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .competitor-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--amber);
+      border-bottom: 1px solid var(--card-border);
+    }
+
+    .competitor-table td {
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(245,166,35,0.06);
+      vertical-align: top;
+    }
+
+    .competitor-table tr:hover td {
+      background: rgba(245,166,35,0.04);
+    }
+
+    .competitor-table td:first-child {
+      font-weight: 700;
+      color: var(--off-white);
+    }
+
+    /* ─── Keywords ─── */
+    .keyword-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .keyword-tag {
+      padding: 8px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--off-white);
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .keyword-tag:hover {
+      border-color: var(--amber);
+      color: var(--amber);
+    }
+
+    /* ─── Platform Timing ─── */
+    .platform-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .platform-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+    }
+
+    .platform-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--amber);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .platform-detail {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      text-align: center;
+      padding: 48px 0 32px;
+      font-size: 12px;
+      color: var(--text-muted);
+      border-top: 1px solid var(--card-border);
+      margin-top: 32px;
+    }
+
+    footer span {
+      color: var(--amber);
+      font-weight: 600;
+    }
+
+    /* ─── Responsive ─── */
+    @media (max-width: 768px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── HERO ─── -->
+  <header class="container">
+    <div class="hero">
+      <div class="hero-badge">☕ Relatório de Inteligência de Marketing</div>
+      <h1>
+        Dia das Mães 2026<br>
+        <span class="gradient-text">Cold Brew Coffee Co.</span>
+      </h1>
+      <div class="hero-meta">
+        <div class="hero-meta-item"><span class="dot"></span> Campanha: dia_das_maes</div>
+        <div class="hero-meta-item"><span class="dot"></span> Data: 10 de maio de 2026</div>
+        <div class="hero-meta-item"><span class="dot"></span> Plataformas: Instagram · Threads · YouTube</div>
+        <div class="hero-meta-item"><span class="dot"></span> Pesquisa: Tavily AI SDK</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ─── KPIs ─── -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-value">22%</div>
+        <div class="kpi-label">CAGR do Mercado Cold Brew</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">$9,76B</div>
+        <div class="kpi-label">Mercado Projetado em 2032</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">60%</div>
+        <div class="kpi-label">Receita RTD (Pronto p/ Beber)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">586%</div>
+        <div class="kpi-label">Crescimento em Buscas (Dia das Mães)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value">40%</div>
+        <div class="kpi-label">Consumidores Cold Brew: 18–34 anos</div>
+      </div>
+    </div>
+
+    <!-- ─── INSIGHT BANNER ─── -->
+    <div class="insight-banner">
+      <h3>🎯 Maior Oportunidade de Mercado</h3>
+      <p>
+        Nenhum concorrente explora o ritual de preparar cold brew <strong>junto com a mãe</strong> como ato de conexão afetiva.
+        A maioria posiciona o produto como presente isolado. A Cold Brew Coffee Co. pode ocupar com exclusividade o espaço
+        de <em>"o café que aproxima"</em> — catalisador de momentos reais entre mãe e filhos adultos.
+      </p>
+    </div>
+
+    <!-- ─── CHARTS ROW 1 ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Mercado &amp; Tendências</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-2">
+        <div class="chart-wrapper">
+          <div class="chart-title">Projeção do Mercado de Cold Brew</div>
+          <div class="chart-subtitle">USD Bilhões · 2025–2032 · CAGR 22,26%</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="marketChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <div class="chart-title">Distribuição de Receita por Formato</div>
+          <div class="chart-subtitle">Segmentação do mercado global de cold brew em 2025</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="segmentChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── CHARTS ROW 2 ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Concorrentes &amp; Abordagens</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-2">
+        <div class="chart-wrapper">
+          <div class="chart-title">Abordagens de Campanha dos Concorrentes</div>
+          <div class="chart-subtitle">Como marcas de café posicionam Dia das Mães (%)</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="competitorChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <div class="chart-title">Força dos Gatilhos Emocionais</div>
+          <div class="chart-subtitle">Impacto estimado na intenção de compra (escala 0–10)</div>
+          <div class="chart-canvas-wrap">
+            <canvas id="triggersChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── COMPETITOR TABLE ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Análise de Concorrentes</h2>
+        <div class="line"></div>
+      </div>
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <table class="competitor-table">
+          <thead>
+            <tr>
+              <th>Marca</th>
+              <th>Campanha</th>
+              <th>Abordagem</th>
+              <th>Aprendizado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tata Starbucks</td>
+              <td>It Starts With Your Mom</td>
+              <td>Personalização em loja + notas manuscritas + parceria com floricultura</td>
+              <td>Pequenos gestos personalizados criam vínculos emocionais mais fortes que o produto em si</td>
+            </tr>
+            <tr>
+              <td>Olympia Coffee</td>
+              <td>Kit Dia das Mães</td>
+              <td>Bundle curado: tumbler + café colombiano + chocolate com sal marinho</td>
+              <td>Bundle produto + acessório eleva percepção de valor e ticket médio</td>
+            </tr>
+            <tr>
+              <td>AeroPress</td>
+              <td>Presentes para Mães 2025</td>
+              <td>Cold brew caseiro como forma de cuidado. Praticidade e variedade de receitas.</td>
+              <td>Ângulo "fazer junto" ressoa com filhos que querem experiência compartilhada</td>
+            </tr>
+            <tr>
+              <td>42 Days Coffee</td>
+              <td>Assinatura com Causa Social</td>
+              <td>Assinatura mensal com missão de apoio à saúde materna</td>
+              <td>Presentes com propósito resonam com filhos adultos conscientes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ─── AD HOOKS ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Hooks de Anúncio</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-2">
+        <div class="hook-card">
+          <div class="hook-number">1</div>
+          <div>
+            <div class="hook-text">"Ela sempre acordou primeiro. Desta vez, surpreenda ela."</div>
+            <div class="hook-platform">Instagram Reels · YouTube</div>
+          </div>
+        </div>
+        <div class="hook-card">
+          <div class="hook-number">2</div>
+          <div>
+            <div class="hook-text">"O presente que ela vai usar todo dia — e lembrar de você."</div>
+            <div class="hook-platform">Instagram Feed · Threads</div>
+          </div>
+        </div>
+        <div class="hook-card">
+          <div class="hook-number">3</div>
+          <div>
+            <div class="hook-text">"Café é pretexto. Conexão é o presente de verdade."</div>
+            <div class="hook-platform">Threads · Stories</div>
+          </div>
+        </div>
+        <div class="hook-card">
+          <div class="hook-number">4</div>
+          <div>
+            <div class="hook-text">"Mais duradouro que flores. Mais saboroso que qualquer coisa."</div>
+            <div class="hook-platform">YouTube Shorts · Instagram</div>
+          </div>
+        </div>
+        <div class="hook-card">
+          <div class="hook-number">5</div>
+          <div>
+            <div class="hook-text">"Cada gole, ela vai lembrar de você. ☕"</div>
+            <div class="hook-platform">Threads · Instagram Stories</div>
+          </div>
+        </div>
+        <div class="hook-card">
+          <div class="hook-number">6</div>
+          <div>
+            <div class="hook-text">"Dê a ela o cold brew que ela nunca soube que precisava."</div>
+            <div class="hook-platform">Instagram Feed · YouTube</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── MARKETING ANGLES ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Ângulos de Posicionamento</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-2">
+        <div class="angle-card">
+          <div class="angle-name">☕ Café como Pretexto para Conexão</div>
+          <div class="angle-desc">
+            O cold brew não é só uma bebida — é o motivo para sentar, conversar e estar presente.
+            O produto vira catalisador de momentos afetivos reais entre mãe e filhos adultos.
+          </div>
+          <span class="angle-badge badge-very-high">Força: Muito Alta ↑</span>
+        </div>
+        <div class="angle-card">
+          <div class="angle-name">🎁 O Presente que Volta Todo Dia</div>
+          <div class="angle-desc">
+            Enquanto flores murcham em dias, o cold brew está lá toda manhã.
+            Um presente que se renova diariamente no ritual matinal da mãe e cria associação com o filho.
+          </div>
+          <span class="angle-badge badge-high">Força: Alta ↑</span>
+        </div>
+        <div class="angle-card">
+          <div class="angle-name">✨ Upgrade da Manhã Dela</div>
+          <div class="angle-desc">
+            Ela sempre cuidou do seu café da manhã. Agora é a sua vez de elevar o dela.
+            Reframing de cuidado e reciprocidade — cria urgência emocional poderosa.
+          </div>
+          <span class="angle-badge badge-high">Força: Alta ↑</span>
+        </div>
+        <div class="angle-card">
+          <div class="angle-name">🚀 Premium sem Complicação</div>
+          <div class="angle-desc">
+            Café de qualidade de cafeteria, sem precisar sair de casa.
+            Um presente que ela vai usar, adorar e nunca precisar aprender nada novo.
+          </div>
+          <span class="angle-badge badge-medium">Força: Média →</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── VIDEO CONCEPTS ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Conceitos de Vídeo</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-3">
+        <div class="video-card">
+          <div class="video-card-header">
+            <div class="video-title">Manhã Com Ela</div>
+            <div class="video-format">20–25s · 1080×1080</div>
+          </div>
+          <div class="video-hook">"Você lembra do cheiro do café dela na sua infância? Agora é a sua vez."</div>
+          <ul class="video-scenes">
+            <li>🎬 Criança brincando enquanto mãe prepara café — flat sepia</li>
+            <li>🎬 Adulto abre embalagem Cold Brew Co. — cores voltam, ambiente quente</li>
+            <li>🎬 Mãe e filho adulto sentados, copos na mão, sorrindo</li>
+            <li>🎬 CTA animado surgindo na tela</li>
+          </ul>
+          <div class="video-cta">CTA: Presenteie Ela</div>
+        </div>
+        <div class="video-card">
+          <div class="video-card-header">
+            <div class="video-title">O Café Que Faz Questão</div>
+            <div class="video-format">15s · 1080×1920</div>
+          </div>
+          <div class="video-hook">"Ela sempre acordou primeiro. Agora, surpreenda ela antes das 8h."</div>
+          <ul class="video-scenes">
+            <li>🎬 Texto animado: "Ela sempre acordou primeiro." — fundo escuro</li>
+            <li>🎬 Mão estendendo lata cold brew para mãe acordando — close afetivo</li>
+            <li>🎬 Mãe sorri, bebe — texto CTA aparece suavemente</li>
+          </ul>
+          <div class="video-cta">CTA: Grab Yours</div>
+        </div>
+        <div class="video-card">
+          <div class="video-card-header">
+            <div class="video-title">Juntos na Cozinha</div>
+            <div class="video-format">30s · 1080×1080</div>
+          </div>
+          <div class="video-hook">"O melhor presente? Tempo. E cold brew é o pretexto perfeito."</div>
+          <ul class="video-scenes">
+            <li>🎬 Filho adulto chega com embalagem Cold Brew Co.</li>
+            <li>🎬 Os dois na cozinha, copos com gelo, conversando</li>
+            <li>🎬 Close do copo: "Suave como o momento."</li>
+            <li>🎬 CTA: "Presenteie sua mãe. Cold Brew Coffee Co."</li>
+          </ul>
+          <div class="video-cta">CTA: Presenteie Sua Mãe</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── PLATFORM STRATEGY ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Estratégia por Plataforma</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-3">
+        <div class="platform-card">
+          <div class="platform-icon">📸</div>
+          <div class="platform-name">Instagram</div>
+          <div class="platform-detail"><strong>Formato:</strong> Reels emocionais 15–30s</div>
+          <div class="platform-detail"><strong>Público:</strong> Filhos adultos 20–35 anos, amantes de café</div>
+          <div class="platform-detail"><strong>Timing:</strong> Início 28 abr · Pico 7–10 mai</div>
+          <div class="platform-detail"><strong>Tom:</strong> Emocional, afetuoso, visual premium</div>
+        </div>
+        <div class="platform-card">
+          <div class="platform-icon">🧵</div>
+          <div class="platform-name">Threads</div>
+          <div class="platform-detail"><strong>Formato:</strong> Posts curtos com gancho + CTA direto</div>
+          <div class="platform-detail"><strong>Público:</strong> Jovem urbano, cultura de café</div>
+          <div class="platform-detail"><strong>Timing:</strong> Posts diários 3–10 mai</div>
+          <div class="platform-detail"><strong>Tom:</strong> Casual, witty, íntimo</div>
+        </div>
+        <div class="platform-card">
+          <div class="platform-icon">▶️</div>
+          <div class="platform-name">YouTube</div>
+          <div class="platform-detail"><strong>Formato:</strong> Shorts (60s) + mini-doc emocional (30s)</div>
+          <div class="platform-detail"><strong>Público:</strong> Adultos 25–40, buscando ideias de presente</div>
+          <div class="platform-detail"><strong>Timing:</strong> Publicar 1 mai (capturar busca orgânica)</div>
+          <div class="platform-detail"><strong>Tom:</strong> Narrativo, emocional, autêntico</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── KEYWORDS ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Palavras-Chave Estratégicas</h2>
+        <div class="line"></div>
+      </div>
+      <div class="keyword-list">
+        <span class="keyword-tag">cold brew dia das mães</span>
+        <span class="keyword-tag">presente de café para mãe</span>
+        <span class="keyword-tag">cold brew presente premium</span>
+        <span class="keyword-tag">ritual matinal presente especial</span>
+        <span class="keyword-tag">cold brew conexão família</span>
+        <span class="keyword-tag">cold brew coffee presentes 2026</span>
+        <span class="keyword-tag">presente que dura todo dia</span>
+        <span class="keyword-tag">cold brew pronto para beber presente</span>
+        <span class="keyword-tag">café afetuoso mãe filhos</span>
+        <span class="keyword-tag">manhã especial mãe café</span>
+        <span class="keyword-tag">#DiadasMães</span>
+        <span class="keyword-tag">#ColdBrewCoffeeCo</span>
+        <span class="keyword-tag">#ManhãComAmor</span>
+        <span class="keyword-tag">#PresenteParaMãe</span>
+        <span class="keyword-tag">#CaféComCarinho</span>
+        <span class="keyword-tag">#MomMoment</span>
+      </div>
+    </section>
+
+    <!-- ─── DOWNSTREAM RECOMMENDATIONS ─── -->
+    <section>
+      <div class="section-label">
+        <h2>Recomendações para Agentes Criativos</h2>
+        <div class="line"></div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3 style="color: var(--amber);">🎬 Video Ad Specialist</h3>
+          <p style="margin-top: 10px;">Prioridade <strong>Alta</strong>. Desenvolver conceito "Manhã Com Ela" com arco emocional nostálgico → gratidão → ação. Estilo flat Kurzgesagt adaptado. Paleta: <code>#2C1A0E</code> backgrounds + <code>#F5A623</code> highlights + <code>#BFD9E8</code> detalhes. CTA: "Presenteie Ela".</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--cold-blue);">🖼️ Ad Creative Designer</h3>
+          <p style="margin-top: 10px;">Prioridade <strong>Alta</strong>. Layout focado em cena de conexão mãe-filho. Headline: "O Presente que Ela Usa Todo Dia." Subtext: "Cold brew premium. Toda manhã, com carinho." CTA: "Presenteie Ela".</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--off-white);">✍️ Copywriter Agent</h3>
+          <p style="margin-top: 10px;">Prioridade <strong>Média</strong>. Ângulo principal: "Café como Pretexto para Conexão". Tom emocional e acolhedor para todas as plataformas. Threads: casual + witty. Instagram: hook emocional + CTA. YouTube: narrativo + autêntico.</p>
+        </div>
+        <div class="card">
+          <h3 style="color: var(--amber);">📡 Distribution Agent</h3>
+          <p style="margin-top: 10px;">Prioridade <strong>Normal</strong>. Instagram: pico 7–9 mai. YouTube: publicar 1 mai. Threads: daily 3–10 mai. Supabase upload de todos os assets de campanha antes do scheduling.</p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="container">
+    <p>Pesquisa gerada por <span>Marketing Research Agent</span> · <span>Cold Brew Coffee Co.</span> · Dia das Mães 2026 · Powered by Tavily AI SDK</p>
+  </footer>
+
+  <!-- ─── CHARTS JS ─── -->
+  <script>
+    const coffeeAmber   = '#F5A623';
+    const amberLight    = '#FFCA6E';
+    const coldBlue      = '#BFD9E8';
+    const coffeeMid     = '#6B4226';
+    const offWhite      = '#F9F5F0';
+    const cardBg        = 'rgba(75,46,26,0.5)';
+    const gridColor     = 'rgba(249,245,240,0.06)';
+    const tickColor     = 'rgba(249,245,240,0.45)';
+
+    Chart.defaults.color = tickColor;
+    Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+    // ── Market Projection Chart ──────────────────────────────────────────
+    const marketCtx = document.getElementById('marketChart').getContext('2d');
+    const marketGradient = marketCtx.createLinearGradient(0, 0, 0, 280);
+    marketGradient.addColorStop(0, 'rgba(245,166,35,0.4)');
+    marketGradient.addColorStop(1, 'rgba(245,166,35,0.02)');
+
+    new Chart(marketCtx, {
+      type: 'bar',
+      data: {
+        labels: ['2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032'],
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Mercado (USD Bi)',
+            data: [2.39, 2.92, 3.57, 4.36, 5.33, 6.51, 7.95, 9.76],
+            backgroundColor: marketGradient,
+            borderColor: coffeeAmber,
+            borderWidth: 1.5,
+            borderRadius: 6,
+            order: 2
+          },
+          {
+            type: 'line',
+            label: 'Tendência',
+            data: [2.39, 2.92, 3.57, 4.36, 5.33, 6.51, 7.95, 9.76],
+            borderColor: amberLight,
+            borderWidth: 2.5,
+            pointBackgroundColor: amberLight,
+            pointRadius: 4,
+            tension: 0.4,
+            fill: false,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { labels: { font: { size: 12 }, color: tickColor, boxWidth: 12 } },
+          tooltip: {
+            backgroundColor: 'rgba(44,26,14,0.95)',
+            borderColor: 'rgba(245,166,35,0.3)',
+            borderWidth: 1,
+            callbacks: {
+              label: ctx => ` $${ctx.parsed.y.toFixed(2)}B`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: tickColor, font: { size: 11 } } },
+          y: {
+            grid: { color: gridColor },
+            ticks: { color: tickColor, font: { size: 11 }, callback: v => '$' + v + 'B' },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+
+    // ── Segment Pie Chart ────────────────────────────────────────────────
+    const segCtx = document.getElementById('segmentChart').getContext('2d');
+    new Chart(segCtx, {
+      type: 'doughnut',
+      data: {
+        labels: ['RTD (Pronto p/ Beber)', 'Concentrado', 'Cápsulas/Pods', 'Outros'],
+        datasets: [{
+          data: [60, 22, 11, 7],
+          backgroundColor: [
+            'rgba(245,166,35,0.85)',
+            'rgba(191,217,232,0.75)',
+            'rgba(107,66,38,0.8)',
+            'rgba(249,245,240,0.25)'
+          ],
+          borderColor: 'rgba(44,26,14,0.8)',
+          borderWidth: 2,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '62%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { font: { size: 12 }, color: tickColor, padding: 16, boxWidth: 14 }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(44,26,14,0.95)',
+            borderColor: 'rgba(245,166,35,0.3)',
+            borderWidth: 1,
+            callbacks: { label: ctx => ` ${ctx.parsed}% do mercado` }
+          }
+        }
+      }
+    });
+
+    // ── Competitor Approach Chart ────────────────────────────────────────
+    const compCtx = document.getElementById('competitorChart').getContext('2d');
+    const compGradient = compCtx.createLinearGradient(0, 0, 280, 0);
+    compGradient.addColorStop(0, 'rgba(191,217,232,0.9)');
+    compGradient.addColorStop(1, 'rgba(191,217,232,0.4)');
+
+    new Chart(compCtx, {
+      type: 'bar',
+      data: {
+        labels: ['Experiência + Personalização', 'Bundle de Produto', 'Causa/Propósito Social', 'Desconto e Urgência'],
+        datasets: [{
+          label: '% de Marcas',
+          data: [35, 28, 17, 20],
+          backgroundColor: [
+            'rgba(245,166,35,0.75)',
+            'rgba(191,217,232,0.65)',
+            'rgba(107,66,38,0.7)',
+            'rgba(249,245,240,0.2)'
+          ],
+          borderColor: [coffeeAmber, coldBlue, coffeeMid, 'rgba(249,245,240,0.4)'],
+          borderWidth: 1.5,
+          borderRadius: 6
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: 'rgba(44,26,14,0.95)',
+            borderColor: 'rgba(245,166,35,0.3)',
+            borderWidth: 1,
+            callbacks: { label: ctx => ` ${ctx.parsed.x}% das marcas` }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor },
+            ticks: { color: tickColor, font: { size: 11 }, callback: v => v + '%' },
+            max: 45
+          },
+          y: { grid: { color: 'transparent' }, ticks: { color: tickColor, font: { size: 12 } } }
+        }
+      }
+    });
+
+    // ── Emotional Triggers Radar ─────────────────────────────────────────
+    const trigCtx = document.getElementById('triggersChart').getContext('2d');
+    new Chart(trigCtx, {
+      type: 'radar',
+      data: {
+        labels: ['Nostalgia', 'Gratidão', 'Reciprocidade', 'Conexão', 'Urgência', 'Premium'],
+        datasets: [{
+          label: 'Força do Gatilho',
+          data: [8.5, 9.2, 8.0, 9.5, 7.0, 7.8],
+          backgroundColor: 'rgba(245,166,35,0.15)',
+          borderColor: coffeeAmber,
+          borderWidth: 2,
+          pointBackgroundColor: coffeeAmber,
+          pointRadius: 5,
+          pointHoverRadius: 7
+        }, {
+          label: 'Benchmrk Concorrentes',
+          data: [6.0, 7.0, 5.5, 6.5, 8.5, 7.0],
+          backgroundColor: 'rgba(191,217,232,0.1)',
+          borderColor: 'rgba(191,217,232,0.6)',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointBackgroundColor: coldBlue,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { font: { size: 12 }, color: tickColor, boxWidth: 12 } },
+          tooltip: {
+            backgroundColor: 'rgba(44,26,14,0.95)',
+            borderColor: 'rgba(245,166,35,0.3)',
+            borderWidth: 1
+          }
+        },
+        scales: {
+          r: {
+            min: 0, max: 10,
+            backgroundColor: 'rgba(44,26,14,0.3)',
+            grid: { color: 'rgba(249,245,240,0.08)' },
+            angleLines: { color: 'rgba(249,245,240,0.08)' },
+            ticks: { display: false, stepSize: 2 },
+            pointLabels: { color: tickColor, font: { size: 12 } }
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

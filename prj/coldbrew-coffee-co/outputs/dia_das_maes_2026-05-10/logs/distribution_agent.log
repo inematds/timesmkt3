@@ -1,0 +1,31 @@
+[2026-03-27T01:55:24.350Z] Waiting for dependencies: ad_creative_designer, video_ad_specialist, copywriter_agent
+[2026-03-27T01:58:23.900Z] All dependencies completed.
+[2026-03-27T01:58:23.900Z] Starting distribution_agent...
+[2026-03-27T01:58:23.901Z] Invoking Claude CLI...
+[2026-03-27T02:01:01.188Z] Claude output:
+Tudo concluído. Aqui está o resumo do que foi executado:
+
+---
+
+**Distribution Agent — dia_das_maes — 2026-05-10**
+
+**Upload para Supabase:** 10/10 arquivos enviados com sucesso ao bucket `campaign-uploads`:
+- 5 slides de carrossel (carousel_01–05.png)
+- 3 Stories (story_01–03.png)
+- 2 vídeos (ad_01.mp4 · ad_02.mp4)
+
+`media_urls.json` salvo em `outputs/dia_das_maes_2026-05-10/`.
+
+**Arquivo gerado:**
+`outputs/dia_das_maes_2026-05-10/Publish dia_das_maes 2026-05-10.md`
+
+O arquivo contém:
+- **Carrossel Instagram** — instrução de ordem dos slides, caption individual por slide, caption do post e horário recomendado (07/05 às 07h30)
+- **Stories Instagram** — sequência completa com textos, formatos e notas de link sticker (09/05 às 08h00)
+- **YouTube ad_01** — título (66 chars ✓), descrição, tags, horário (upload 30/04 para indexação prévia)
+- **YouTube ad_02** — título (62 chars ✓), descrição, tags, horário (07/05 às 12h00)
+- **Threads** — post de 141 chars ✓, horário (06/05 às 08h30), nota de publicação manual
+- **Calendário da semana** com racional estratégico baseado nos dados de pesquisa
+- **Checklist de qualidade** completo — nenhuma chamada de API de publicação foi feita
+
+[2026-03-27T02:01:01.188Z] Completed successfully.

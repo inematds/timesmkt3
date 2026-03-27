@@ -1,0 +1,199 @@
+/* ============================================
+   Cold Brew Coffee Co. — Instagram Ad Creative
+   Layout: Lifestyle | Format: 1080x1080 Square
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Ad Container ── */
+.ad-container {
+  width: 1080px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Lifestyle Background ── */
+.ad-container.lifestyle {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+/* ── Dark Overlay for Readability ── */
+.ad-container.lifestyle::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(44, 26, 14, 0.82) 0%,
+    rgba(44, 26, 14, 0.45) 35%,
+    rgba(44, 26, 14, 0.25) 55%,
+    rgba(44, 26, 14, 0.50) 75%,
+    rgba(44, 26, 14, 0.85) 100%
+  );
+  z-index: 1;
+}
+
+/* ── Content Wrapper ── */
+.content-wrapper {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 80px 60px 72px;
+}
+
+/* ── Top Text Block ── */
+.text-block {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ── Headline ── */
+.headline {
+  font-size: 78px;
+  font-weight: 900;
+  line-height: 1.05;
+  letter-spacing: -1.5px;
+  color: #F9F5F0;
+  text-transform: uppercase;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Gold Accent Bar ── */
+.accent-bar {
+  width: 80px;
+  height: 5px;
+  background: #F5A623;
+  border-radius: 3px;
+  margin-top: 8px;
+}
+
+/* ── Subtext ── */
+.subtext {
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: rgba(249, 245, 240, 0.88);
+  max-width: 640px;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Product Image ── */
+.product-image-wrapper {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.product-image-wrapper img {
+  height: 380px;
+  width: 380px;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 50%;
+  border: 4px solid rgba(245, 166, 35, 0.5);
+  box-shadow:
+    0 0 0 8px rgba(245, 166, 35, 0.1),
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 8px 24px rgba(245, 166, 35, 0.15);
+  transform: rotate(0deg);
+}
+
+/* ── Glow Behind Product ── */
+.product-glow {
+  position: absolute;
+  width: 440px;
+  height: 440px;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.15) 0%, transparent 65%);
+  border-radius: 50%;
+  z-index: -1;
+}
+
+/* ── Bottom Section ── */
+.bottom-section {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* ── CTA Button ── */
+.cta {
+  font-family: 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #2C1A0E;
+  background: linear-gradient(135deg, #F5A623 0%, #E8941A 50%, #D4830F 100%);
+  border: none;
+  padding: 22px 64px;
+  border-radius: 60px;
+  cursor: pointer;
+  box-shadow:
+    0 8px 32px rgba(245, 166, 35, 0.4),
+    0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  border-radius: 60px;
+}
+
+/* ── Brand Tag ── */
+.brand-tag {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(249, 245, 240, 0.5);
+}

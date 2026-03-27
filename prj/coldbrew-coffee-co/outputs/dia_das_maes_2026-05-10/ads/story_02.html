@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { width: 1080px; height: 1920px; overflow: hidden; font-family: 'Arial', sans-serif; }
+
+  .ad {
+    width: 1080px;
+    height: 1920px;
+    background: #BFD9E8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Background pattern */
+  .ad::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, #F9F5F0 0%, #BFD9E8 40%, #8FBFD8 100%);
+  }
+
+  /* Dark panel at bottom */
+  .bottom-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 560px;
+    background: #2C1A0E;
+    border-radius: 48px 48px 0 0;
+    z-index: 1;
+  }
+
+  /* Decorative circles */
+  .circle-1 {
+    position: absolute;
+    width: 900px;
+    height: 900px;
+    border-radius: 50%;
+    border: 2px solid rgba(44,26,14,0.06);
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .circle-2 {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    border-radius: 50%;
+    border: 2px solid rgba(44,26,14,0.08);
+    top: 250px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  /* Top content */
+  .top-section {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 280px;
+    text-align: center;
+  }
+
+  .tag {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 5px;
+    text-transform: uppercase;
+    color: #4B2E1A;
+    opacity: 0.6;
+    margin-bottom: 24px;
+  }
+
+  .headline {
+    font-family: 'Georgia', serif;
+    font-size: 100px;
+    font-weight: 700;
+    color: #2C1A0E;
+    line-height: 1.0;
+    text-align: center;
+  }
+
+  /* Product image */
+  .product-section {
+    position: relative;
+    z-index: 3;
+    margin-top: 40px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .product-section img {
+    width: 520px;
+    height: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 30px 80px rgba(44,26,14,0.3));
+  }
+
+  /* Bottom content */
+  .bottom-section {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 560px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 80px 100px;
+    gap: 28px;
+  }
+
+  .benefit-row {
+    display: flex;
+    gap: 20px;
+    width: 100%;
+  }
+
+  .benefit {
+    flex: 1;
+    background: rgba(245,166,35,0.12);
+    border: 1px solid rgba(245,166,35,0.25);
+    border-radius: 16px;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .benefit-icon {
+    font-size: 30px;
+  }
+
+  .benefit-label {
+    font-size: 16px;
+    font-weight: 700;
+    color: #F5A623;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+  }
+
+  .subtext {
+    font-size: 28px;
+    color: #F9F5F0;
+    text-align: center;
+    line-height: 1.5;
+    font-weight: 300;
+  }
+  .subtext strong {
+    font-weight: 700;
+    color: #F5A623;
+  }
+
+  .cta-btn {
+    background: #F5A623;
+    color: #2C1A0E;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 22px 80px;
+    border-radius: 8px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .brand {
+    position: absolute;
+    bottom: 36px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    font-size: 14px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(249,245,240,0.3);
+    z-index: 3;
+  }
+</style>
+</head>
+<body>
+<div class="ad">
+  <div class="circle-1"></div>
+  <div class="circle-2"></div>
+  <div class="bottom-panel"></div>
+
+  <div class="top-section">
+    <div class="tag">Por que Cold Brew?</div>
+    <div class="headline">Suave.<br>Premium.<br>Ela merece.</div>
+  </div>
+
+  <div class="product-section">
+    <img src="file:///home/nmaldaner/projetos/timesmkt/cbcc/assets/coffee_glass.png.jpeg" alt="Cold Brew Glass" />
+  </div>
+
+  <div class="bottom-section">
+    <div class="benefit-row">
+      <div class="benefit">
+        <div class="benefit-icon">✨</div>
+        <div class="benefit-label">Sem amargura</div>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">🧊</div>
+        <div class="benefit-label">Baixa acidez</div>
+      </div>
+      <div class="benefit">
+        <div class="benefit-icon">☕</div>
+        <div class="benefit-label">Pronto já</div>
+      </div>
+    </div>
+    <div class="subtext">Café de cafeteria, direto na cozinha dela. <strong>Sem complicação.</strong></div>
+    <div class="cta-btn">Comprar Agora</div>
+  </div>
+
+  <div class="brand">Cold Brew Coffee Co.</div>
+</div>
+</body>
+</html>

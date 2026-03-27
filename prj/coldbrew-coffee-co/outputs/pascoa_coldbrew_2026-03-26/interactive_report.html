@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Páscoa Cold Brew — Research Dashboard · Cold Brew Coffee Co.</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* === BRAND PALETTE === */
+    :root {
+      --coffee-dark: #2C1A0E;
+      --coffee-mid: #4B2E1A;
+      --cold-blue: #BFD9E8;
+      --amber: #F5A623;
+      --off-white: #F9F5F0;
+      --bg: #1A0F08;
+      --card-bg: rgba(75, 46, 26, 0.35);
+      --card-border: rgba(245, 166, 35, 0.18);
+      --text-muted: rgba(249, 245, 240, 0.6);
+      --glow-amber: rgba(245, 166, 35, 0.25);
+      --glow-blue: rgba(191, 217, 232, 0.15);
+    }
+
+    /* === SCROLLBAR === */
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb {
+      background: var(--card-bg);
+      border-radius: 6px;
+      border: 2px solid var(--bg);
+    }
+    ::-webkit-scrollbar-thumb:hover { background: var(--amber); }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--off-white);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient radiant background */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -20%;
+      left: -10%;
+      width: 60%;
+      height: 60%;
+      background: radial-gradient(ellipse, var(--glow-amber) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -20%;
+      right: -10%;
+      width: 55%;
+      height: 55%;
+      background: radial-gradient(ellipse, var(--glow-blue) 0%, transparent 65%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* === LAYOUT === */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 48px 24px;
+    }
+
+    /* === HEADER === */
+    .header {
+      text-align: center;
+      margin-bottom: 64px;
+    }
+    .header .badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border: 1px solid var(--amber);
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 20px;
+    }
+    .header h1 {
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      background: linear-gradient(135deg, var(--amber) 0%, var(--off-white) 50%, var(--cold-blue) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 16px;
+    }
+    .header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+      max-width: 560px;
+      margin: 0 auto;
+    }
+    .header .meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+    .header .meta span {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .header .meta span::before {
+      content: '●';
+      color: var(--amber);
+      font-size: 8px;
+    }
+
+    /* === STATS ROW === */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .stat-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(245, 166, 35, 0.4);
+    }
+    .stat-card .number {
+      font-size: 2.2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--amber), var(--cold-blue));
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-card .label {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    /* === SECTION === */
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--off-white);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, var(--card-border), transparent);
+    }
+
+    /* === CHARTS GRID === */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    .chart-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px;
+    }
+    .chart-card h3 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+    }
+    .chart-card canvas {
+      max-height: 280px;
+    }
+
+    .chart-card--wide {
+      grid-column: 1 / -1;
+    }
+
+    /* === ANGLES GRID === */
+    .angles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+    .angle-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .angle-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(245, 166, 35, 0.4);
+    }
+    .angle-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 4px; height: 100%;
+      background: linear-gradient(180deg, var(--amber), var(--cold-blue));
+    }
+    .angle-card.primary::before {
+      background: var(--amber);
+      width: 4px;
+    }
+    .angle-card .angle-tag {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 12px;
+    }
+    .angle-card .primary-badge {
+      display: inline-block;
+      background: rgba(245, 166, 35, 0.15);
+      color: var(--amber);
+      border: 1px solid rgba(245, 166, 35, 0.3);
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 10px;
+      margin-left: 8px;
+      letter-spacing: 1px;
+    }
+    .angle-card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--off-white);
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    .angle-card .quote {
+      font-size: 0.85rem;
+      color: var(--cold-blue);
+      font-style: italic;
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .angle-card p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* === HOOKS TABLE === */
+    .hooks-table {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .hooks-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .hooks-table thead th {
+      padding: 16px 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--amber);
+      text-align: left;
+      background: rgba(44, 26, 14, 0.5);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .hooks-table tbody tr {
+      border-bottom: 1px solid rgba(245, 166, 35, 0.07);
+      transition: background 0.15s;
+    }
+    .hooks-table tbody tr:last-child { border-bottom: none; }
+    .hooks-table tbody tr:hover { background: rgba(245, 166, 35, 0.05); }
+    .hooks-table tbody td {
+      padding: 14px 20px;
+      font-size: 0.88rem;
+      color: var(--off-white);
+    }
+    .hooks-table tbody td:first-child { font-style: italic; color: var(--cold-blue); }
+    .hooks-table tbody td:nth-child(2) { color: var(--text-muted); font-size: 0.8rem; }
+
+    /* === PLATFORM TAGS === */
+    .platform-tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .platform-tag.instagram { background: rgba(191, 217, 232, 0.15); color: var(--cold-blue); }
+    .platform-tag.threads { background: rgba(249, 245, 240, 0.1); color: var(--off-white); }
+    .platform-tag.youtube { background: rgba(245, 166, 35, 0.12); color: var(--amber); }
+    .platform-tag.all { background: rgba(75, 46, 26, 0.5); color: var(--off-white); }
+
+    /* === VIDEO CONCEPTS === */
+    .video-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 48px;
+    }
+    @media (max-width: 768px) { .video-grid { grid-template-columns: 1fr; } }
+
+    .video-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 28px;
+    }
+    .video-card .vc-meta {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .video-card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--off-white);
+      margin-bottom: 8px;
+    }
+    .video-card .vc-hook {
+      font-size: 0.85rem;
+      color: var(--cold-blue);
+      font-style: italic;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: rgba(191, 217, 232, 0.08);
+      border-left: 3px solid var(--cold-blue);
+      border-radius: 0 8px 8px 0;
+    }
+    .video-card .scene {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 8px;
+      font-size: 0.82rem;
+    }
+    .video-card .scene .sc-num {
+      min-width: 28px;
+      height: 24px;
+      background: rgba(245, 166, 35, 0.15);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--amber);
+    }
+    .video-card .scene p { color: var(--text-muted); line-height: 1.5; }
+    .video-card .cta-label {
+      margin-top: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .video-card .cta-text {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--off-white);
+      margin-top: 4px;
+    }
+
+    /* === FOOTER === */
+    .footer {
+      text-align: center;
+      padding: 48px 0 24px;
+      color: var(--text-muted);
+      font-size: 12px;
+      border-top: 1px solid var(--card-border);
+    }
+    .footer strong { color: var(--amber); }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="badge">Marketing Intelligence · Páscoa 2026</div>
+      <h1>Páscoa Cold Brew<br>Research Dashboard</h1>
+      <p>Strategic market intelligence for the Easter 2026 campaign — Cold Brew Coffee Co.</p>
+      <div class="meta">
+        <span>Campaign: pascoa_coldbrew</span>
+        <span>Date: 2026-03-26</span>
+        <span>Platforms: Instagram · Threads · YouTube</span>
+        <span>Research by Marketing Research Agent</span>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number">$3.75B</div>
+        <div class="label">Market by 2032</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">6×</div>
+        <div class="label">Market growth projection</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">69%</div>
+        <div class="label">Consumers celebrating Easter</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">70%</div>
+        <div class="label">Positive Easter F&B sentiment</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">26%</div>
+        <div class="label">Millennials gifting Easter</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">62%</div>
+        <div class="label">Consumers prioritize health</div>
+      </div>
+    </div>
+
+    <!-- CHARTS -->
+    <h2 class="section-title">Market Intelligence</h2>
+    <div class="charts-grid">
+      <div class="chart-card chart-card--wide">
+        <h3>Cold Brew Market Growth — USD Millions (2023–2032)</h3>
+        <canvas id="marketGrowthChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Platform Content Distribution</h3>
+        <canvas id="platformPieChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Easter Consumer Behavior Breakdown</h3>
+        <canvas id="easterBarChart"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Cold Brew Market Segment Shares (2024)</h3>
+        <canvas id="segmentDoughnut"></canvas>
+      </div>
+
+      <div class="chart-card">
+        <h3>Content Topic Engagement Potential (Score)</h3>
+        <canvas id="contentRadar"></canvas>
+      </div>
+    </div>
+
+    <!-- MARKETING ANGLES -->
+    <h2 class="section-title">Marketing Angles</h2>
+    <div class="angles-grid">
+      <div class="angle-card primary">
+        <div class="angle-tag">Angle 01 <span class="primary-badge">PRIMARY</span></div>
+        <h3>Easter Morning, Upgraded</h3>
+        <div class="quote">"Most people wake up to chaos on Easter. You wake up to cold brew."</div>
+        <p>Position cold brew as the premium Easter morning ritual. Connects to universal holiday morning chaos and the desire for smooth, effortless energy. Mirrors our core product truth.</p>
+      </div>
+      <div class="angle-card">
+        <div class="angle-tag">Angle 02</div>
+        <h3>The Easter Gift Nobody Returns</h3>
+        <div class="quote">"Chocolate? Flowers? Try again. Cold brew actually wins."</div>
+        <p>Leverages millennial Easter gifting behavior (26% buy gifts). Humor differentiates from generic holiday copy. High shareability on Threads and Instagram.</p>
+      </div>
+      <div class="angle-card">
+        <div class="angle-tag">Angle 03</div>
+        <h3>Smooth as Easter Sunday</h3>
+        <div class="quote">"Easter Sunday. No chaos. No bitterness. Just smooth."</div>
+        <p>Easter's cultural association with calm and renewal mirrors cold brew's smooth, low-acid profile. Strong awareness / brand-building angle.</p>
+      </div>
+      <div class="angle-card">
+        <div class="angle-tag">Angle 04</div>
+        <h3>Limited Edition Páscoa Drop</h3>
+        <div class="quote">"Páscoa 2026. One drop. Stock up."</div>
+        <p>FOMO + scarcity framing. Even without a product variant, the campaign feels exclusive. Gen Z responds to seasonal limited-edition narratives.</p>
+      </div>
+    </div>
+
+    <!-- AD HOOKS -->
+    <h2 class="section-title">Top Ad Hooks</h2>
+    <div class="hooks-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Hook</th>
+            <th>Angle</th>
+            <th>Platform</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"Your Easter morning just got a serious upgrade. ☕"</td>
+            <td>Morning upgrade</td>
+            <td><span class="platform-tag instagram">Instagram</span> <span class="platform-tag threads">Threads</span></td>
+          </tr>
+          <tr>
+            <td>"The Easter gift nobody returns."</td>
+            <td>Gifting</td>
+            <td><span class="platform-tag instagram">Instagram</span> <span class="platform-tag youtube">YouTube</span></td>
+          </tr>
+          <tr>
+            <td>"Skip the hot mess. Cold brew your Easter."</td>
+            <td>Hot vs. cold contrast</td>
+            <td><span class="platform-tag threads">Threads</span> <span class="platform-tag youtube">YouTube</span></td>
+          </tr>
+          <tr>
+            <td>"Smooth as Easter Sunday. No bitterness allowed."</td>
+            <td>Smooth / calm</td>
+            <td><span class="platform-tag instagram">Stories</span></td>
+          </tr>
+          <tr>
+            <td>"This Easter, serve the good stuff."</td>
+            <td>Premium signal</td>
+            <td><span class="platform-tag all">All Platforms</span></td>
+          </tr>
+          <tr>
+            <td>"Hot coffee on Easter? Life's too short for that."</td>
+            <td>Witty contrast</td>
+            <td><span class="platform-tag threads">Threads</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- VIDEO CONCEPTS -->
+    <h2 class="section-title">Video Concepts</h2>
+    <div class="video-grid">
+      <div class="video-card">
+        <div class="vc-meta">
+          <span class="platform-tag instagram">Instagram Reels</span>
+          <span class="platform-tag youtube">YouTube Shorts</span>
+          <span class="platform-tag all" style="background:rgba(75,46,26,0.7)">20s · 1080×1080</span>
+        </div>
+        <h3>Easter Morning Upgrade</h3>
+        <div class="vc-hook">"Most people wake up to chaos on Easter. You wake up to cold brew."</div>
+        <div class="scene"><div class="sc-num">01</div><p>Easter morning chaos — animated alarm, colorful eggs flying, hot coffee spilling</p></div>
+        <div class="scene"><div class="sc-num">02</div><p>Hand reaches for Cold Brew can; scene calms, amber + cold blue wash in</p></div>
+        <div class="scene"><div class="sc-num">03</div><p>Character energizes; sparkles burst, Easter egg motifs → energy icons</p></div>
+        <div class="scene"><div class="sc-num">04</div><p>CTA animates in per-word; can + egg silhouette fade in below</p></div>
+        <div class="cta-label">CTA</div>
+        <div class="cta-text">Upgrade Your Easter Morning</div>
+      </div>
+      <div class="video-card">
+        <div class="vc-meta">
+          <span class="platform-tag instagram">Instagram Stories</span>
+          <span class="platform-tag youtube">YouTube Shorts</span>
+          <span class="platform-tag all" style="background:rgba(75,46,26,0.7)">15s · 1080×1920</span>
+        </div>
+        <h3>The Easter Gift Nobody Returns</h3>
+        <div class="vc-hook">"Chocolate? Flowers? Try again. Cold brew is the Easter gift that actually wins."</div>
+        <div class="scene"><div class="sc-num">01</div><p>Strike-through animations on typical Easter gifts (chocolate, flowers, socks)</p></div>
+        <div class="scene"><div class="sc-num">02</div><p>Cold brew can slides in with a spring pop; Easter ribbon SVG wraps around it</p></div>
+        <div class="scene"><div class="sc-num">03</div><p>Social proof text fades in: "Zero returns since forever."</p></div>
+        <div class="scene"><div class="sc-num">04</div><p>Bold CTA with downward arrow</p></div>
+        <div class="cta-label">CTA</div>
+        <div class="cta-text">Grab Yours</div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      Generated by <strong>Marketing Research Agent</strong> · Cold Brew Coffee Co. ·
+      Campaign: <strong>pascoa_coldbrew</strong> · 2026-03-26
+    </div>
+
+  </div>
+
+  <script>
+    const amber = '#F5A623';
+    const coldBlue = '#BFD9E8';
+    const coffeeMid = '#4B2E1A';
+    const offWhite = '#F9F5F0';
+    const chartTextColor = 'rgba(249,245,240,0.7)';
+
+    Chart.defaults.color = chartTextColor;
+    Chart.defaults.borderColor = 'rgba(245,166,35,0.1)';
+
+    // 1. Market Growth Line+Bar
+    new Chart(document.getElementById('marketGrowthChart'), {
+      type: 'bar',
+      data: {
+        labels: ['2023','2024','2025','2026','2027','2028','2029','2030','2031','2032'],
+        datasets: [
+          {
+            type: 'line',
+            label: 'Growth Trend',
+            data: [604, 780, 1010, 1280, 1570, 1890, 2240, 2620, 3130, 3752],
+            borderColor: coldBlue,
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            pointBackgroundColor: coldBlue,
+            pointRadius: 4,
+            tension: 0.4,
+          },
+          {
+            label: 'Market Value ($M)',
+            data: [604, 780, 1010, 1280, 1570, 1890, 2240, 2620, 3130, 3752],
+            backgroundColor: [
+              'rgba(245,166,35,0.5)','rgba(245,166,35,0.52)','rgba(245,166,35,0.55)',
+              'rgba(245,166,35,0.58)','rgba(245,166,35,0.62)','rgba(245,166,35,0.66)',
+              'rgba(245,166,35,0.70)','rgba(245,166,35,0.75)','rgba(245,166,35,0.82)','rgba(245,166,35,0.9)'
+            ],
+            borderColor: amber,
+            borderWidth: 1,
+            borderRadius: 6,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top', labels: { boxWidth: 14, padding: 16 } },
+          tooltip: { mode: 'index', intersect: false }
+        },
+        scales: {
+          y: {
+            grid: { color: 'rgba(245,166,35,0.07)' },
+            ticks: { callback: v => '$' + v.toLocaleString() + 'M' }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // 2. Platform Pie
+    new Chart(document.getElementById('platformPieChart'), {
+      type: 'pie',
+      data: {
+        labels: ['Instagram Reels/Stories', 'YouTube Shorts/Pre-roll', 'Threads Text+Image', 'YouTube Standard'],
+        datasets: [{
+          data: [45, 25, 20, 10],
+          backgroundColor: [
+            'rgba(245,166,35,0.75)',
+            'rgba(191,217,232,0.75)',
+            'rgba(249,245,240,0.5)',
+            'rgba(75,46,26,0.8)'
+          ],
+          borderColor: '#1A0F08',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }
+        }
+      }
+    });
+
+    // 3. Easter Consumer Bar
+    new Chart(document.getElementById('easterBarChart'), {
+      type: 'bar',
+      data: {
+        labels: ['Celebrate Easter', 'Plan Food Purchase', 'Buy Candy', 'Gift Givers', 'Gift-Giving Millennials', 'Gen Z Alcohol Purchase'],
+        datasets: [{
+          label: '% of Consumers',
+          data: [69, 69, 53, 18, 26, 28],
+          backgroundColor: [
+            'rgba(245,166,35,0.8)','rgba(245,166,35,0.7)','rgba(191,217,232,0.7)',
+            'rgba(245,166,35,0.55)','rgba(245,166,35,0.65)','rgba(191,217,232,0.55)'
+          ],
+          borderColor: amber,
+          borderWidth: 1,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: {
+            grid: { color: 'rgba(245,166,35,0.07)' },
+            ticks: { callback: v => v + '%' },
+            max: 100
+          },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+
+    // 4. Segment Doughnut
+    new Chart(document.getElementById('segmentDoughnut'), {
+      type: 'doughnut',
+      data: {
+        labels: ['Unflavored Cold Brew', 'Flavored Cold Brew', 'Conventional', 'Organic', 'Off-Trade', 'On-Trade'],
+        datasets: [{
+          data: [56.71, 43.29, 72.12, 27.88, 58.34, 41.66],
+          backgroundColor: [
+            'rgba(245,166,35,0.85)','rgba(191,217,232,0.75)',
+            'rgba(75,46,26,0.9)','rgba(245,166,35,0.5)',
+            'rgba(191,217,232,0.55)','rgba(249,245,240,0.35)'
+          ],
+          borderColor: '#1A0F08',
+          borderWidth: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } }
+        },
+        cutout: '62%'
+      }
+    });
+
+    // 5. Content Radar
+    new Chart(document.getElementById('contentRadar'), {
+      type: 'radar',
+      data: {
+        labels: [
+          'Easter Coffee Bar', 'Gift Basket Reveal', 'Morning Ritual',
+          'Hot vs Cold Comparison', 'Easter Egg Hunt Parody', 'Limited Edition Reveal', 'Easter Brunch'
+        ],
+        datasets: [{
+          label: 'Engagement Potential',
+          data: [90, 85, 88, 80, 82, 92, 78],
+          backgroundColor: 'rgba(245,166,35,0.15)',
+          borderColor: amber,
+          pointBackgroundColor: amber,
+          pointBorderColor: '#1A0F08',
+          borderWidth: 2,
+          pointRadius: 4,
+        }, {
+          label: 'Share Rate',
+          data: [80, 88, 75, 78, 92, 85, 72],
+          backgroundColor: 'rgba(191,217,232,0.1)',
+          borderColor: coldBlue,
+          pointBackgroundColor: coldBlue,
+          pointBorderColor: '#1A0F08',
+          borderWidth: 2,
+          pointRadius: 4,
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          r: {
+            beginAtZero: true,
+            max: 100,
+            grid: { color: 'rgba(245,166,35,0.08)' },
+            angleLines: { color: 'rgba(245,166,35,0.08)' },
+            pointLabels: { font: { size: 10 }, color: chartTextColor },
+            ticks: { stepSize: 25, display: false }
+          }
+        },
+        plugins: { legend: { position: 'top', labels: { boxWidth: 12, padding: 14 } } }
+      }
+    });
+  </script>
+</body>
+</html>

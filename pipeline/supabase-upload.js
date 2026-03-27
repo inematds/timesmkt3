@@ -3,10 +3,10 @@
 /**
  * supabase-upload.js
  * Uploads campaign media files to the Supabase "campaign-uploads" bucket.
- * Usage: node pipeline/supabase-upload.js <task_name> <date> <file1> [file2] ...
+ * Usage: node pipeline/supabase-upload.js <project_dir> <task_name> <date> <file1> [file2] ...
  *
  * Reads credentials from .env (no dotenv dependency).
- * Outputs a media_urls.json in outputs/<task_name>_<date>/
+ * Outputs a media_urls.json in <project_dir>/outputs/<task_name>_<date>/
  */
 
 const fs = require('fs');
@@ -37,9 +37,9 @@ function getMimeType(filename) {
   return map[ext] || 'application/octet-stream';
 }
 
-async function uploadFiles(taskName, date, filePaths) {
+async function uploadFiles(projectDir, taskName, date, filePaths) {
   const bucket = 'campaign-uploads';
-  const outputDir = path.resolve(__dirname, `../outputs/${taskName}_${date}`);
+  const outputDir = path.resolve(__dirname, '..', projectDir, `outputs/${taskName}_${date}`);
   const urlMap = {};
 
   for (const filePath of filePaths) {
@@ -74,14 +74,14 @@ async function uploadFiles(taskName, date, filePaths) {
 }
 
 // --- CLI entry point ---
-const [,, taskName, date, ...files] = process.argv;
+const [,, projectDir, taskName, date, ...files] = process.argv;
 
-if (!taskName || !date || files.length === 0) {
-  console.error('Usage: node pipeline/supabase-upload.js <task_name> <date> <file1> [file2] ...');
+if (!projectDir || !taskName || !date || files.length === 0) {
+  console.error('Usage: node pipeline/supabase-upload.js <project_dir> <task_name> <date> <file1> [file2] ...');
   process.exit(1);
 }
 
-uploadFiles(taskName, date, files).catch(err => {
+uploadFiles(projectDir, taskName, date, files).catch(err => {
   console.error('Fatal error:', err);
   process.exit(1);
 });
