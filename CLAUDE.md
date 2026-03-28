@@ -1,6 +1,30 @@
 ## Project Overview
 
-This project implements an **AI-powered Social Media Content Automation System** built with Claude Code inside the Antigravity IDE.
+**ATMKT v3.0.0** — AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
+
+---
+
+## Versionamento
+
+**Padrão:** `ATMKT vMAJOR.RECURSO.BUG`
+
+| Campo | Quando incrementar |
+|---|---|
+| `MAJOR` | Mudança de arquitetura ou redesign completo do fluxo |
+| `RECURSO` | Novo agente, nova aprovação, novo provider, nova feature |
+| `BUG` | Correção de bug, ajuste de comportamento, fix de prompt |
+
+**Exemplos:**
+- `v3.0.0` → versão base com novo fluxo de 4 aprovações + Diretor de Criação
+- `v3.1.0` → adição do Agente Revisor automático
+- `v3.1.1` → fix no gate de dependências do worker
+- `v4.0.0` → mudança de arquitetura (ex: substituir BullMQ por outro sistema)
+
+**Versão atual:** `ATMKT v3.0.0`
+
+Sempre atualizar a versão no topo deste arquivo e no `package.json` ao fazer uma alteração relevante.
+
+---
 
 The system uses **five specialized AI agents** coordinated by an **Orchestrator** to research, generate, render, and distribute marketing content for a demo brand.
 

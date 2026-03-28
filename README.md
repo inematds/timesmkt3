@@ -1,4 +1,5 @@
-# Time de Agentes de Marketing
+# ATMKT — Time de Agentes de Marketing
+### v3.0.0
 
 Sistema de automação de conteúdo para redes sociais usando **5 agentes de IA coordenados**. Os agentes pesquisam, criam textos, geram imagens, renderizam vídeos e preparam a distribuição de campanhas de marketing — tudo automatizado.
 
@@ -10,32 +11,120 @@ A marca de demonstração usada é a **Cold Brew Coffee Co.**, mas o sistema ser
 
 ---
 
-## Como funciona
+## Como funciona — Fluxo v3
+
+O **Bot Telegram é o controlador** de todo o fluxo. O Orquestrador enfileira jobs, o Worker executa. Nenhum agente decide quando rodar — o bot controla cada etapa.
 
 ```
-Você define uma campanha (JSON ou conversa)
+Usuário define campanha no Telegram
     ↓
-1. Agente de Pesquisa → pesquisa mercado via Tavily
+BOT → ORQUESTRADOR enfileira: research + diretor_criacao
     ↓
-2. Três agentes criativos rodam em paralelo:
-   ├── Designer de Ads → imagens para carousel + stories (Playwright)
-   ├── Especialista de Vídeo → roteiro + renderização (Remotion)
-   └── Copywriter → textos para Instagram, Threads, YouTube
+WORKER executa: Research Agent
+WORKER executa: Diretor de Criação → gera Creative Brief
+
+⏸ APROVAÇÃO 1 (humano / agente / auto)
+  BOT envia: resumo do brief + link para relatório completo
+  BOT pergunta: "aprovar estratégia?"
+  BOT pergunta: "quer aprovar o vídeo antes de renderizar?"
     ↓
-3. Agente de Distribuição → sobe mídia no Supabase + monta guia de publicação
+BOT → ORQUESTRADOR enfileira: ad_creative + copywriter (paralelo)
     ↓
-Resultado: pasta com tudo pronto para publicar
+WORKER executa: Ad Creative Designer
+  — gera imagem → envia imediatamente no chat
+  — gera imagem → envia imediatamente no chat
+  — ...
+WORKER executa: Copywriter Agent
+
+⏸ APROVAÇÃO 2 (humano / agente / auto)
+  BOT envia: imagens geradas + textos por plataforma
+  BOT pergunta: "aprovar e partir para o vídeo?"
+    ↓
+BOT → ORQUESTRADOR enfileira: video_specialist
+    ↓
+WORKER executa: Video Ad Specialist
+  — usa imagens aprovadas da etapa anterior
+  — gera roteiro de cenas
+
+⏸ APROVAÇÃO 3 — só se usuário quis aprovar vídeo (humano / agente / auto)
+  BOT envia: link para roteiro do vídeo
+  BOT pergunta: "aprovar roteiro?"
+  → se aprovado ou auto: renderiza vídeo com ffmpeg
+    ↓
+⏸ APROVAÇÃO 4 (humano / agente / auto)
+  BOT envia: resumo completo da campanha (imagens + vídeo + textos)
+  BOT pergunta: "aprovar e distribuir?"
+    ↓
+BOT → ORQUESTRADOR enfileira: distribution
+    ↓
+WORKER executa: Distribution Agent
+  — sobe mídia no Supabase
+  — monta Publish MD
+    ↓
+BOT envia: resumo final + /enviar disponível
 ```
 
-### Os 5 agentes
+---
 
-| Agente | O que faz | Ferramenta |
-|---|---|---|
-| **Pesquisa de Marketing** | Pesquisa tendências, concorrentes, público-alvo | Tavily AI SDK |
-| **Designer de Ads** | Cria imagens para carousel e stories | Playwright (HTML→PNG) |
-| **Especialista de Vídeo** | Gera roteiro e renderiza vídeos com efeitos | Remotion |
-| **Copywriter** | Escreve textos adaptados por plataforma | Claude |
-| **Distribuição** | Sobe mídia e monta o guia de publicação | Supabase |
+## Modos de Aprovação
+
+Cada etapa pode ter um modo independente:
+
+| Modo | Comportamento |
+|---|---|
+| `humano` | Pausa e espera resposta no Telegram **(padrão)** |
+| `agente` | Agente Revisor avalia e decide — bot notifica o resultado |
+| `auto` | Aprova automaticamente sem interação |
+
+**Configuração por campanha:**
+```json
+{
+  "aprovacoes": {
+    "brief":      "humano",
+    "criativo":   "humano",
+    "video":      "humano",
+    "distribuir": "humano"
+  },
+  "notificacoes": true
+}
+```
+
+**Flag de notificações:**
+- `true` — envia imagens, roteiro e resumos no chat **(padrão)**
+- `false` — roda silencioso, avisa só quando terminar
+
+**Exemplos de uso:**
+```
+Pipeline rápido     → todas "auto",   notificacoes: false
+Pipeline monitorado → todas "agente", notificacoes: true
+Distribuição segura → brief/criativo/video "auto", distribuir "humano"
+```
+
+---
+
+## Papéis no Sistema
+
+| Componente | Papel |
+|---|---|
+| **Bot Telegram** | Controlador — recebe instruções, gerencia aprovações, decide quando avançar |
+| **Orquestrador** | Enfileirador — coloca jobs na fila BullMQ quando o bot manda |
+| **Worker** | Executor — pega job da fila e executa via Claude CLI, nunca pausa esperando humano |
+| **Agentes** | Especialistas — executados pelo worker via `claude -p` |
+| **Agente Revisor** | Aprovador automático — avalia com critérios da marca quando modo = "agente" |
+
+---
+
+## Agentes (v3)
+
+| # | Agente | O que faz | Quando roda |
+|---|---|---|---|
+| 1 | **Research Agent** | Pesquisa tendências, concorrentes, público via Tavily | Etapa 1 |
+| 2 | **Diretor de Criação** | Gera Creative Brief — ângulo, mensagem, tom, anti-diretrizes | Etapa 1 |
+| 3 | **Ad Creative Designer** | Cria imagens (HTML→PNG ou KIE API), envia cada uma ao vivo | Etapa 2 |
+| 4 | **Copywriter Agent** | Escreve textos por plataforma alinhados ao brief | Etapa 2 |
+| 5 | **Video Ad Specialist** | Gera roteiro + renderiza vídeo usando imagens aprovadas | Etapa 3 |
+| 6 | **Agente Revisor** | Avalia qualidade e alinhamento com a marca (modo "agente") | Aprovações 1-4 |
+| 7 | **Distribution Agent** | Sobe mídia no Supabase + monta guia de publicação | Etapa 4 |
 
 ---
 
