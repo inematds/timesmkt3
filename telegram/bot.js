@@ -1176,6 +1176,12 @@ Be concise and helpful. You have full access to the codebase.`;
 function runPipeline(ctx, chatId, payload, outputDir) {
   const payloadStr = JSON.stringify(payload);
 
+  // Store chatId in output dir so bot can notify the right chat after restart
+  const absOutputDir = path.resolve(PROJECT_ROOT, outputDir);
+  fs.mkdirSync(absOutputDir, { recursive: true });
+  fs.writeFileSync(path.join(absOutputDir, 'chat_context.json'),
+    JSON.stringify({ chatId: String(chatId), ts: Date.now() }));
+
   // Step 1: enqueue jobs
   const orch = spawn('node', [
     'pipeline/orchestrator.js',
@@ -1621,10 +1627,87 @@ bot.catch((err) => {
   console.error('Bot error:', err.message);
 });
 
+// ── /aprovar — re-scan pending approvals ─────────────────────────────────────
+
+bot.command('aprovar', async (ctx) => {
+  await scanPendingApprovals(ctx.chat.id.toString(), ctx);
+});
+
+/**
+ * Scans all project outputs for pending approval_needed.json files.
+ * Sends approval requests to the matching chat.
+ * Called on bot startup and via /aprovar command.
+ */
+async function scanPendingApprovals(targetChatId, ctx) {
+  const prjRoot = path.resolve(PROJECT_ROOT, 'prj');
+  if (!fs.existsSync(prjRoot)) return;
+
+  const pending = [];
+
+  // Walk prj/<project>/outputs/<campaign>/
+  for (const prj of fs.readdirSync(prjRoot)) {
+    const outRoot = path.join(prjRoot, prj, 'outputs');
+    if (!fs.existsSync(outRoot)) continue;
+    for (const campaign of fs.readdirSync(outRoot)) {
+      const campDir = path.join(outRoot, campaign);
+      const relDir = `prj/${prj}/outputs/${campaign}`;
+
+      // Check video approval
+      const videoSignal = path.join(campDir, 'video', 'approval_needed.json');
+      const videoApproved = path.join(campDir, 'video', 'approved.json');
+      const videoRejected = path.join(campDir, 'video', 'rejected.json');
+      if (fs.existsSync(videoSignal) && !fs.existsSync(videoApproved) && !fs.existsSync(videoRejected)) {
+        const ctx2 = readChatContext(campDir);
+        if (!targetChatId || ctx2?.chatId === targetChatId || !ctx2) {
+          pending.push({ type: 'video', outputDir: relDir, chatId: ctx2?.chatId || targetChatId });
+        }
+      }
+
+      // Check image approval
+      const imgSignal = path.join(campDir, 'imgs', 'approval_needed.json');
+      const imgApproved = path.join(campDir, 'imgs', 'approved.json');
+      const imgRejected = path.join(campDir, 'imgs', 'rejected.json');
+      if (fs.existsSync(imgSignal) && !fs.existsSync(imgApproved) && !fs.existsSync(imgRejected)) {
+        const ctx2 = readChatContext(campDir);
+        if (!targetChatId || ctx2?.chatId === targetChatId || !ctx2) {
+          pending.push({ type: 'images', outputDir: relDir, chatId: ctx2?.chatId || targetChatId });
+        }
+      }
+    }
+  }
+
+  if (pending.length === 0) {
+    if (ctx) await ctx.reply('Nenhuma aprovação pendente encontrada.');
+    return;
+  }
+
+  for (const item of pending) {
+    const chatId = item.chatId;
+    if (!chatId) continue;
+    console.log(`[startup] Pending ${item.type} approval found: ${item.outputDir} → chat ${chatId}`);
+    if (item.type === 'video') {
+      session.setPendingVideoApproval(chatId, { outputDir: item.outputDir, type: 'video' });
+      await sendVideoApprovalRequest(bot, chatId, item.outputDir);
+    } else {
+      session.setPendingVideoApproval(chatId, { outputDir: item.outputDir, type: 'images' });
+      await sendImageApprovalRequest(bot, chatId, item.outputDir);
+    }
+  }
+}
+
+function readChatContext(campDir) {
+  try {
+    const f = path.join(campDir, 'chat_context.json');
+    return fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf-8')) : null;
+  } catch { return null; }
+}
+
 bot.start({
-  onStart: (botInfo) => {
+  onStart: async (botInfo) => {
     console.log(`Bot @${botInfo.username} rodando (long-polling)`);
     console.log(`Projeto padrao: ${session.DEFAULT_PROJECT}`);
     console.log('Ctrl+C para parar.\n');
+    // Scan for pending approvals left over from before restart
+    await scanPendingApprovals(null, null);
   },
 });

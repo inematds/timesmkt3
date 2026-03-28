@@ -386,6 +386,9 @@ Each story has one bold key message with large text.`;
       const rejectedPath = path.resolve(PROJECT_ROOT, output_dir, 'imgs', 'rejected.json');
       process.stdout.write(`[IMAGE_APPROVAL_NEEDED] ${output_dir}\n`);
       log(output_dir, 'ad_creative_designer', '[IMAGE_APPROVAL_NEEDED] Waiting for user to approve generated images...');
+      // Write signal file so bot can re-detect after restart
+      fs.writeFileSync(path.resolve(PROJECT_ROOT, output_dir, 'imgs', 'approval_needed.json'),
+        JSON.stringify({ type: 'images', output_dir, ts: Date.now() }));
 
       const imgApproved = await waitForFile(approvalPath, 1800000);
       if (!imgApproved) {
@@ -702,6 +705,9 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
 
   log(output_dir, 'video_ad_specialist', '[VIDEO_APPROVAL_NEEDED] Waiting for user approval of scene plans (30 min timeout)...');
   process.stdout.write(`[VIDEO_APPROVAL_NEEDED] ${output_dir}\n`);
+  // Write signal file so bot can re-detect after restart
+  fs.writeFileSync(path.resolve(PROJECT_ROOT, output_dir, 'video', 'approval_needed.json'),
+    JSON.stringify({ type: 'video', output_dir, ts: Date.now() }));
 
   const approved = await waitForFile(approvalPath, 1800000);
   if (!approved) {
