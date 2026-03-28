@@ -18,7 +18,21 @@ const path = require('path');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const { generateImage, buildImagePrompt, readBrandContext, AVAILABLE_MODELS, DEFAULT_MODEL } = require('./generate-image-kie');
+const kieProvider = require('./generate-image-kie');
+const pollinationsProvider = require('./generate-image-pollinations');
+
+// Active provider — default KIE, switch to pollinations via IMAGE_PROVIDER env or job.data.image_provider
+const IMAGE_PROVIDER = (process.env.IMAGE_PROVIDER || 'kie').toLowerCase();
+
+function getImageProvider(jobProvider) {
+  const p = (jobProvider || IMAGE_PROVIDER || 'kie').toLowerCase();
+  if (p === 'pollinations') return pollinationsProvider;
+  return kieProvider;
+}
+
+// Aliases used throughout file (KIE defaults; overridden per-job via getImageProvider)
+const { buildImagePrompt, readBrandContext, DEFAULT_MODEL } = kieProvider;
+const { generateImage } = kieProvider; // will be shadowed per call when provider differs
 
 // ── Asset discovery ────────────────────────────────────────────────────────────
 
@@ -145,15 +159,18 @@ function assetPaths(assets) {
  *
  * @param {string} outputDir   - relative output dir
  * @param {string} projectDir  - project dir for reading brand_identity.md
- * @param {string} model       - KIE model id (default: z-image)
+ * @param {string} model       - model id (provider-specific)
  * @param {number} count       - number of images to generate
  * @param {string[]} formats   - ['carousel_1080x1080', 'story_1080x1920']
  * @param {string} brief       - campaign brief
  * @param {boolean} useBrandOverlay - whether to include brand visual identity in prompt
  * @param {string[]} scenePurposes  - optional array of scene types per image
  * @param {string[]} sceneDescriptions - optional per-scene visual descriptions (synchronized with script/narration)
+ * @param {string} provider    - 'kie' (default) | 'pollinations'
  */
-async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, count = 5, formats = ['carousel_1080x1080'], brief = '', useBrandOverlay = true, scenePurposes = [], sceneDescriptions = []) {
+async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, count = 5, formats = ['carousel_1080x1080'], brief = '', useBrandOverlay = true, scenePurposes = [], sceneDescriptions = [], provider = IMAGE_PROVIDER) {
+  const imageProvider = getImageProvider(provider);
+  const genImage = imageProvider.generateImage;
   const absImgsDir = path.resolve(PROJECT_ROOT, outputDir, 'imgs');
   fs.mkdirSync(absImgsDir, { recursive: true });
 
@@ -188,11 +205,11 @@ async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, c
       log(outputDir, 'api_image_gen', `Already exists, skipping: ${filename}`);
     } else {
       const prompt = buildImagePrompt(brief, brand, fmt, imgIndex, count, sceneType, sceneDesc);
-      log(outputDir, 'api_image_gen', `Generating ${imgIndex}/${count}: ${filename} [${sceneType}] (${model}, ${ratio})`);
+      log(outputDir, 'api_image_gen', `Generating ${imgIndex}/${count}: ${filename} [${sceneType}] (${provider}/${model}, ${ratio})`);
       log(outputDir, 'api_image_gen', `Prompt: ${prompt.slice(0, 200)}`);
 
       try {
-        await generateImage(outputPath, prompt, model, ratio);
+        await genImage(outputPath, prompt, model, ratio);
         // Signal bot: image ready — bot sends it live to the chat
         process.stdout.write(`[STAGE2_IMAGE_READY] ${outputDir} ${outputPath}\n`);
       } catch (err) {
@@ -792,10 +809,13 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
   // Only when image_source === 'api'. Images are generated here (AFTER scene plan)
   // so each scene's image_prompt (derived from its narration/purpose) drives generation.
   if (image_source === 'api') {
+    const jobProvider = job.data.image_provider || IMAGE_PROVIDER;
+    const imageProvider = getImageProvider(jobProvider);
+    const genImage = imageProvider.generateImage;
     const model = job.data.image_model || process.env.KIE_DEFAULT_MODEL || DEFAULT_MODEL;
     const useBrand = job.data.use_brand_overlay !== false;
     const brand = useBrand ? readBrandContext(project_dir) : null;
-    if (brand) log(output_dir, 'video_ad_specialist', `Brand context: ${brand.brandName}`);
+    if (brand) log(output_dir, 'video_ad_specialist', `Brand context: ${brand.brandName} | provider: ${jobProvider}`);
 
     for (let i = 1; i <= video_count; i++) {
       const idx = String(i).padStart(2, '0');
@@ -835,7 +855,7 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
 
         log(output_dir, 'video_ad_specialist', `Generating image for video_${idx} scene ${s + 1}/${total} [${sceneType}]: ${scene.image_prompt.slice(0, 80)}`);
         try {
-          await generateImage(outputPath, finalPrompt, model, '9:16');
+          await genImage(outputPath, finalPrompt, model, '9:16');
           scene.image = outputPath;
           scene.image_type = scene.image_type || 'raw';
           planChanged = true;
