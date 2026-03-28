@@ -1,0 +1,27 @@
+{
+  "task_name": "inema_ddm_test",
+  "task_date": "2026-05-10",
+  "business": "INEMA — Ecossistema de IA e Transformação Digital",
+  "description": "Teste completo do pipeline com brand assets reais, ElevenLabs narration e ffmpeg render.",
+
+  "project_dir": "prj/inema",
+  "output_folder": "prj/inema/outputs/inema_ddm_test_2026-05-10",
+
+  "platform_targets": ["instagram", "threads", "youtube"],
+  "language": "pt-BR",
+
+  "skip_research": false,
+  "skip_image": false,
+  "skip_video": false,
+
+  "campaign_brief": "Campanha Dia das Mães INEMA. Ângulo: 'Mãe que aprende, mãe que inspira'. Empoderamento feminino via educação em IA. CTAs: inema.club (grátis) e inema.vip (R$ 35/mês). Tom: emocional, inspirador, sem elitismo. Usar imagens de marca reais.",
+
+  "image_count": 8,
+  "image_formats": ["story_1080x1920", "carousel_1080x1080"],
+
+  "video_count": 2,
+  "video_briefs": [
+    "Vídeo 1 — 'Mãe que Cria' — voz Rachel (warm/emotional). Ângulo emocional: mãe que decide aprender IA transforma o futuro de toda a família. Hook: 'Tem um presente que nenhuma loja vende.' Mostre pertencimento, comunidade, crescimento. CTA: inema.club — grátis para começar.",
+    "Vídeo 2 — 'Mãe que Aprende' — voz Bella (clear/friendly). Ângulo aspiracional: mulher que não para de evoluir, nunca está obsoleta. Hook: 'Mãe que aprende, nunca para.' Mostre projetos reais, comunidade VIP, futuro. CTA: inema.vip — comunidade ativa R$ 35/mês."
+  ]
+}

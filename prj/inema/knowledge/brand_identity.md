@@ -165,6 +165,16 @@ Toda comunicação da INEMA orbita esses três pilares:
 - Contraste alto, hierarquia visual clara
 - Evitar: design corporativo traditional, cores pastel, tipografia serifada
 
+### Contexto Visual para Imagens
+- Pessoas trabalhando em setups tecnológicos modernos: múltiplos monitores, interfaces de IA, código na tela
+- Ambientes de trabalho dark e futuristas: luz neon ciano/verde, escritório minimalista de alta tecnologia
+- Interfaces digitais visíveis: dashboards de IA, terminais de código, plataformas de e-learning, chat com agentes
+- Educação digital em ação: pessoa estudando online, trilha de aprendizado, comunidade conectada remotamente
+- Transformação profissional: contraste entre analógico/perdido e digital/confiante com tecnologia nas mãos
+- Elementos de IA tangíveis: redes neurais visuais, fluxos de dados, grafos de agentes, automação em movimento
+- Pessoa sempre presente mas sempre COM tecnologia — nunca pessoa isolada sem contexto tech
+- Evitar: natureza genérica sem tech, escritórios corporativos tradicionais, pessoas sem equipamento ou tela visível
+
 ---
 
 ## O Fundador: Nei Maldaner

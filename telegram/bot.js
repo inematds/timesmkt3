@@ -20,6 +20,8 @@ const { sendPhoto, sendVideo, sendDocument, sendCampaignOutputs } = require('./m
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
+const { enqueueStage: _enqueueStage, STAGES } = require('../pipeline/orchestrator');
+
 const bot = new Bot(config.botToken);
 
 const BOT_ACK = 'inemamkt >';
@@ -63,6 +65,7 @@ bot.command('start', async (ctx) => {
     `/status — ver status do pipeline\n` +
     `/outputs — listar campanhas geradas\n` +
     `/enviar &lt;pasta&gt; — receber arquivos da campanha\n` +
+    `/modos [etapa] [humano|agente|auto] — modos de aprovacao\n` +
     `/fix &lt;descricao&gt; — corrigir algo no sistema\n` +
     `/novochat — limpar historico\n` +
     `/help — este menu\n\n` +
@@ -84,7 +87,9 @@ bot.command('help', async (ctx) => {
     `/status — status do pipeline\n` +
     `/outputs — lista campanhas\n` +
     `/relatorio &lt;campanha&gt; — resumo + inventario de arquivos\n` +
-    `/enviar &lt;campanha&gt; [imagens|videos|audio|copy|tudo]\n\n` +
+    `/enviar &lt;campanha&gt; [imagens|videos|audio|copy|tudo]\n` +
+    `/aprovar — re-verificar aprovações pendentes\n` +
+    `/modos [etapa] [humano|agente|auto] — modos de aprovação\n\n` +
 
     `<b>Agentes</b>\n` +
     `/pesquisa &lt;tema&gt; — Research Agent\n` +
@@ -108,7 +113,8 @@ bot.command('help', async (ctx) => {
     `Texto livre = conversa com Claude\n\n` +
 
     `<b>Detalhes por tema:</b>\n` +
-    `/helpcampanha — pipeline e opcoes\n` +
+    `/helpcampanha — pipeline e etapas v3\n` +
+    `/helpaprovacoes — modos de aprovação e Agente Revisor\n` +
     `/helpimagens — geracao e busca de imagens\n` +
     `/helpvideos — criacao de videos\n` +
     `/helpaudio — musica, SFX e narracao\n` +
@@ -121,37 +127,91 @@ bot.command('help', async (ctx) => {
 
 bot.command('helpcampanha', async (ctx) => {
   await ctx.reply(
-    `<b>PIPELINE COMPLETO — /campanha</b>\n\n` +
+    `<b>PIPELINE COMPLETO — ATMKT v3</b>\n\n` +
 
-    `Roda todos os agentes em ordem:\n` +
-    `Pesquisa → Ads + Video + Copy (paralelo) → Distribuicao\n\n` +
+    `O pipeline roda em <b>4 etapas com aprovação</b>:\n` +
+    `  <b>1.</b> Pesquisa + Brief Criativo\n` +
+    `  <b>2.</b> Imagens + Copy (paralelo)\n` +
+    `  <b>3.</b> Vídeo\n` +
+    `  <b>4.</b> Distribuição\n\n` +
 
-    `<b>Uso:</b>\n` +
+    `A cada etapa o bot envia o resultado e aguarda sua confirmação antes de avançar (modo padrão). Veja /helpaprovacoes para mudar isso.\n\n` +
+
+    `<b>Como iniciar:</b>\n` +
+    `Descreva sua campanha em linguagem natural:\n` +
+    `<i>"quero uma campanha de páscoa para o projeto coldbrew com 5 imagens geradas por IA"</i>\n\n` +
+    `Ou via comando:\n` +
     `<code>/campanha &lt;nome&gt; [opcoes]</code>\n\n` +
 
-    `<b>Opcoes:</b>\n` +
-    `  --date YYYY-MM-DD (padrao: hoje)\n` +
-    `  --lang pt-BR|en (padrao: pt-BR)\n` +
+    `<b>Opções:</b>\n` +
+    `  --date YYYY-MM-DD (padrão: hoje)\n` +
+    `  --lang pt-BR|en (padrão: pt-BR)\n` +
     `  --platforms instagram,youtube,threads\n` +
-    `  --images N — qtd de imagens (padrao: 1)\n` +
-    `  --videos N — qtd de videos (padrao: 1)\n` +
+    `  --images N — qtd de imagens (padrão: 5)\n` +
+    `  --videos N — qtd de vídeos (padrão: 1)\n` +
     `  --skip-research — pula pesquisa\n` +
     `  --skip-image — pula imagens\n` +
-    `  --skip-video — pula videos\n\n` +
+    `  --skip-video — pula vídeo\n\n` +
 
     `<b>Exemplos:</b>\n` +
-    `<code>/campanha dia_das_maes --date 2026-05-10 --images 5 --videos 2</code>\n` +
+    `<code>/campanha pascoa_2026 --images 5</code>\n` +
     `<code>/campanha black_friday --skip-research --images 3</code>\n` +
     `<code>/campanha lancamento --platforms instagram --videos 1</code>\n\n` +
 
-    `<b>Agentes individuais:</b>\n` +
-    `/pesquisa &lt;tema&gt; — so o Research Agent\n` +
-    `/copy &lt;campanha&gt; — so o Copywriter\n\n` +
-
     `<b>Acompanhamento:</b>\n` +
-    `/status — ve qual agente esta rodando\n` +
+    `/status — etapa atual e agentes rodando\n` +
     `/outputs — lista campanhas prontas\n` +
-    `/enviar &lt;pasta&gt; — recebe os arquivos aqui`,
+    `/enviar &lt;pasta&gt; — recebe os arquivos aqui\n` +
+    `/helpaprovacoes — configurar modos de aprovação`,
+    { parse_mode: 'HTML' }
+  );
+});
+
+// ── /helpaprovacoes ────────────────────────────────────────────────────────
+
+bot.command('helpaprovacoes', async (ctx) => {
+  await ctx.reply(
+    `<b>APROVAÇÕES — Como funciona</b>\n\n` +
+
+    `O pipeline v3 tem <b>4 pontos de aprovação</b>, um por etapa:\n\n` +
+    `  <b>Etapa 1</b> — Brief Criativo\n` +
+    `  O Diretor de Criação entrega o ângulo estratégico da campanha.\n` +
+    `  Você aprova antes das imagens e copy serem gerados.\n\n` +
+    `  <b>Etapa 2</b> — Imagens & Copy\n` +
+    `  Imagens chegam ao vivo à medida que são geradas.\n` +
+    `  Copy (Instagram, Threads, YouTube) é mostrado para aprovação.\n\n` +
+    `  <b>Etapa 3</b> — Vídeo\n` +
+    `  Roteiro cena a cena é enviado para revisão antes da renderização.\n\n` +
+    `  <b>Etapa 4</b> — Distribuição\n` +
+    `  Confirmação final antes de publicar nas plataformas.\n\n` +
+
+    `<b>Modos por etapa:</b>\n\n` +
+    `  👤 <b>humano</b> — você recebe o resultado e responde <b>sim</b> ou <b>não</b> (padrão)\n` +
+    `  🤖 <b>agente</b> — Agente Revisor avalia e decide automaticamente; só notifica se pedir ajuste\n` +
+    `  ⚡ <b>auto</b> — avança sem nenhuma aprovação\n\n` +
+
+    `<b>Configurar antes de rodar:</b>\n` +
+    `Descreva no briefing:\n` +
+    `<i>"campanha de páscoa, aprovação por agente em tudo"</i>\n` +
+    `<i>"campanha sem aprovações, notificações desativadas"</i>\n` +
+    `<i>"aprovação humana só no brief e na distribuição"</i>\n\n` +
+
+    `<b>Configurar durante a campanha:</b>\n` +
+    `<code>/modos todas auto</code> — sem aprovações\n` +
+    `<code>/modos todas agente</code> — Agente Revisor em tudo\n` +
+    `<code>/modos 1 humano</code> — só etapa 1 com aprovação humana\n` +
+    `<code>/modos 3 auto</code> — vídeo sem aprovação\n` +
+    `<code>/modos notificacoes off</code> — silencia notificações de agentes\n\n` +
+
+    `<b>O Agente Revisor:</b>\n` +
+    `Quando modo <code>agente</code> está ativo, o revisor lê os outputs e decide:\n` +
+    `  ✅ Aprovado → avança automaticamente\n` +
+    `  ⚠️ Ajuste necessário → manda o feedback para você decidir\n\n` +
+
+    `<b>Respostas aceitas nas aprovações:</b>\n` +
+    `  <b>sim</b> / ok / confirma / vai / bora → avança\n` +
+    `  <b>não</b> / cancela → cancela a campanha\n` +
+    `  Qualquer texto longo → ajuste (ex: "deixa o copy mais direto")`,
     { parse_mode: 'HTML' }
   );
 });
@@ -600,9 +660,11 @@ bot.command('status', async (ctx) => {
 
   const agents = [
     'research_agent',
+    'creative_director',
     'ad_creative_designer',
-    'video_ad_specialist',
     'copywriter_agent',
+    'video_ad_specialist',
+    'motion_director',
     'distribution_agent',
   ];
 
@@ -617,9 +679,17 @@ bot.command('status', async (ctx) => {
     return `  ${a}: em progresso`;
   });
 
+  const cv = s.campaignV3;
+  let approvalStatus = '';
+  if (cv?.pendingApproval) {
+    const stageLabels = { 1: 'Brief Criativo', 2: 'Imagens & Copy', 3: 'Roteiro de Vídeo', 4: 'Distribuição' };
+    approvalStatus = `\n⏳ <b>Aguardando aprovação — Etapa ${cv.pendingApproval.stage}: ${stageLabels[cv.pendingApproval.stage] || ''}</b>`;
+  }
+
   await ctx.reply(
     `<b>Pipeline: ${s.runningTask.taskName}</b>\n` +
-    `Iniciado: ${s.runningTask.startedAt}\n\n` +
+    `Iniciado: ${s.runningTask.startedAt}` +
+    approvalStatus + '\n\n' +
     `<pre>${lines.join('\n')}</pre>`,
     { parse_mode: 'HTML' }
   );
@@ -819,6 +889,12 @@ bot.on('message:text', async (ctx) => {
   const chatId = String(ctx.chat.id);
   const s = session.get(chatId);
 
+  // ── V3 stage approval ──────────────────────────────────────────────────
+  if (s.campaignV3?.pendingApproval) {
+    const handled = await handleV3StageApproval(ctx, chatId, s, text);
+    if (handled) return;
+  }
+
   // ── Video storyboard approval ───────────────────────────────────────────
   if (s.pendingVideoApproval) {
     const lower = text.toLowerCase().trim();
@@ -904,7 +980,22 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       const payload = s.pendingCampaign;
       session.clearPendingCampaign(chatId);
 
-      const outputDir = `${payload.project_dir}/outputs/${payload.task_name}_${payload.task_date}`;
+      // Assign a global sequential counter per project: c0001-{name}, c0002-{name}, ...
+      const baseName = payload.task_name;
+      const outsDir = path.join(PROJECT_ROOT, payload.project_dir, 'outputs');
+      let nextCounter = 1;
+      if (fs.existsSync(outsDir)) {
+        const existing = fs.readdirSync(outsDir);
+        const re = /^c(\d{4})-/;
+        for (const folder of existing) {
+          const m = folder.match(re);
+          if (m) nextCounter = Math.max(nextCounter, parseInt(m[1], 10) + 1);
+        }
+      }
+      payload.task_name = `c${String(nextCounter).padStart(4, '0')}-${baseName}`;
+      const outputDir = `${payload.project_dir}/outputs/${payload.task_name}`;
+      payload.output_dir = outputDir;
+
       session.setRunningTask(chatId, {
         taskName: payload.task_name,
         taskDate: payload.task_date,
@@ -913,7 +1004,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       });
 
       await ctx.reply(`Iniciando pipeline <b>${payload.task_name}</b>...\n\nUse /status para acompanhar.`, { parse_mode: 'HTML' });
-      runPipeline(ctx, chatId, payload, outputDir);
+      runPipelineV3(ctx, chatId, payload, outputDir);
       return;
     }
 
@@ -1015,12 +1106,26 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     lines.push(`<b>Fluxo:</b> gerar imagens → você aprova → montar criativos e vídeo`);
   }
 
+  const audioLabels = { narration: '🎙 Narração (voz)', music: '🎵 Música de fundo', both: '🎙🎵 Narração + Música', none: '🔇 Sem áudio' };
   lines.push(
     `<b>Videos:</b> ${payload.video_count}`,
+    `<b>Áudio do vídeo:</b> ${audioLabels[payload.video_audio] || '🎙 Narração (padrão)'}`,
     `<b>Idioma:</b> ${payload.language}`,
   );
 
   if (skipFlags.length > 0) lines.push(`<b>Pular:</b> ${skipFlags.join(', ')}`);
+
+  // Approval modes summary
+  const modes = payload.approval_modes || {};
+  const modeLabel = { humano: '👤', agente: '🤖', auto: '⚡' };
+  const modeNames = { humano: 'humano', agente: 'agente', auto: 'auto' };
+  const stageNames = { stage1: 'Brief', stage2: 'Criativos', stage3: 'Vídeo', stage4: 'Distribuição' };
+  const modeParts = Object.entries(stageNames).map(([key, label]) => {
+    const m = modes[key] || 'humano';
+    return `${modeLabel[m] || '👤'} ${label}`;
+  });
+  lines.push(`<b>Aprovações:</b> ${modeParts.join(' → ')}`);
+  lines.push(`<b>Notificações:</b> ${payload.notifications === false ? 'desativadas' : 'ativadas'}`);
 
   if (isApi && payload.use_brand_overlay === undefined) {
     // brand_overlay not explicitly set — ask
@@ -1079,6 +1184,14 @@ Return a JSON object with these fields:
   "video_count": 1,
   "image_source": "brand",
   "image_model": "${process.env.KIE_DEFAULT_MODEL || 'z-image'}",
+  "approval_modes": {
+    "stage1": "humano",
+    "stage2": "humano",
+    "stage3": "humano",
+    "stage4": "humano"
+  },
+  "notifications": true,
+  "video_audio": "narration",
   "campaign_brief": "full campaign brief in pt-BR summarizing the intent, audience, tone, key messages"
 }
 
@@ -1088,6 +1201,9 @@ Rules:
 - video_count: how many videos requested (default 1)
 - image_source: "brand" if user mentions brand images; "pexels" if free stock photos; "api" if paid AI image generation
 - image_model: only relevant when image_source is "api". Default is ALWAYS "${process.env.KIE_DEFAULT_MODEL || 'z-image'}" (from .env). Only change if the user explicitly requests a different model. Options: "z-image", "z-image-turbo", "flux-kontext-pro", "flux-kontext-max", "gpt-image-1".
+- approval_modes: each stage can be "humano" (user must approve), "agente" (AI reviewer decides), or "auto" (advance automatically). Default "humano" for all. Set to "auto" if user says "sem aprovações", "automático", "full auto". Set to "agente" if user says "aprovação por agente", "agente revisa".
+- notifications: false only if user explicitly says "sem notificações", "silencioso", "não notificar".
+- video_audio: "narration" if user wants voiceover/narração (default), "music" if user wants background music only, "both" if user wants narration + music, "none" for silent/no audio.
 - campaign_brief: comprehensive summary of everything the user described
 - Return ONLY the JSON object, no markdown, no explanation`;
 
@@ -1231,10 +1347,8 @@ function runPipeline(ctx, chatId, payload, outputDir) {
         const match = text.match(/\[IMAGE_APPROVAL_NEEDED\]\s*(\S+)/);
         if (match) {
           const approvalOutputDir = match[1];
-          ctx.reply('Imagens geradas! Enviando para sua aprovação...').then(() => {
-            sendImageApprovalRequest(ctx, chatId, approvalOutputDir).catch(e => {
-              console.error('Error sending image approval:', e.message);
-            });
+          sendImageApprovalRequest(null, chatId, approvalOutputDir).catch(e => {
+            console.error('Error sending image approval:', e.message);
           });
         }
       }
@@ -1289,7 +1403,7 @@ function runPipeline(ctx, chatId, payload, outputDir) {
         worker.kill('SIGTERM');
         session.clearRunningTask(chatId);
 
-        const folderName = `${payload.task_name}_${payload.task_date}`;
+        const folderName = payload.task_name;
         const absOutputDir = path.join(PROJECT_ROOT, outputDir);
 
         ctx.reply(
@@ -1307,6 +1421,440 @@ function runPipeline(ctx, chatId, payload, outputDir) {
       ctx.reply('Pipeline timeout (30 min). Verifique /status.');
     }, 1800000);
   });
+}
+
+// ── V3 Pipeline runner ───────────────────────────────────────────────────────
+
+function runPipelineV3(ctx, chatId, payload, outputDir) {
+  const absOutputDir = path.resolve(PROJECT_ROOT, outputDir);
+  fs.mkdirSync(absOutputDir, { recursive: true });
+  fs.writeFileSync(path.join(absOutputDir, 'chat_context.json'),
+    JSON.stringify({ chatId: String(chatId), ts: Date.now() }));
+
+  const approvalModes = payload.approval_modes || {
+    stage1: 'humano', stage2: 'humano', stage3: 'humano', stage4: 'humano',
+  };
+
+  session.setCampaignV3(chatId, {
+    payload,
+    outputDir,
+    currentStage: 1,
+    pendingApproval: null,
+    stageResults: { stage1: null, stage2: null, stage3: null, stage4: null },
+    approvalModes,
+    notifications: payload.notifications !== false,
+  });
+
+  // Track which stage-2/3/4 agents have completed (in-memory, not in session)
+  const stageAgentsDone = { stage2: new Set(), stage3: new Set(), stage4: new Set() };
+
+  // ctx expires after the Telegram update — use bot.api for async messages
+  const botCtx = {
+    reply: (text, opts) => bot.api.sendMessage(chatId, text, opts).catch(e => console.error('[v3 send]', e.message)),
+    replyWithPhoto: (photo, opts) => bot.api.sendPhoto(chatId, photo, opts).catch(e => console.error('[v3 photo]', e.message)),
+    chat: { id: chatId },
+    api: bot.api,
+  };
+
+  // Start worker — stays alive for the entire campaign
+  const worker = spawn('node', ['pipeline/worker.js'], {
+    cwd: PROJECT_ROOT,
+    env: { ...process.env },
+  });
+
+  worker.stdout.on('data', (d) => {
+    const text = d.toString();
+    console.log('[worker]', text.slice(0, 200));
+
+    // Stage 1 complete — creative brief ready
+    if (text.includes('[STAGE1_DONE]')) {
+      console.log('[v3] STAGE1_DONE received');
+      session.updateCampaignV3Stage(chatId, 1, { status: 'done' });
+      sendStageApprovalRequest(botCtx, chatId, 1).catch(e =>
+        console.error('[v3] stage1 approval error:', e.message)
+      );
+    }
+
+    // Live image streaming — forward each image as it arrives
+    if (text.includes('[STAGE2_IMAGE_READY]')) {
+      const match = text.match(/\[STAGE2_IMAGE_READY\]\s*\S+\s+(\S+)/);
+      if (match) {
+        const imgPath = match[1];
+        if (fs.existsSync(imgPath)) {
+          bot.api.sendPhoto(chatId, new InputFile(imgPath), {
+            caption: path.basename(imgPath),
+          }).catch(e => console.error('[v3 photo]', e.message));
+        }
+      }
+    }
+
+    // In v3, image/video approval happens at stage level — unblock the worker immediately
+    // Anchored to line-start to avoid matching the [AGENT] log prefix lines
+    if (text.includes('[IMAGE_APPROVAL_NEEDED]')) {
+      const match = text.match(/(?:^|\n)\[IMAGE_APPROVAL_NEEDED\]\s*(\S+)/);
+      if (match) {
+        const approvedPath = path.resolve(PROJECT_ROOT, match[1], 'imgs', 'approved.json');
+        fs.mkdirSync(path.dirname(approvedPath), { recursive: true });
+        fs.writeFileSync(approvedPath, JSON.stringify({ approved: true, by: 'v3_stage_gate', ts: Date.now() }));
+        console.log('[v3] auto-approved worker image gate:', match[1]);
+      }
+    }
+
+    if (text.includes('[VIDEO_APPROVAL_NEEDED]')) {
+      const match = text.match(/(?:^|\n)\[VIDEO_APPROVAL_NEEDED\]\s*(\S+)/);
+      if (match) {
+        const approvedPath = path.resolve(PROJECT_ROOT, match[1], 'video', 'approved.json');
+        fs.mkdirSync(path.dirname(approvedPath), { recursive: true });
+        fs.writeFileSync(approvedPath, JSON.stringify({ approved: true, by: 'v3_stage_gate', ts: Date.now() }));
+        console.log('[v3] auto-approved worker video gate:', match[1]);
+      }
+    }
+
+    // Track agent completions for stage advancement
+    if (text.includes('Job completed:')) {
+      const match = text.match(/Job completed:\s*(\S+)/);
+      if (match) {
+        const agentName = match[1];
+        console.log('[v3] Job completed:', agentName);
+        const cv = session.getCampaignV3(chatId);
+        if (!cv) return;
+
+        if (cv.notifications) {
+          bot.api.sendMessage(chatId, `✅ Agente concluído: <code>${agentName}</code>`, { parse_mode: 'HTML' })
+            .catch(() => {});
+        }
+
+        // Stage 2: ad_creative_designer + copywriter_agent
+        if (STAGES.stage2.includes(agentName)) {
+          stageAgentsDone.stage2.add(agentName);
+          const active2 = STAGES.stage2.filter(a =>
+            !(a === 'ad_creative_designer' && cv.payload.skip_image)
+          );
+          if (active2.every(a => stageAgentsDone.stage2.has(a))) {
+            session.updateCampaignV3Stage(chatId, 2, { status: 'done' });
+            sendStageApprovalRequest(botCtx, chatId, 2).catch(e =>
+              console.error('[v3] stage2 approval error:', e.message)
+            );
+          }
+        }
+
+        // Stage 3: video_ad_specialist
+        if (STAGES.stage3.includes(agentName)) {
+          stageAgentsDone.stage3.add(agentName);
+          const active3 = STAGES.stage3.filter(a =>
+            !(a === 'video_ad_specialist' && cv.payload.skip_video)
+          );
+          if (active3.every(a => stageAgentsDone.stage3.has(a))) {
+            session.updateCampaignV3Stage(chatId, 3, { status: 'done' });
+            sendStageApprovalRequest(botCtx, chatId, 3).catch(e =>
+              console.error('[v3] stage3 approval error:', e.message)
+            );
+          }
+        }
+
+        // Stage 4: distribution complete
+        if (STAGES.stage4.includes(agentName)) {
+          stageAgentsDone.stage4.add(agentName);
+          if (STAGES.stage4.every(a => stageAgentsDone.stage4.has(a))) {
+            worker.kill('SIGTERM');
+            session.clearRunningTask(chatId);
+            session.clearCampaignV3(chatId);
+            const folderName = payload.task_name;
+            bot.api.sendMessage(chatId, `🎉 Campanha <b>${payload.task_name}</b> publicada!`, { parse_mode: 'HTML' })
+              .then(() => sendCampaignReport(botCtx, absOutputDir, folderName))
+              .catch(() => {});
+          }
+        }
+      }
+    }
+
+    if (text.includes('Job failed:')) {
+      const match = text.match(/Job failed:\s*(\S+)/);
+      if (match) {
+        console.error('[v3] Job failed:', match[1]);
+        bot.api.sendMessage(chatId, `❌ Agente FALHOU: <code>${match[1]}</code>`, { parse_mode: 'HTML' })
+          .catch(() => {});
+      }
+    }
+  });
+
+  worker.stderr.on('data', (d) => {
+    const text = d.toString();
+    if (text.includes('Error') || text.includes('error')) {
+      console.error('[worker stderr]', text.slice(0, 200));
+      bot.api.sendMessage(chatId, `Worker erro: ${text.slice(0, 500)}`).catch(() => {});
+    }
+  });
+
+  // Timeout after 90 min
+  setTimeout(() => {
+    const cv = session.getCampaignV3(chatId);
+    if (cv) {
+      worker.kill('SIGTERM');
+      session.clearRunningTask(chatId);
+      session.clearCampaignV3(chatId);
+      bot.api.sendMessage(chatId, 'Pipeline v3 timeout (90 min). Verifique /status.').catch(() => {});
+    }
+  }, 5400000);
+
+  // Enqueue stage 1
+  ctx.reply('Iniciando etapa 1/4 — Pesquisa & Brief Criativo...').then(() => {
+    _enqueueStage(payload, STAGES.stage1)
+      .then(() => ctx.reply('Pesquisa em andamento. Aguarde o brief criativo...').catch(() => {}))
+      .catch(e => ctx.reply(`Erro ao enfileirar etapa 1: ${e.message}`).catch(() => {}));
+  }).catch(() => {});
+}
+
+async function runStage(ctx, chatId, stageNumber) {
+  const cv = session.getCampaignV3(chatId);
+  const send = (t, o) => bot.api.sendMessage(chatId, t, o).catch(() => {});
+  if (!cv) { await send('Nenhuma campanha v3 ativa.'); return; }
+
+  session.setCampaignV3Stage(chatId, stageNumber);
+  session.clearPendingStageApproval(chatId);
+
+  const stageKey = `stage${stageNumber}`;
+  const agentNames = STAGES[stageKey];
+  if (!agentNames) { await send('Pipeline v3 completo!'); return; }
+
+  const labels = { 2: 'Criação de imagens & copy', 3: 'Produção de vídeo', 4: 'Distribuição' };
+  await send(`Avançando para etapa ${stageNumber}/4 — ${labels[stageNumber] || `Etapa ${stageNumber}`}...`);
+
+  try {
+    await _enqueueStage(cv.payload, agentNames);
+    await send(`Etapa ${stageNumber} na fila. Processando...`);
+  } catch (e) {
+    await send(`Erro ao enfileirar etapa ${stageNumber}: ${e.message}`);
+  }
+}
+
+function runAgentReview(ctx, chatId, stage, outputDir) {
+  const cv = session.getCampaignV3(chatId);
+  if (!cv) return;
+
+  const absOutputDir = path.resolve(PROJECT_ROOT, outputDir);
+  const stageLabels = { 1: 'Brief Criativo', 2: 'Imagens & Copy', 3: 'Vídeo', 4: 'Distribuição' };
+
+  const prompt = `You are the Agente Revisor. Follow the skill defined in skills/agente-revisor/SKILL.md exactly.
+
+Review Stage ${stage} (${stageLabels[stage] || `Stage ${stage}`}) outputs.
+
+Project dir: ${cv.payload.project_dir}
+Output dir: ${outputDir}
+
+Read the relevant files for Stage ${stage} as specified in the skill.
+Then print your decision in exactly the required format: [AGENTE_APROVADO] or [AGENTE_AJUSTE].`;
+
+  runClaude(prompt, 'agente_revisor', (code, stdout) => {
+    if (code !== 0) {
+      // Fallback to human approval on agent error
+      ctx.reply(`Agente Revisor encontrou um erro na etapa ${stage}. Enviando para revisão humana...`)
+        .then(() => sendStageApprovalRequest(ctx, chatId, stage))
+        .catch(() => {});
+      return;
+    }
+
+    const approvedMatch = stdout.match(/\[AGENTE_APROVADO\][^\n]*\nRaz[ãa]o:\s*(.+)/i);
+    const adjustMatch  = stdout.match(/\[AGENTE_AJUSTE\][^\n]*\nFeedback:\s*([\s\S]+)/i);
+
+    if (approvedMatch) {
+      const reason = approvedMatch[1].trim();
+      ctx.reply(
+        `<b>Agente Revisor — Etapa ${stage} aprovada ✅</b>\n\n<i>${escapeHtml(reason)}</i>`,
+        { parse_mode: 'HTML' }
+      ).then(() => runStage(ctx, chatId, stage + 1)).catch(() => {});
+    } else if (adjustMatch) {
+      const feedback = adjustMatch[1].trim().slice(0, 800);
+      // Notify user of agent feedback, then fall to human to decide
+      ctx.reply(
+        `<b>Agente Revisor — Etapa ${stage} precisa de ajustes</b>\n\n` +
+        `<i>${escapeHtml(feedback)}</i>\n\n` +
+        `Responda <b>sim</b> para ignorar e continuar, <b>não</b> para cancelar, ` +
+        `ou descreva como corrigir.`,
+        { parse_mode: 'HTML' }
+      ).then(() => {
+        session.setPendingStageApproval(chatId, { stage, type: 'agente_feedback', feedback });
+      }).catch(() => {});
+    } else {
+      // Could not parse agent output — escalate to human
+      ctx.reply(`Agente Revisor não retornou decisão clara na etapa ${stage}. Enviando para revisão humana...`)
+        .then(() => sendStageApprovalRequest(ctx, chatId, stage))
+        .catch(() => {});
+    }
+  });
+}
+
+async function sendStageApprovalRequest(ctx, chatId, stage) {
+  const cv = session.getCampaignV3(chatId);
+  if (!cv) return;
+
+  const mode = cv.approvalModes[`stage${stage}`] || 'humano';
+  const outputDir = cv.outputDir;
+
+  // Auto mode — advance without any review
+  if (mode === 'auto') {
+    await ctx.reply(`Etapa ${stage} concluída — avançando automaticamente...`).catch(() => {});
+    await runStage(ctx, chatId, stage + 1);
+    return;
+  }
+
+  // Agente mode — Agente Revisor evaluates and decides
+  if (mode === 'agente') {
+    await ctx.reply(`Etapa ${stage} concluída — Agente Revisor avaliando...`).catch(() => {});
+    runAgentReview(ctx, chatId, stage, outputDir);
+    return;
+  }
+
+  // humano mode
+  session.setPendingStageApproval(chatId, { stage, type: 'humano' });
+
+  if (stage === 1) {
+    const briefPath = path.join(PROJECT_ROOT, outputDir, 'creative', 'creative_brief.md');
+    if (fs.existsSync(briefPath)) {
+      const brief = fs.readFileSync(briefPath, 'utf-8');
+      for (const part of splitMessage(toTelegramHTML(brief))) {
+        await ctx.reply(part, { parse_mode: 'HTML' }).catch(() => ctx.reply(part));
+      }
+    }
+    await ctx.reply(
+      '<b>Brief criativo pronto — Etapa 1/4 ✅</b>\n\n' +
+      'Responda <b>sim</b> para avançar para imagens e copy.\n' +
+      '<b>não</b> para cancelar a campanha.\n' +
+      'Ou descreva ajustes.',
+      { parse_mode: 'HTML' }
+    );
+  } else if (stage === 2) {
+    // 1. Copy first
+    const lines = ['<b>Imagens e copy prontos — Etapa 2/4 ✅</b>\n'];
+    const captionPath = path.join(PROJECT_ROOT, outputDir, 'copy', 'instagram_caption.txt');
+    const threadsPath = path.join(PROJECT_ROOT, outputDir, 'copy', 'threads_post.txt');
+    if (fs.existsSync(captionPath)) {
+      lines.push('<b>📝 Instagram:</b>');
+      lines.push(`<i>${escapeHtml(fs.readFileSync(captionPath, 'utf-8').slice(0, 300))}</i>\n`);
+    }
+    if (fs.existsSync(threadsPath)) {
+      lines.push('<b>📝 Threads:</b>');
+      lines.push(`<i>${escapeHtml(fs.readFileSync(threadsPath, 'utf-8').slice(0, 200))}</i>\n`);
+    }
+    await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
+
+    // 2. Images after copy
+    const imgsDir = path.join(PROJECT_ROOT, outputDir, 'imgs');
+    if (fs.existsSync(imgsDir)) {
+      const imgFiles = fs.readdirSync(imgsDir)
+        .filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f) && f !== 'approved.json')
+        .sort();
+      for (const f of imgFiles) {
+        await bot.api.sendPhoto(chatId, new InputFile(path.join(imgsDir, f)), {
+          caption: `🖼 ${f}`,
+        }).catch(e => console.error('[stage2 img]', e.message));
+      }
+    }
+
+    // 3. Approval question
+    await ctx.reply(
+      'Responda <b>sim</b> para avançar para vídeo.\nOu descreva o que ajustar nas imagens ou no copy.',
+      { parse_mode: 'HTML' }
+    );
+  } else if (stage === 3) {
+    const msg = formatStoryboardMessage(path.join(PROJECT_ROOT, outputDir));
+    if (msg) {
+      await ctx.reply(msg, { parse_mode: 'HTML' });
+    } else {
+      await ctx.reply(
+        '<b>Etapa 3/4 ✅ — Vídeo pronto</b>\n\n' +
+        'Responda <b>sim</b> para avançar para distribuição.\n<b>não</b> para cancelar.',
+        { parse_mode: 'HTML' }
+      );
+    }
+  } else if (stage === 4) {
+    await ctx.reply(
+      '<b>Pronto para distribuição — Etapa 4/4</b>\n\n' +
+      'Tudo certo para publicar nas plataformas configuradas.\n' +
+      'Responda <b>sim</b> para iniciar a distribuição.\n<b>não</b> para cancelar.',
+      { parse_mode: 'HTML' }
+    );
+  }
+}
+
+async function handleV3StageApproval(ctx, chatId, s, text) {
+  const cv = s.campaignV3;
+  if (!cv?.pendingApproval) return false;
+
+  const lower = text.toLowerCase().trim();
+  const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda)/.test(lower);
+  const isCancel  = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);
+  const stage = cv.pendingApproval.stage;
+
+  if (isConfirm) {
+    await runStage(ctx, chatId, stage + 1);
+    return true;
+  }
+
+  if (isCancel) {
+    session.clearPendingStageApproval(chatId);
+    session.clearCampaignV3(chatId);
+    session.clearRunningTask(chatId);
+    await ctx.reply(`Campanha cancelada na etapa ${stage}.`);
+    return true;
+  }
+
+  // Adjustment requests
+  if (lower.length > 10) {
+    if (stage === 1) {
+      await ctx.reply('Revisando o brief criativo...');
+      const adjustPrompt = `Revise the creative brief based on this feedback: "${text}"
+
+Read current brief at ${path.join(PROJECT_ROOT, cv.outputDir, 'creative', 'creative_brief.md')} and ${path.join(PROJECT_ROOT, cv.outputDir, 'creative', 'creative_brief.json')}.
+Apply the feedback, save updated versions to the same paths.
+After saving both files, print exactly: [STAGE1_DONE] ${cv.outputDir}`;
+      runClaude(adjustPrompt, 'brief_adjustment', (code) => {
+        if (code !== 0) ctx.reply('Erro ao ajustar o brief.').catch(() => {});
+        // [STAGE1_DONE] re-triggers approval flow via worker stdout handler
+      });
+    } else if (stage === 2) {
+      await ctx.reply('Ajustando copy com seu feedback...');
+      const copyDir = path.join(PROJECT_ROOT, cv.outputDir, 'copy');
+      const adjustPrompt = `You are the Copywriter Agent. Adjust the existing copy based on this feedback: "${text}"
+
+Read the current copy files:
+- ${path.join(copyDir, 'instagram_caption.txt')}
+- ${path.join(copyDir, 'threads_post.txt')}
+- ${path.join(copyDir, 'youtube_metadata.json')}
+
+Also read the brand guidelines at ${path.join(PROJECT_ROOT, cv.payload.project_dir, 'knowledge', 'brand_identity.md')}
+
+Apply the feedback, update only what was asked. Save the revised files to the same paths. Keep the same file format.`;
+      runClaude(adjustPrompt, 'copy_adjustment', (code) => {
+        const _ctx = { reply: (t, o) => bot.api.sendMessage(chatId, t, o).catch(() => {}), chat: { id: chatId }, api: bot.api };
+        if (code !== 0) { _ctx.reply('Erro ao ajustar o copy.'); return; }
+        sendStageApprovalRequest(_ctx, chatId, 2).catch(() => {});
+      });
+    } else if (stage === 3) {
+      await ctx.reply('Ajustando o roteiro do vídeo...');
+      const videoDir = path.join(PROJECT_ROOT, cv.outputDir, 'video');
+      const planFiles = fs.existsSync(videoDir)
+        ? fs.readdirSync(videoDir).filter(f => f.endsWith('_scene_plan.json'))
+          .map(f => path.join(videoDir, f))
+        : [];
+      if (planFiles.length === 0) {
+        await ctx.reply('Nenhum roteiro encontrado para ajustar.');
+        return true;
+      }
+      const adjustPrompt = `Adjust the video scene plans based on this feedback: "${text}"
+Scene plan files:\n${planFiles.join('\n')}
+Read each, apply feedback, save to same paths. Keep same JSON structure.`;
+      runClaude(adjustPrompt, 'video_adjustment', (code) => {
+        if (code !== 0) { ctx.reply('Erro ao ajustar o roteiro.').catch(() => {}); return; }
+        sendStageApprovalRequest(ctx, chatId, 3).catch(() => {});
+      });
+    } else if (stage === 4) {
+      await ctx.reply('Responda <b>sim</b> para distribuir ou <b>não</b> para cancelar.', { parse_mode: 'HTML' });
+    }
+    return true;
+  }
+
+  return true; // consumed
 }
 
 // ── Claude CLI runner (for individual agents) ───────────────────────────────
@@ -1485,7 +2033,7 @@ function escapeHtml(str) {
 
 // ── Image approval ───────────────────────────────────────────────────────────
 
-async function sendImageApprovalRequest(ctx, chatId, outputDir) {
+async function sendImageApprovalRequest(_ctx, chatId, outputDir) {
   const absImgsDir = path.join(PROJECT_ROOT, outputDir, 'imgs');
   if (!fs.existsSync(absImgsDir)) {
     writeImageApproval(outputDir, true);
@@ -1505,22 +2053,22 @@ async function sendImageApprovalRequest(ctx, chatId, outputDir) {
 
   session.setPendingVideoApproval(chatId, { outputDir, type: 'images' });
 
-  await ctx.reply(
+  await bot.api.sendMessage(chatId,
     `🖼 <b>${images.length} imagens geradas — aprove antes de montar os criativos</b>\n\nEnviando uma por uma...`,
     { parse_mode: 'HTML' }
   );
 
   for (const imgPath of images) {
     try {
-      await ctx.replyWithPhoto(new (require('grammy').InputFile)(imgPath), {
+      await bot.api.sendPhoto(chatId, new InputFile(imgPath), {
         caption: path.basename(imgPath),
       });
     } catch (e) {
-      await ctx.reply(`(não foi possível enviar ${path.basename(imgPath)})`);
+      await bot.api.sendMessage(chatId, `(não foi possível enviar ${path.basename(imgPath)})`).catch(() => {});
     }
   }
 
-  await ctx.reply(
+  await bot.api.sendMessage(chatId,
     `Responda <b>sim</b> para usar estas imagens e continuar.\n` +
     `<b>não</b> para cancelar.\n` +
     `Ou descreva o que ajustar e vou regenerar.`,
@@ -1633,6 +2181,70 @@ bot.command('aprovar', async (ctx) => {
   await scanPendingApprovals(ctx.chat.id.toString(), ctx);
 });
 
+// ── /modos — configure approval modes for active campaign ────────────────────
+
+bot.command('modos', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const cv = session.getCampaignV3(chatId);
+  const arg = ctx.match?.trim().toLowerCase();
+
+  if (!cv) {
+    await ctx.reply(
+      '<b>Modos de aprovação</b>\n\n' +
+      'Use este comando durante uma campanha ativa para ajustar os modos por etapa.\n\n' +
+      'Sintaxe: <code>/modos [etapa] [modo]</code>\n\n' +
+      'Etapas: <code>1</code> (brief), <code>2</code> (criativos), <code>3</code> (vídeo), <code>4</code> (distribuição), <code>todas</code>\n' +
+      'Modos:\n' +
+      '  👤 <code>humano</code> — você aprova antes de avançar\n' +
+      '  🤖 <code>agente</code> — Agente Revisor decide\n' +
+      '  ⚡ <code>auto</code> — avança automaticamente sem aprovação\n\n' +
+      'Exemplos:\n' +
+      '<code>/modos todas auto</code> — sem aprovações\n' +
+      '<code>/modos 1 humano</code> — só etapa 1 com aprovação humana\n' +
+      '<code>/modos notificacoes off</code> — silencia notificações',
+      { parse_mode: 'HTML' }
+    );
+    return;
+  }
+
+  // Parse /modos <target> <mode>
+  const parts = arg ? arg.split(/\s+/) : [];
+  const target = parts[0];
+  const mode   = parts[1];
+
+  // Notification toggle
+  if (target === 'notificacoes' || target === 'notificações') {
+    cv.notifications = !(mode === 'off' || mode === 'nao' || mode === 'não' || mode === 'false');
+    await ctx.reply(`Notificações ${cv.notifications ? 'ativadas ✅' : 'desativadas 🔇'}`);
+    return;
+  }
+
+  const validModes = ['humano', 'agente', 'auto'];
+  if (!target || !mode || !validModes.includes(mode)) {
+    await ctx.reply(
+      'Use: <code>/modos [1|2|3|4|todas] [humano|agente|auto]</code>\n' +
+      'Ou: <code>/modos notificacoes [on|off]</code>',
+      { parse_mode: 'HTML' }
+    );
+    return;
+  }
+
+  const stageMap = { '1': 'stage1', '2': 'stage2', '3': 'stage3', '4': 'stage4' };
+  if (target === 'todas' || target === 'all') {
+    ['stage1','stage2','stage3','stage4'].forEach(s => { cv.approvalModes[s] = mode; });
+    await ctx.reply(`Todas as etapas definidas como <b>${mode}</b>.`, { parse_mode: 'HTML' });
+  } else if (stageMap[target]) {
+    cv.approvalModes[stageMap[target]] = mode;
+    const stageLabels = { stage1: 'Brief', stage2: 'Criativos', stage3: 'Vídeo', stage4: 'Distribuição' };
+    await ctx.reply(
+      `Etapa ${target} (${stageLabels[stageMap[target]]}) definida como <b>${mode}</b>.`,
+      { parse_mode: 'HTML' }
+    );
+  } else {
+    await ctx.reply('Etapa inválida. Use 1, 2, 3, 4 ou todas.');
+  }
+});
+
 /**
  * Scans all project outputs for pending approval_needed.json files.
  * Sends approval requests to the matching chat.
@@ -1707,6 +2319,14 @@ bot.start({
     console.log(`Bot @${botInfo.username} rodando (long-polling)`);
     console.log(`Projeto padrao: ${session.DEFAULT_PROJECT}`);
     console.log('Ctrl+C para parar.\n');
+
+    // Kill any stale worker processes from previous bot sessions
+    try {
+      const { spawnSync } = require('child_process');
+      spawnSync('pkill', ['-f', 'pipeline/worker.js'], { stdio: 'ignore' });
+      console.log('Stale workers cleared.');
+    } catch (_) { /* none running */ }
+
     // Scan for pending approvals left over from before restart
     await scanPendingApprovals(null, null);
   },

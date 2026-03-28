@@ -136,25 +136,30 @@ function renderVideo(scenePlanPath, outputPath) {
         .replace(/\[/g, '\\[')
         .replace(/\]/g, '\\]');
 
-      // Font size based on text length
-      const fontSize = textOverlay.length > 60 ? 52 : textOverlay.length > 30 ? 64 : 80;
+      // ── Motion config — from motion director or fallback defaults ────────────
+      const motionConfig = scene.motion || {};
+      const motionTypes = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left'];
+      const motionType = motionConfig.type || motionTypes[i % motionTypes.length];
+      const zoomStart = motionConfig.zoom_start ?? 1.0;
+      const zoomEnd   = motionConfig.zoom_end   ?? 1.08;
 
-      // image_type: 'banner' → only scale/letterbox (no crop, no Ken Burns)
-      //             'raw'   → Ken Burns zoom/pan (default)
-      //             'clip'  → handled separately as video input
+      // ── Text layout config — from motion director or fallback defaults ────────
+      const textLayout = scene.text_layout || {};
+      const fontSize     = textLayout.font_size         || (textOverlay.length > 60 ? 52 : textOverlay.length > 30 ? 64 : 80);
+      const textPosition = textLayout.position          || 'bottom';
+      const safeMargin   = textLayout.safe_margin       || 120;
+      const bgType       = textLayout.background        || 'gradient';
+      const bgOpacity    = textLayout.background_opacity ?? 0.60;
+      const maxWidthPct  = textLayout.max_width_pct     || 85;
+
+      // ── image_type ────────────────────────────────────────────────────────────
       const imageType = scene.image_type || 'raw';
       const isBanner = imageType === 'banner';
 
-      // Ken Burns motion type: alternate zoom-in / zoom-out / pan-right / pan-left per scene
-      const motionTypes = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left'];
-      const motionType = motionTypes[i % motionTypes.length];
       const fps = 30;
       const totalFrames = Math.round(duration * fps);
 
-      // Ken Burns zoompan filter
-      // Zoom range: 1.0 to 1.08 (subtle — prevents distortion on vertical video)
-      const zoomStart = 1.0;
-      const zoomEnd = 1.08;
+      // ── Ken Burns zoompan filter ──────────────────────────────────────────────
       let kbFilter = '';
       if (motionType === 'zoom_in') {
         kbFilter = `zoompan=z='${zoomStart}+(${zoomEnd}-${zoomStart})*on/${totalFrames}':` +
@@ -168,58 +173,88 @@ function renderVideo(scenePlanPath, outputPath) {
         kbFilter = `zoompan=z='${zoomEnd}':` +
           `x='(iw-(iw/zoom))*on/${totalFrames}':y='ih/2-(ih/zoom/2)':` +
           `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
-      } else { // pan_left
+      } else if (motionType === 'pan_left') {
         kbFilter = `zoompan=z='${zoomEnd}':` +
           `x='(iw-(iw/zoom))*(1-on/${totalFrames})':y='ih/2-(ih/zoom/2)':` +
           `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
+      } else {
+        // static — minimal zoom to avoid pure freeze
+        kbFilter = `zoompan=z='${zoomStart}':` +
+          `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':` +
+          `d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
       }
 
-      // Fade in/out for the segment (0.4s each)
+      // ── Fade in/out ───────────────────────────────────────────────────────────
       const fadeDur = Math.min(0.4, duration / 4);
       const fadeOut = duration - fadeDur;
       const fadeFilter = `fade=t=in:st=0:d=${fadeDur},fade=t=out:st=${fadeOut.toFixed(2)}:d=${fadeDur}`;
 
-      // Text fade-in: alpha goes from 0 to 1 over first 0.5s
+      // ── Text fade-in alpha ────────────────────────────────────────────────────
       const textFadeFrames = Math.round(0.5 * fps);
       const alphaExpr = `if(lt(n,${textFadeFrames}),n/${textFadeFrames},1)`;
+
+      // ── Text Y position (drawtext supports expressions) ───────────────────────
+      let textY;
+      if (textPosition === 'top') {
+        textY = String(safeMargin);
+      } else if (textPosition === 'center') {
+        textY = `(h/2-${Math.round(fontSize / 2)})`;
+      } else {
+        // bottom — safe margin from edge
+        textY = `h-${safeMargin + fontSize}`;
+      }
 
       let vfParts = [];
 
       if (imgSrc && fs.existsSync(imgSrc)) {
         if (isBanner || imageType === 'clip') {
-          // Banner or video clip: scale to fit with letterbox/pillarbox — never crop edges
           vfParts.push(
             `scale=${vidW}:${vidH}:force_original_aspect_ratio=decrease,` +
             `pad=${vidW}:${vidH}:(ow-iw)/2:(oh-ih)/2:color=black`
           );
         } else {
-          // Raw photo: scale to 2x then Ken Burns (zoom/pan)
           vfParts.push(`scale=${vidW * 2}:${vidH * 2}:force_original_aspect_ratio=increase`);
           vfParts.push(kbFilter);
         }
       } else {
-        // Solid dark background — just scale, no KB
         vfParts.push(`scale=${vidW}:${vidH}`);
       }
 
-      // Fade in/out on the segment
       vfParts.push(fadeFilter);
 
       if (escapedText) {
-        // Gradient scrim at bottom for text readability
-        vfParts.push(
-          `drawbox=x=0:y=ih-${fontSize * 3 + 20}:w=iw:h=${fontSize * 3 + 20}:` +
-          `color=black@0.0:t=fill`  // transparent base — gradient done via drawtext positioning
-        );
-        // Dark gradient overlay (simulate with two overlapping boxes)
-        vfParts.push(
-          `drawbox=x=0:y=ih*0.55:w=iw:h=ih*0.45:color=black@0.6:t=fill`
-        );
-        // Text with fade-in alpha
+        // ── Background behind text ──────────────────────────────────────────────
+        if (bgType === 'dark_box') {
+          // Caixa semi-transparente atrás do texto
+          const boxW = Math.round(vidW * maxWidthPct / 100);
+          const boxH = Math.round(fontSize * 1.8);
+          const boxX = Math.round((vidW - boxW) / 2);
+          let boxY;
+          if (textPosition === 'top') {
+            boxY = Math.max(0, safeMargin - Math.round(fontSize * 0.4));
+          } else if (textPosition === 'center') {
+            boxY = Math.round(vidH / 2) - Math.round(fontSize * 0.9);
+          } else {
+            boxY = vidH - safeMargin - Math.round(fontSize * 1.5);
+          }
+          vfParts.push(
+            `drawbox=x=${boxX}:y=${boxY}:w=${boxW}:h=${boxH}:color=black@${bgOpacity}:t=fill`
+          );
+        } else if (bgType === 'gradient' || bgType !== 'none') {
+          // Gradiente escuro cobrindo a região relevante da tela
+          if (textPosition === 'top') {
+            vfParts.push(`drawbox=x=0:y=0:w=iw:h=ih*0.40:color=black@${bgOpacity}:t=fill`);
+          } else {
+            vfParts.push(`drawbox=x=0:y=ih*0.55:w=iw:h=ih*0.45:color=black@${bgOpacity}:t=fill`);
+          }
+        }
+        // bgType === 'none' → sem fundo, só shadow no texto
+
+        // ── drawtext ──────────────────────────────────────────────────────────────
         vfParts.push(
           `drawtext=text='${escapedText}':fontsize=${fontSize}:` +
           `fontcolor=white@1:alpha='${alphaExpr}':` +
-          `x=(w-text_w)/2:y=h-${Math.round(fontSize * 2.4)}:` +
+          `x=(w-text_w)/2:y=${textY}:` +
           `fontfile=/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf:` +
           `shadowcolor=black@0.9:shadowx=3:shadowy=3`
         );

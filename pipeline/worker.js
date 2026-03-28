@@ -191,6 +191,8 @@ async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, c
 
       try {
         await generateImage(outputPath, prompt, model, ratio);
+        // Signal bot: image ready — bot sends it live to the chat
+        process.stdout.write(`[STAGE2_IMAGE_READY] ${outputDir} ${outputPath}\n`);
       } catch (err) {
         log(outputDir, 'api_image_gen', `Failed image ${imgIndex}: ${err.message}`);
         imgIndex++;
@@ -274,6 +276,61 @@ function runClaude(prompt, agentName, outputDir, timeoutMs = 600000) {
 }
 
 // ── Agent Handlers ─────────────────────────────────────────────────────────────
+
+async function handleCreativeDirector(job) {
+  const { task_name, task_date, output_dir, project_dir, platform_targets, language, campaign_brief } = job.data;
+  const absCreativeDir = path.resolve(PROJECT_ROOT, output_dir, 'creative');
+  fs.mkdirSync(absCreativeDir, { recursive: true });
+
+  const lang = language || 'pt-BR';
+  const langInstruction = lang === 'pt-BR'
+    ? 'IMPORTANT: Write ALL outputs (creative_brief.json values, creative_brief.md) in Brazilian Portuguese (pt-BR).'
+    : '';
+  const briefInstruction = campaign_brief
+    ? `\nCampaign Brief from user: ${campaign_brief}`
+    : '';
+
+  const prompt = `You are the Creative Director. Follow the skill defined in skills/creative-director/SKILL.md exactly.
+
+Task: Create the Creative Brief for the "${task_name}" campaign.
+Date: ${task_date}
+Platforms: ${platform_targets.join(', ')}
+Research input: ${output_dir}/research_results.json
+Output directory: ${output_dir}/creative/
+${langInstruction}${briefInstruction}
+
+Read these files FIRST:
+- ${project_dir}/knowledge/brand_identity.md
+- ${project_dir}/knowledge/product_campaign.md
+- ${output_dir}/research_results.json
+
+Then follow the SKILL.md process exactly:
+1. Analyze research — identify top 3 angles
+2. Filter through brand identity
+3. Choose ONE angle with justification
+4. Define visual direction
+5. Write key messages per platform
+6. Set guardrails (what to avoid)
+
+Save to ${output_dir}/creative/:
+- creative_brief.json
+- creative_brief.md
+
+After saving, print exactly: [STAGE1_DONE] ${output_dir}`;
+
+  await runClaude(prompt, 'creative_director', output_dir, 600000);
+
+  // Emit stage signal to bot's stdout listener
+  process.stdout.write(`[STAGE1_DONE] ${output_dir}\n`);
+
+  // Write signal file for bot restart recovery
+  const signalFile = path.resolve(PROJECT_ROOT, output_dir, 'creative', 'stage1_done.json');
+  if (!fs.existsSync(signalFile)) {
+    fs.writeFileSync(signalFile, JSON.stringify({ stage: 1, output_dir, ts: Date.now() }));
+  }
+
+  return { status: 'complete', output: `${output_dir}/creative/creative_brief.md` };
+}
 
 async function handleResearchAgent(job) {
   const { task_name, task_date, output_dir, project_dir, platform_targets, language, campaign_brief, business } = job.data;
@@ -719,25 +776,33 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
     return { status: 'skipped', reason: 'approval timeout' };
   }
 
-  // ── PHASE 3: Render approved videos ────────────────────────────────────────
-  log(output_dir, 'video_ad_specialist', 'User approved. Starting video render...');
+  // ── PHASE 3: Motion Director — enrich scene plans before render ────────────
+  log(output_dir, 'video_ad_specialist', 'Running Motion Director to enrich scene plans...');
+  await handleMotionDirector(output_dir, project_dir, video_count);
+
+  // ── PHASE 4: Render approved videos ────────────────────────────────────────
+  log(output_dir, 'video_ad_specialist', 'Starting video render...');
 
   for (let i = 1; i <= video_count; i++) {
     const idx = String(i).padStart(2, '0');
     const videoOutput = path.resolve(PROJECT_ROOT, `${output_dir}/video/video_${idx}.mp4`);
     const scenePlan = `${output_dir}/video/video_${idx}_scene_plan.json`;
-    const absScenePlan = path.resolve(PROJECT_ROOT, scenePlan);
+    const motionPlan = `${output_dir}/video/video_${idx}_scene_plan_motion.json`;
+
+    // Use motion-enriched plan if Motion Director produced one, else fall back to original
+    const planToRender = fs.existsSync(path.resolve(PROJECT_ROOT, motionPlan)) ? motionPlan : scenePlan;
+    const absScenePlan = path.resolve(PROJECT_ROOT, planToRender);
 
     if (!fs.existsSync(absScenePlan)) {
       log(output_dir, 'video_ad_specialist', `Scene plan not found for video ${i}, skipping render: ${absScenePlan}`);
       continue;
     }
 
-    log(output_dir, 'video_ad_specialist', `Rendering video ${i}/${video_count} with ffmpeg...`);
+    log(output_dir, 'video_ad_specialist', `Rendering video ${i}/${video_count} using: ${path.basename(planToRender)}`);
     try {
       execFileSync('node', [
         path.resolve(PROJECT_ROOT, 'pipeline/render-video-ffmpeg.js'),
-        scenePlan,
+        planToRender,
         `${output_dir}/video/video_${idx}.mp4`,
       ], {
         cwd: PROJECT_ROOT,
@@ -751,6 +816,42 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
   }
 
   return { status: 'complete', output: `${output_dir}/video/` };
+}
+
+// ── Motion Director ────────────────────────────────────────────────────────────
+
+async function handleMotionDirector(outputDir, projectDir, videoCount) {
+  const scenePlans = [];
+  for (let i = 1; i <= videoCount; i++) {
+    const idx = String(i).padStart(2, '0');
+    const planPath = path.resolve(PROJECT_ROOT, outputDir, 'video', `video_${idx}_scene_plan.json`);
+    if (fs.existsSync(planPath)) scenePlans.push(`${outputDir}/video/video_${idx}_scene_plan.json`);
+  }
+
+  if (scenePlans.length === 0) {
+    log(outputDir, 'motion_director', 'No scene plans found, skipping.');
+    return;
+  }
+
+  const prompt = `You are the Motion Director. Follow the skill defined in skills/motion-director/SKILL.md exactly.
+
+Project: ${projectDir}
+Output dir: ${outputDir}
+
+Scene plans to enrich:
+${scenePlans.map((p, i) => `  ${i + 1}. ${p}`).join('\n')}
+
+For each scene plan:
+1. Read all reference files: skills/motion-director/cinematography-rules.md, layout-typography.md, pacing-by-mood.md, scene-type-presets.md
+2. Read the scene plan JSON
+3. Use the Read tool to view each image listed in the scenes
+4. Read ${projectDir}/knowledge/brand_identity.md for brand mood and visual style
+5. Produce the enriched scene plan with motion, text_layout and transition_out per scene
+6. Save as video_0N_scene_plan_motion.json in the same folder
+
+After saving all files, print exactly: [MOTION_PLAN_DONE] ${outputDir}`;
+
+  await runClaude(prompt, 'motion_director', outputDir, 300000);
 }
 
 async function handleCopywriterAgent(job) {
@@ -843,10 +944,12 @@ DO NOT publish to any platform. Only generate the Publish MD advisory file.`;
 
 const HANDLERS = {
   research_agent: handleResearchAgent,
+  creative_director: handleCreativeDirector,
   ad_creative_designer: handleAdCreativeDesigner,
   video_ad_specialist: handleVideoAdSpecialist,
   copywriter_agent: handleCopywriterAgent,
   distribution_agent: handleDistributionAgent,
+  motion_director: async (job) => ({ status: 'complete' }), // handled inline inside video_ad_specialist
 };
 
 // ── Logger ────────────────────────────────────────────────────────────────────

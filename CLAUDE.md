@@ -1,6 +1,6 @@
 ## Project Overview
 
-**ATMKT v3.0.0** — AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
+**ATMKT v3.1.0** — AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
 
 ---
 
@@ -17,18 +17,18 @@
 **Exemplos:**
 - `v3.0.0` → versão base com novo fluxo de 4 aprovações + Diretor de Criação
 - `v3.1.0` → adição do Agente Revisor automático
-- `v3.1.1` → fix no gate de dependências do worker
+- `v3.1.1` → fix no gate de imagens do worker + regra de imagens sem texto via API
 - `v4.0.0` → mudança de arquitetura (ex: substituir BullMQ por outro sistema)
 
-**Versão atual:** `ATMKT v3.0.0`
+**Versão atual:** `ATMKT v3.1.1`
 
 Sempre atualizar a versão no topo deste arquivo e no `package.json` ao fazer uma alteração relevante.
 
 ---
 
-The system uses **five specialized AI agents** coordinated by an **Orchestrator** to research, generate, render, and distribute marketing content for a demo brand.
+The system uses **six specialized AI agents** coordinated by a **bot controller** to research, generate, render, and distribute marketing content.
 
-The goal is to demonstrate how Claude Code agents can coordinate **research, creative generation, media production, and social distribution workflows** using modular skills, knowledge files, and APIs.
+Each agent runs as a **Claude CLI subprocess** (`claude -p <prompt> --dangerously-skip-permissions`) with full tool access (Read, Write, Bash, etc.). The `skills/` folder contains the **agent instruction specs** — Markdown documents each agent reads to know exactly what to do. These are not Claude Code skills; they are the agent's operational spec.
 
 The demo brand used in this project is **Cold Brew Coffee Co.**
 
@@ -52,27 +52,52 @@ All pipeline payloads must include a `project_dir` field (e.g., `"project_dir": 
 
 # System Architecture
 
-The system consists of five agents managed by a central orchestrator:
+The system consists of **six specialized agents** coordinated by the bot in a 4-stage approval pipeline:
 
 ```
-Marketing Research Agent
-        │
-        ├──► Ad Creative Designer  ─┐
-        ├──► Video Ad Specialist   ─┼──► Distribution Agent
-        └──► Copywriter Agent      ─┘
+┌─────────────────────────────────────────────────────────────┐
+│  Stage 1: Research & Strategy                               │
+│  Marketing Research Agent → Creative Director               │
+│                          [APROVAÇÃO 1 — brief criativo]     │
+├─────────────────────────────────────────────────────────────┤
+│  Stage 2: Creative Production                               │
+│  Ad Creative Designer + Copywriter Agent (paralelo)         │
+│                          [APROVAÇÃO 2 — imagens e copy]     │
+├─────────────────────────────────────────────────────────────┤
+│  Stage 3: Video Production                                  │
+│  Video Ad Specialist                                        │
+│                          [APROVAÇÃO 3 — roteiro de vídeo]   │
+├─────────────────────────────────────────────────────────────┤
+│  Stage 4: Distribution                                      │
+│  Distribution Agent                                         │
+│                          [APROVAÇÃO 4 — antes de publicar]  │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-The **Orchestrator** skill coordinates all agents via **BullMQ** job queues backed by **Upstash Redis**. Agents run in dependency order — research first, then the three creative agents in parallel, then distribution last.
+**Componentes:**
+- **Bot** (`telegram/bot.js`) — controlador do pipeline; avança etapas após aprovação
+- **Orchestrator** (`pipeline/orchestrator.js`) — enfileira jobs por etapa via `enqueueStage()`
+- **Worker** (`pipeline/worker.js`) — executa os agentes; emite sinais `[STAGE1_DONE]`, `[STAGE2_IMAGE_READY]`, `[IMAGE_APPROVAL_NEEDED]`
 
-Each agent uses a combination of **custom skills, knowledge files, and APIs** to perform its tasks.
+**Modos de aprovação por etapa** (configurável via `approval_modes` no payload):
+| Modo | Comportamento |
+|---|---|
+| `humano` | Bot envia resultado ao usuário e aguarda confirmação (padrão) |
+| `auto` | Avança automaticamente sem aprovação |
+| `agente` | Agente Revisor avalia e decide |
+
+**Gate interno de imagens vs. aprovação de stage:**
+O worker emite `[IMAGE_APPROVAL_NEEDED]` após gerar imagens via API — esse é um gate **interno** que aguarda o arquivo `imgs/approved.json` para continuar montando o ad HTML. O bot v3 escreve esse arquivo automaticamente. A aprovação real (humano/agente/auto) acontece no **gate de stage 2**, depois que ambos os agentes (`ad_creative_designer` + `copywriter_agent`) completam. Os dois mecanismos são independentes — os flags de aprovação controlam apenas o gate de stage.
+
+Each agent uses a combination of **instruction specs, knowledge files, and APIs** to perform its tasks.
 
 ---
 
 # Orchestrator
 
-The Orchestrator is not an agent — it is a coordinating skill that manages the full pipeline.
+The Orchestrator is not an agent — it is a Node.js coordinator (`pipeline/orchestrator.js`) that enqueues jobs and manages stage advancement.
 
-Skill File: `skills/orchestrator/SKILL.md`
+Agent Spec: `skills/orchestrator/SKILL.md`
 
 Responsibilities:
 - Accept a Job Payload (JSON) with `task_name`, `task_date`, `project_dir`, `platform_targets`, and optional skip flags
@@ -102,12 +127,34 @@ node pipeline/worker.js                  # start the BullMQ worker (separate ter
 
 # Agents and Responsibilities
 
+## 0. Creative Director
+
+Purpose:
+Transform research output into a **single strategic campaign angle** that guides all creative production.
+
+Agent Spec: `skills/creative-director/SKILL.md`
+
+Responsibilities:
+- Read research results + brand identity + product campaign
+- Choose ONE campaign angle (strongest intersection of audience desire + brand authenticity)
+- Define visual direction: mood, colors, photography style
+- Write key messages per platform
+- Set guardrails (what to avoid)
+
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/creative/`):
+- `creative_brief.json` — structured brief consumed by creative agents
+- `creative_brief.md` — human-readable brief shown for Approval 1
+
+Emits `[STAGE1_DONE]` signal when complete.
+
+---
+
 ## 1. Marketing Research Agent
 
 Purpose:
 Conduct structured market intelligence research using the **Tavily AI SDK** via a local Node.js script.
 
-Skill File: `skills/marketing-research-agent/SKILL.md`
+Agent Spec: `skills/marketing-research-agent/SKILL.md`
 
 Responsibilities:
 - Run 5 targeted Tavily searches (trends, competitors, audience, hooks, viral topics)
@@ -126,7 +173,7 @@ Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/`):
 Purpose:
 Generate **static marketing ad creatives** as structured design JSON, then render them to PNG via **Playwright**.
 
-Skill File: `skills/ad-creative-designer/SKILL.md`
+Agent Spec: `skills/ad-creative-designer/SKILL.md`
 
 Responsibilities:
 - Select ad layout type (Product Focus, Split, or Lifestyle) based on platform and campaign goal
@@ -134,6 +181,9 @@ Responsibilities:
 - Output a design JSON spec
 - Generate `ad.html` + `styles.css` from the layout spec
 - Render the HTML to a 1080×1080 PNG screenshot using Playwright (`chromium.launch()`)
+
+**Regra de imagens geradas via API:**
+Imagens geradas por modelos de IA (ex: KIE/z-image) devem sempre ser **limpas de texto**. Texto é sempre sobreposto via HTML/CSS na etapa de montagem do ad — nunca embutido na imagem gerada. Esta regra é fixa. Futuramente, se o modelo suportar texto de forma confiável, a regra pode ser revisada.
 
 Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/ads/`):
 - `layout.json` — design specification
@@ -147,13 +197,13 @@ Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/ads/`):
 Purpose:
 Generate short-form video ad concepts and **Remotion-ready scene structures**.
 
-Skill File: `skills/video-ad-specialist/SKILL.md`
+Agent Spec: `skills/video-ad-specialist/SKILL.md`
 
 Responsibilities:
 - Generate a video concept (hook, emotional arc, visual style, CTA intent)
 - Build a scene-by-scene breakdown (Hook → Product Showcase → Benefit → CTA)
 - Output scene JSON for Remotion rendering
-- Reference the official `remotion-best-practices` skill for technical guidance
+- Reference `skills/remotion-best-practices/` for technical rendering guidance
 
 Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/video/`):
 - Scene JSON with `video_length`, `platform`, and per-scene `visual` + `text_overlay`
@@ -166,7 +216,7 @@ Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/video/`):
 Purpose:
 Transform research output into **platform-native marketing copy** for Threads, Instagram, and YouTube.
 
-Skill File: `skills/copywriter-agent/SKILL.md`
+Agent Spec: `skills/copywriter-agent/SKILL.md`
 
 Responsibilities:
 - Select a consistent campaign angle from the research output
@@ -185,7 +235,7 @@ Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/copy/`):
 Purpose:
 Host media on **Supabase**, assemble publish-ready metadata, generate scheduling recommendations, and gate-protect actual posting.
 
-Skill File: `skills/distribution-agent/SKILL.md`
+Agent Spec: `skills/distribution-agent/SKILL.md`
 
 Responsibilities:
 - Upload all campaign media files to the `campaign-uploads` Supabase storage bucket

@@ -25,23 +25,30 @@ const AGENTS = [
     skipFlag: 'skip_research',
   },
   {
+    name: 'creative_director',
+    label: 'Creative Director',
+    dependencies: ['research_agent'],
+    skippable: true,
+    skipFlag: 'skip_research', // skipped together with research
+  },
+  {
     name: 'ad_creative_designer',
     label: 'Ad Creative Designer',
-    dependencies: ['research_agent'],
+    dependencies: ['research_agent', 'creative_director'],
     skippable: true,
     skipFlag: 'skip_image',
   },
   {
     name: 'video_ad_specialist',
     label: 'Video Ad Specialist',
-    dependencies: ['research_agent'],
+    dependencies: ['research_agent', 'creative_director'],
     skippable: true,
     skipFlag: 'skip_video',
   },
   {
     name: 'copywriter_agent',
     label: 'Copywriter Agent',
-    dependencies: ['research_agent'],
+    dependencies: ['research_agent', 'creative_director'],
     skippable: false,
   },
   {
@@ -51,6 +58,15 @@ const AGENTS = [
     skippable: false,
   },
 ];
+
+// ── v3 Stage definitions ──────────────────────────────────────────────────────
+
+const STAGES = {
+  stage1: ['research_agent', 'creative_director'],
+  stage2: ['ad_creative_designer', 'copywriter_agent'],
+  stage3: ['video_ad_specialist'],
+  stage4: ['distribution_agent'],
+};
 
 // ── Payload validation ────────────────────────────────────────────────────────
 
@@ -135,7 +151,7 @@ async function enqueueJobs(payload) {
       skip_video,
       dependencies: activeDeps,
       project_dir,
-      output_dir: `${project_dir}/outputs/${task_name}_${task_date}`,
+      output_dir: payload.output_dir || `${project_dir}/outputs/${task_name}`,
     };
 
     // BullMQ job options — delay dependent jobs to allow dependencies to complete
@@ -177,6 +193,67 @@ async function enqueueJobs(payload) {
   return jobResults;
 }
 
+// ── Stage enqueue (v3) ────────────────────────────────────────────────────────
+
+/**
+ * Enqueues only the agents belonging to a specific stage.
+ * Used by the bot to advance the pipeline one stage at a time.
+ *
+ * @param {object} payload - full campaign payload
+ * @param {string[]} agentNames - list of agent names to enqueue (from STAGES)
+ */
+async function enqueueStage(payload, agentNames) {
+  const {
+    task_name,
+    task_date,
+    project_dir,
+    skip_research = false,
+    skip_image = false,
+    skip_video = false,
+    platform_targets = ['instagram', 'youtube'],
+    source_folder = null,
+  } = payload;
+
+  const stageAgentDefs = AGENTS.filter(a => agentNames.includes(a.name));
+  const jobResults = [];
+
+  for (const agent of stageAgentDefs) {
+    const isSkipped = agent.skippable && payload[agent.skipFlag];
+    if (isSkipped) {
+      console.log(`  ⏭  ${agent.label} — skipped`);
+      continue;
+    }
+
+    const jobData = {
+      ...payload,
+      agent: agent.name,
+      task_name,
+      task_date,
+      platform_targets,
+      source_folder,
+      skip_research,
+      skip_image,
+      skip_video,
+      dependencies: agent.dependencies,
+      project_dir,
+      output_dir: payload.output_dir || `${project_dir}/outputs/${task_name}`,
+    };
+
+    const jobOptions = {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 5000 },
+      removeOnComplete: false,
+      removeOnFail: false,
+    };
+
+    const job = await pipelineQueue.add(agent.name, jobData, jobOptions);
+    jobResults.push({ job_name: agent.name, job_id: job.id });
+    console.log(`  ✅ ${agent.label} — queued (job ID: ${job.id})`);
+  }
+
+  return jobResults;
+}
+
 // ── CLI entrypoint ────────────────────────────────────────────────────────────
 
 async function main() {
@@ -208,7 +285,12 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(err => {
-  console.error('Orchestrator error:', err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch(err => {
+    console.error('Orchestrator error:', err);
+    process.exit(1);
+  });
+} else {
+  // Module mode — used by bot.js for v3 stage-by-stage execution
+  module.exports = { enqueueStage, STAGES, validatePayload };
+}

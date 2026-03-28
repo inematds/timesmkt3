@@ -12,7 +12,7 @@ description: >
 
 # Copywriter Agent
 
-Transforms structured research output into platform-specific marketing copy for Threads, Instagram, and YouTube — adapted in tone, length, and format for each channel.
+Receives the campaign angle from the Creative Director's brief and adapts it into platform-native copy for Threads, Instagram, and YouTube — each with the appropriate tone, length, format, and CTA for that channel. The angle is fixed; the adaptation is the job.
 
 ## When to Use This Skill
 
@@ -37,43 +37,38 @@ Before writing a single word of copy, read the following files:
 
 ## Step 1: Gather Inputs
 
-Collect or confirm the following:
+Read ALL of these before writing anything:
 
-| Input | Source | Example |
-|---|---|---|
-| Campaign or research output | `<project_dir>/outputs/{campaign_name}/research_results.json` | `<project_dir>/outputs/coldbrew_campaign_2026-03-15/` |
-| Business niche / product | Research JSON or user prompt | "Cold Brew Coffee" |
-| Campaign goal | Research JSON or user prompt | "brand awareness" |
-| Target audience | Research JSON or user prompt | "millennials, young professionals" |
+| Input | Source |
+|---|---|
+| Campaign angle + key messages | `{output_dir}/creative/creative_brief.json` — fields: `campaign_angle`, `emotional_hook`, `key_messages`, `approved_ctas`, `avoid` |
+| Research keywords + hooks | `{output_dir}/research_results.json` — fields: `keywords`, `ad_hooks` |
+| Brand voice + hashtags | `{project_dir}/knowledge/brand_identity.md` |
+| Platform rules | `{project_dir}/knowledge/platform_guidelines.md` |
 
-If a research output path is provided or referenced, read `research_results.json` from that folder and extract:
-
-- `content_topics` — use to select a topic
-- `marketing_angles` — use to select the campaign angle
-- `keywords` — use in Instagram hashtags and YouTube tags
-- `ad_hooks` — use as opening lines for Threads and Instagram
-
-If no research output exists, ask the user for the campaign angle, topic, and key benefit before proceeding.
+**The campaign angle comes from the Creative Director's brief — do not choose or invent a new one.**
 
 ---
 
-## Step 2: Select the Campaign Angle
+## Step 2: Receive the Campaign Angle
 
-From the research output (or user input), select **one** of each:
+Extract from `creative_brief.json`:
 
-| Element | Description | Example |
+| Element | Field | Example |
 |---|---|---|
-| Campaign angle | The core narrative frame | "Upgrade Your Morning" |
-| Topic | The specific subject the copy focuses on | "morning productivity" |
-| Key benefit | The single product advantage to highlight | "smooth energy without bitterness" |
+| Campaign angle | `campaign_angle` | "Ritual over routine" |
+| Emotional hook | `emotional_hook` | "belonging" |
+| Key messages per platform | `key_messages.instagram`, `key_messages.threads` | hook, benefit, CTA |
+| Approved CTAs | `approved_ctas` | ["Peça o seu", "Experimente agora"] |
+| What to avoid | `avoid` | ["tom corporativo", "emojis de fogo"] |
 
-**This angle must remain consistent across all three platform outputs.** Do not switch angles between platforms.
+**Your job is to adapt this angle for each platform — not reinterpret it.** The angle is fixed. The format, tone, and length change per platform.
 
 ---
 
-## Step 3: Generate Platform-Specific Copy
+## Step 3: Adapt the Angle for Each Platform
 
-Using the selected angle, topic, and benefit — plus brand guidelines from `<project_dir>/knowledge/brand_identity.md` and `<project_dir>/knowledge/platform_guidelines.md` — generate copy for all three platforms.
+Using the angle and key messages from `creative_brief.json` — adapted in tone, length, format, and CTA style for each platform. Brand guidelines are the final arbiter on voice and what to avoid.
 
 ---
 

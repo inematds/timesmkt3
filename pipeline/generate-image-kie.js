@@ -68,7 +68,7 @@ function readBrandContext(projectDir) {
   const uniqueColors = [...new Set(colorMatches)].slice(0, 5);
 
   // Extract visual style keywords
-  const styleSection = content.match(/### Estilo visual\n([\s\S]*?)(?=\n---|\n##)/)?.[1] || '';
+  const styleSection = content.match(/### Estilo visual\n([\s\S]*?)(?=\n###|\n##|\n---)/)?.[1] || '';
   const styleKeywords = styleSection
     .split('\n')
     .filter(l => l.startsWith('-'))
@@ -76,8 +76,16 @@ function readBrandContext(projectDir) {
     .filter(Boolean)
     .slice(0, 5);
 
+  // Extract visual context for image generation (brand's visual world/subjects)
+  const visualContextSection = content.match(/### Contexto Visual para Imagens\n([\s\S]*?)(?=\n###|\n##|\n---)/)?.[1] || '';
+  const visualContext = visualContextSection
+    .split('\n')
+    .filter(l => l.startsWith('-'))
+    .map(l => l.replace(/^-\s*/, '').trim())
+    .filter(Boolean);
+
   // Extract brand name and tagline
-  const brandName = content.match(/^# Brand Identity — (.+)/m)?.[1] || '';
+  const brandName = content.match(/^# Brand Identity[^\n]*?[—-]\s*(.+)/m)?.[1]?.trim() || '';
   const tagline = content.match(/> "(.+?)"/)?.[1] || '';
 
   // Extract audience/personality descriptors
@@ -86,7 +94,7 @@ function readBrandContext(projectDir) {
     .map(l => l.replace(/\*\*/g, '').replace(/ —$/, '').trim())
     .slice(0, 3);
 
-  return { brandName, tagline, colors: uniqueColors, styleKeywords, personality };
+  return { brandName, tagline, colors: uniqueColors, styleKeywords, personality, visualContext };
 }
 
 // ── Prompt builder ────────────────────────────────────────────────────────────
@@ -139,7 +147,12 @@ function buildImagePrompt(brief, brand, format, index, total, sceneType = '') {
     // Scene purpose
     `Scene purpose: ${purposeHint}.`,
 
-    // Brand identity
+    // Brand visual world — what subjects/environments the brand lives in
+    brand?.visualContext?.length
+      ? `Brand visual world: ${brand.visualContext.slice(0, 4).join(' ')}`
+      : '',
+
+    // Brand style identity
     brandParts.length
       ? `Visual style: ${brandParts.join('; ')}.`
       : '',
@@ -153,8 +166,8 @@ function buildImagePrompt(brief, brand, format, index, total, sceneType = '') {
     // Quality
     'Photorealistic, 8K quality, sharp focus on subject, bokeh background.',
 
-    // Restrictions
-    'No text overlays, no watermarks, no logos, no UI elements.',
+    // Restrictions LAST — z-image-turbo: no CFG, restrictions work better at end of prompt
+    'Clean image, no text overlay, no watermark, no logo, no words, no typography, no letters or numbers visible, text-free, label-free, pure visual composition.',
   ];
 
   return parts.filter(Boolean).join(' ');

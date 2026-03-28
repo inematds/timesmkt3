@@ -1,0 +1,232 @@
+{
+  "task_name": "dia_das_maes",
+  "task_date": "2026-05-10",
+  "business": "INEMA — Ecossistema de IA e Transformação Digital",
+  "description": "Campanha Dia das Mães INEMA. Ângulo emocional/branding: mãe que aprende, mãe que inspira. CTA duplo: inema.club (grátis) e inema.vip (R$ 35/mês).",
+  "simulate_uploads": false,
+  "dry_run": false,
+
+  "project_dir": "prj/inema",
+  "output_folder": "prj/inema/outputs/dia_das_maes_2026-05-10",
+
+  "platform_targets": ["instagram", "threads", "youtube"],
+
+  "skip_research": false,
+  "skip_image": false,
+  "skip_video": true,
+
+  "knowledge_files": [
+    "prj/inema/knowledge/brand_identity.md",
+    "prj/inema/knowledge/product_campaign.md",
+    "prj/inema/knowledge/platform_guidelines.md"
+  ],
+
+  "pipeline": {
+
+    "research": {
+      "enabled": true,
+      "agent": "marketing-research-agent",
+      "skill": "skills/marketing-research-agent/SKILL.md",
+      "inputs": {
+        "niche": "educação em inteligência artificial e transformação digital no Brasil",
+        "target_audience": "profissionais em transição de carreira, empreendedores, mulheres que querem aprender IA",
+        "campaign_goal": "branding emocional no Dia das Mães + conversão para inema.club e inema.vip"
+      },
+      "tavily": {
+        "search_depth": "advanced",
+        "queries": [
+          "mercado educação inteligência artificial Brasil 2025 2026",
+          "cursos de IA gratuitos comunidades de aprendizado Brasil tendências",
+          "público feminino inteligência artificial aprendizado empreendedorismo digital",
+          "campanhas dia das mães marketing digital emocional melhores práticas",
+          "INEMA inema.club inema.vip comunidade IA transformação digital"
+        ]
+      },
+      "outputs": {
+        "folder": "prj/inema/outputs/dia_das_maes_2026-05-10",
+        "files": [
+          "research_results.json",
+          "research_brief.md",
+          "interactive_report.html"
+        ]
+      }
+    },
+
+    "static_ad": {
+      "enabled": true,
+      "agent": "ad-creative-designer",
+      "skill": "skills/ad-creative-designer/SKILL.md",
+      "inputs": {
+        "product": "INEMA — Comunidade de IA e Transformação Digital",
+        "campaign_goal": "branding emocional Dia das Mães",
+        "platform": "instagram",
+        "format": "square",
+        "dimensions": "1080x1080",
+        "layout_type": "lifestyle",
+        "assets_available": [
+          "prj/inema/imgs/inema_vip_hero.jpg",
+          "prj/inema/imgs/inema_vip_motivacional.jpg",
+          "prj/inema/imgs/inema_club_instagram_post.jpg",
+          "prj/inema/imgs/banner_ecossistema_light.jpg"
+        ],
+        "brand_colors": {
+          "primary": "#0099FF",
+          "dark": "#0D0D0D",
+          "accent": "#00FF88",
+          "white": "#FFFFFF"
+        },
+        "copy": {
+          "headline": "Mãe que aprende",
+          "subtext": "O presente mais poderoso tem URL: inema.club",
+          "cta": "Comece grátis"
+        },
+        "design_notes": "Dark-first design. Tipografia bold e impactante. Gradiente ciano/azul/verde neon. Tom emocional mas tecnológico. Usar assets de marca disponíveis em prj/inema/imgs/."
+      },
+      "outputs": {
+        "folder": "prj/inema/outputs/dia_das_maes_2026-05-10/ads",
+        "files": [
+          "layout.json",
+          "ad.html",
+          "styles.css",
+          "instagram_ad.png"
+        ]
+      }
+    },
+
+    "video_ad": {
+      "enabled": false,
+      "skip_reason": "Dois Reels já foram produzidos manualmente com ElevenLabs: video_01_rachel.mp4 e video_02_bella.mp4",
+      "existing_outputs": [
+        "prj/inema/outputs/dia_das_maes_2026-05-10/video/video_01_rachel.mp4",
+        "prj/inema/outputs/dia_das_maes_2026-05-10/video/video_02_bella.mp4"
+      ]
+    },
+
+    "copywriting": {
+      "enabled": true,
+      "agent": "copywriter-agent",
+      "skill": "skills/copywriter-agent/SKILL.md",
+      "inputs": {
+        "research_source": "prj/inema/outputs/dia_das_maes_2026-05-10/research_results.json",
+        "campaign_angle": "Mãe que aprende, mãe que inspira",
+        "topic": "Dia das Mães — empoderamento feminino via educação em IA",
+        "key_benefit": "Conhecimento gratuito e comunidade ativa para se reinventar profissionalmente",
+        "platforms": ["instagram", "threads", "youtube"],
+        "cta_primary": "inema.club — grátis para começar",
+        "cta_secondary": "inema.vip — R$ 35/mês, comunidade ativa",
+        "tone": "emocional, inspirador, empoderador, sem elitismo",
+        "language": "pt-BR"
+      },
+      "platform_rules": {
+        "instagram": {
+          "structure": "hook emocional → benefício → CTA → linha em branco → hashtags",
+          "max_sentences": 4,
+          "emojis": 2,
+          "hashtag_count": "5-8",
+          "cta_required": true,
+          "hashtag_placement": "comentário (não na legenda)"
+        },
+        "threads": {
+          "structure": "frase provocadora → insight → CTA com URL",
+          "max_chars": 500,
+          "hashtag_count": "2-3"
+        },
+        "youtube": {
+          "title_length": "60-70 caracteres",
+          "title_no_emojis": true,
+          "description_sentences": "2-3",
+          "description_ends_with_cta": true,
+          "tag_count": "6-8"
+        }
+      },
+      "outputs": {
+        "folder": "prj/inema/outputs/dia_das_maes_2026-05-10/copy",
+        "files": [
+          "instagram_caption.txt",
+          "threads_post.txt",
+          "youtube_metadata.json",
+          "copy_output.json"
+        ]
+      }
+    },
+
+    "distribution": {
+      "enabled": true,
+      "agent": "distribution-agent",
+      "skill": "skills/distribution-agent/SKILL.md",
+      "inputs": {
+        "media_sources": {
+          "instagram_image": "prj/inema/outputs/dia_das_maes_2026-05-10/ads/instagram_ad.png",
+          "instagram_carousel": [
+            "prj/inema/outputs/dia_das_maes_2026-05-10/ads/carousel_01.png",
+            "prj/inema/outputs/dia_das_maes_2026-05-10/ads/carousel_02.png",
+            "prj/inema/outputs/dia_das_maes_2026-05-10/ads/carousel_03.png",
+            "prj/inema/outputs/dia_das_maes_2026-05-10/ads/carousel_04.png",
+            "prj/inema/outputs/dia_das_maes_2026-05-10/ads/carousel_05.png"
+          ],
+          "reel_1": "prj/inema/outputs/dia_das_maes_2026-05-10/video/video_01_rachel.mp4",
+          "reel_2": "prj/inema/outputs/dia_das_maes_2026-05-10/video/video_02_bella.mp4"
+        },
+        "copy_sources": {
+          "instagram_caption": "prj/inema/outputs/dia_das_maes_2026-05-10/copy/instagram_caption.txt",
+          "threads_post": "prj/inema/outputs/dia_das_maes_2026-05-10/copy/threads_post.txt",
+          "youtube_metadata": "prj/inema/outputs/dia_das_maes_2026-05-10/copy/youtube_metadata.json"
+        },
+        "simulate_uploads": false,
+        "use_placeholder_urls": false,
+        "publish_immediately": false
+      },
+      "supabase": {
+        "bucket": "campaign-uploads",
+        "filename_convention": "inema_dia_das_maes_2026-05-10_<original_filename>",
+        "simulate": false
+      },
+      "scheduling_advisory": {
+        "instagram": {
+          "best_days": ["Sábado", "Domingo"],
+          "best_time": "08h–10h ou 19h–21h",
+          "recommended_slot": "Sábado 10/05 às 09h (Dia das Mães)"
+        },
+        "threads": {
+          "best_days": ["Sábado", "Domingo"],
+          "best_time": "09h–11h",
+          "recommended_slot": "Sábado 10/05 às 10h"
+        },
+        "youtube": {
+          "best_days": ["Quinta", "Sexta", "Sábado"],
+          "best_time": "12h–15h",
+          "recommended_slot": "Sexta 09/05 às 14h (24h antes do Dia das Mães)"
+        }
+      },
+      "publish_gate": {
+        "trigger_phrase": "Run Publish dia_das_maes 2026-05-10.md",
+        "auto_publish": false,
+        "note": "Posting will NOT execute without explicit user reference to the Publish MD file."
+      },
+      "outputs": {
+        "folder": "prj/inema/outputs/dia_das_maes_2026-05-10",
+        "files": [
+          "media_urls.json",
+          "Publish dia_das_maes 2026-05-10.md"
+        ]
+      }
+    }
+
+  },
+
+  "execution_order": [
+    "research",
+    "static_ad",
+    "copywriting",
+    "distribution"
+  ],
+
+  "completion_checklist": [
+    "Research outputs: research_results.json, research_brief.md, interactive_report.html",
+    "Static ad outputs: layout.json, ad.html, styles.css, instagram_ad.png",
+    "Copy outputs: instagram_caption.txt, threads_post.txt, youtube_metadata.json, copy_output.json",
+    "Distribution outputs: media_urls.json, Publish dia_das_maes 2026-05-10.md",
+    "Existing assets preserved: carousel_01-05.png, video_01_rachel.mp4, video_02_bella.mp4, audio/",
+    "No live social API posts executed (publish_immediately: false)"
+  ]
+}
