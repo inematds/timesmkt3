@@ -1566,7 +1566,7 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
     for (let i = 1; i <= video_count; i++) {
       const idx = String(i).padStart(2, '0');
-      const planPath = path.resolve(PROJECT_ROOT, output_dir, 'video', `video_${idx}_scene_plan_motion.json`);
+      const planPath = vfFind(idx, '_scene_plan_motion.json');
       if (!fs.existsSync(planPath)) continue;
 
       let plan;
@@ -1631,10 +1631,10 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
     }
   }
 
-  // ── PHASE 2: Validate and auto-fix ──────────────────────────────────────────
+  // ── PHASE 2b: Validate and auto-fix ─────────────────────────────────────────
   for (let i = 1; i <= video_count; i++) {
     const idx = String(i).padStart(2, '0');
-    const planPath = path.resolve(PROJECT_ROOT, output_dir, 'video', `video_${idx}_scene_plan_motion.json`);
+    const planPath = vfFind(idx, '_scene_plan_motion.json');
     if (!fs.existsSync(planPath)) continue;
 
     try {
