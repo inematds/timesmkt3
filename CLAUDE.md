@@ -1,6 +1,6 @@
 ## Project Overview
 
-**ITAGMKT v4.0.0** — INEMA Time de Agentes de Marketing. AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
+**ITAGMKT v4.2.6** — INEMA Time de Agentes de Marketing. AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
 
 ---
 
@@ -23,13 +23,13 @@
 - `v3.2.1` → Motion Director + brand visual context (RECURSO+1, BUG acumulado = 1, não zerou)
 - `v4.0.0` → pipeline 5 estágios, 6 agentes de plataforma, video quick/pro, publish genérico (MAJOR+1, tudo zera)
 
-**Versão atual:** `ITAGMKT v4.1.6`
+**Versão atual:** `ITAGMKT v4.2.6`
 
 Sempre atualizar a versão no topo deste arquivo e no `package.json` ao fazer uma alteração relevante.
 
 ---
 
-The system uses **six specialized AI agents** coordinated by a **bot controller** to research, generate, render, and distribute marketing content.
+The system uses **13+ specialized AI agents** coordinated by a **bot controller** in a **5-stage pipeline** to research, generate, render, and distribute marketing content.
 
 Each agent runs as a **Claude CLI subprocess** (`claude -p <prompt> --dangerously-skip-permissions`) with full tool access (Read, Write, Bash, etc.). The `skills/` folder contains the **agent instruction specs** — Markdown documents each agent reads to know exactly what to do. These are not Claude Code skills; they are the agent's operational spec.
 
@@ -55,25 +55,31 @@ All pipeline payloads must include a `project_dir` field (e.g., `"project_dir": 
 
 # System Architecture
 
-The system consists of **six specialized agents** coordinated by the bot in a 4-stage approval pipeline:
+The system consists of **13+ specialized agents** coordinated by the bot in a **5-stage approval pipeline**:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Stage 1: Research & Strategy                               │
-│  Marketing Research Agent → Creative Director               │
-│                          [APROVAÇÃO 1 — brief criativo]     │
+│  Stage 1: Estratégia & Narrativa                            │
+│  Research Agent → Diretor Criativo → Copywriter             │
+│                          [APROVAÇÃO 1 — brief + narrativa]  │
 ├─────────────────────────────────────────────────────────────┤
-│  Stage 2: Creative Production                               │
-│  Ad Creative Designer + Copywriter Agent (paralelo)         │
-│                          [APROVAÇÃO 2 — imagens e copy]     │
+│  Stage 2: Imagens                                           │
+│  Ad Creative Designer                                       │
+│                          [APROVAÇÃO 2 — imagens estáticas]  │
 ├─────────────────────────────────────────────────────────────┤
-│  Stage 3: Video Production                                  │
-│  Video Ad Specialist                                        │
-│                          [APROVAÇÃO 3 — roteiro de vídeo]   │
+│  Stage 3: Vídeo                                             │
+│  Video Quick (default) + Video Pro (sob demanda)            │
+│  Independentes — podem rodar juntos                         │
+│                          [APROVAÇÃO 3 — vídeo + plataformas]│
 ├─────────────────────────────────────────────────────────────┤
-│  Stage 4: Distribution                                      │
-│  Distribution Agent                                         │
-│                          [APROVAÇÃO 4 — antes de publicar]  │
+│  Stage 4: Plataformas                                       │
+│  Instagram + YouTube + TikTok + Facebook + Threads + LinkedIn│
+│  (só rodam as plataformas selecionadas)                     │
+│                          [APROVAÇÃO 4 — copy nativo]        │
+├─────────────────────────────────────────────────────────────┤
+│  Stage 5: Distribuição                                      │
+│  Distribution Agent (upload + agendar + publicar)           │
+│                          [APROVAÇÃO 5 — publicar]           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -195,41 +201,62 @@ Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/ads/`):
 
 ---
 
-## 3. Video Ad Specialist
+## 3. Video Quick (default)
 
 Purpose:
-Generate short-form video ad concepts and **Remotion-ready scene structures**.
+Generate a quick slideshow video (10-20s) using images from the Ad Creative Designer.
 
-Agent Spec: `skills/video-ad-specialist/SKILL.md`
+Agent Spec: `skills/video-editor-agent/SKILL.md`
 
 Responsibilities:
-- Generate a video concept (hook, emotional arc, visual style, CTA intent)
-- Build a scene-by-scene breakdown (Hook → Product Showcase → Benefit → CTA)
-- Output scene JSON for Remotion rendering
-- Reference `skills/remotion-best-practices/` for technical rendering guidance
+- Use images from ads/ as source
+- Apply transitions, Ken Burns effects, text overlays
+- Optional narration (ElevenLabs) and music
+- Render via ffmpeg (`pipeline/render-video-ffmpeg.js`)
 
-Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/video/`):
-- Scene JSON with `video_length`, `platform`, and per-scene `visual` + `text_overlay`
-- Rendering configuration for Remotion
+Typical Output: `<project_dir>/outputs/<task_name>_<date>/video/ad.mp4`
+
+## 3b. Video Pro (sob demanda)
+
+Purpose:
+Professional video production (30-60s) with narration, music, and advanced editing. **Independent** from Video Quick — both can run in the same campaign.
+
+Agent Spec: `skills/video-editor-agent/SKILL.md` (mode: pro)
+
+Responsibilities:
+- Draft phase: generate preview with SVG/placeholders for approval
+- Final phase: generate real images via API + render complete video
+- Narration + music mandatory
+- Narrative frameworks (AIDA, PAS, Hero's Journey)
+- Render via Remotion (`pipeline/render-video.js`) for professional quality
+- Reference `skills/video-art-direction/SKILL.md` for 12 visual style presets
+
+Typical Output: `<project_dir>/outputs/<task_name>_<date>/video/ad_pro.mp4`
+
+## Video Art Direction
+
+Skill: `skills/video-art-direction/SKILL.md`
+
+Provides 12 visual style presets (cinematic, editorial, bold, minimal, etc.) defining color palettes, typography, transitions, and mood. Applied by both Video Quick and Video Pro agents.
 
 ---
 
-## 4. Copywriter Agent
+## 4. Platform Agents (Stage 4)
 
 Purpose:
-Transform research output into **platform-native marketing copy** for Threads, Instagram, and YouTube.
+Adapt campaign narrative into **platform-native content** for each selected platform.
 
-Agent Spec: `skills/copywriter-agent/SKILL.md`
+6 platform agents: Instagram, YouTube, TikTok, Facebook, Threads, LinkedIn.
 
-Responsibilities:
-- Select a consistent campaign angle from the research output
-- Write platform-specific copy adapted in tone, length, CTA, and hashtag format
-- Output structured JSON and individual platform text files
+Only the platforms in `platform_targets` are executed. Each agent generates copy, formats, and scheduling recommendations native to its platform. See `doc/agentes-distribuicao.md` for detailed specs per platform.
 
-Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/copy/`):
-- `threads_post.txt` — witty, casual, ≤500 characters
-- `instagram_caption.txt` — hook + benefit + CTA + 3–5 hashtags
-- `youtube_metadata.json` — title (60–70 chars), description, and keyword tags
+Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/platforms/`):
+- `instagram.json` + `.md`
+- `youtube.json` + `.md`
+- `tiktok.json` + `.md`
+- `facebook.json` + `.md`
+- `threads.json` + `.md`
+- `linkedin.json` + `.md`
 
 ---
 
@@ -251,7 +278,7 @@ Responsibilities:
 Platforms:
 - **Instagram** — Graph API (`/media` + `/media_publish`)
 - **YouTube** — YouTube Data API (requires OAuth `YOUTUBE_REFRESH_TOKEN`)
-- **Threads** — No public API; post text is included in Publish MD for manual posting
+- **Threads** — graph.threads.net API
 
 Typical Output (saved to `<project_dir>/outputs/<task_name>_<date>/`):
 - `media_urls.json` — Supabase public URLs for all uploaded media
@@ -332,14 +359,22 @@ For Cold Brew Coffee Co. (`prj/coldbrew-coffee-co/assets/`):
 ├── video/
 │   └── ad.mp4                    ← Video Ad Specialist (Remotion render)
 ├── copy/
-│   ├── instagram_caption.txt     ← Copywriter Agent
-│   ├── threads_post.txt          ← Copywriter Agent
-│   └── youtube_metadata.json     ← Copywriter Agent
+│   └── narrative.json            ← Copywriter Agent (narrativa central)
+├── platforms/
+│   ├── instagram.json            ← Instagram Agent
+│   ├── youtube.json              ← YouTube Agent
+│   ├── tiktok.json               ← TikTok Agent
+│   ├── facebook.json             ← Facebook Agent
+│   ├── threads.json              ← Threads Agent
+│   └── linkedin.json             ← LinkedIn Agent
 ├── logs/
 │   ├── research_agent.log
 │   ├── ad_creative_designer.log
-│   ├── video_ad_specialist.log
+│   ├── video_quick.log
+│   ├── video_pro.log
 │   ├── copywriter_agent.log
+│   ├── platform_instagram.log
+│   ├── platform_youtube.log
 │   └── distribution_agent.log
 └── Publish <task_name> <date>.md ← Distribution Agent
 ```
@@ -353,7 +388,8 @@ For Cold Brew Coffee Co. (`prj/coldbrew-coffee-co/assets/`):
 | BullMQ + Upstash Redis | Job queuing and worker orchestration |
 | Tavily AI SDK (`@tavily/core`) | Market research via Node.js scripts |
 | Playwright (`chromium`) | HTML-to-PNG ad rendering |
-| Remotion | Video ad rendering |
+| ffmpeg | Basic video rendering (Video Quick) |
+| Remotion | Professional video rendering (Video Pro) |
 | Supabase (`@supabase/supabase-js`) | Media hosting and public URL generation |
 | Instagram Graph API | Instagram publishing |
 | YouTube Data API | YouTube publishing (requires OAuth) |

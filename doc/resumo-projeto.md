@@ -1,4 +1,4 @@
-# ITAGMKT v4.0.0 — Resumo do Projeto
+# ITAGMKT v4.2.6 — Resumo do Projeto
 
 > INEMA Time de Agentes de Marketing
 
@@ -10,7 +10,7 @@ Sistema de automacao de conteudo para marketing digital, alimentado por IA. Usa 
 |---|---|---|
 | 1. Estrategia & Narrativa | Research + Diretor Criativo + Copywriter | Brief + narrativa |
 | 2. Imagens | Ad Creative Designer | Imagens estaticas |
-| 3. Video | Video Quick (default) ou Video Pro (sob demanda) | Video |
+| 3. Video | Video Quick (default) + Video Pro (sob demanda) — independentes | Video |
 | 4. Plataformas | Instagram, YouTube, TikTok, Facebook, Threads, LinkedIn | Copy nativo |
 | 5. Distribuicao | Distribution Agent | Guardar, agendar, publicar |
 
@@ -46,7 +46,8 @@ Sistema de automacao de conteudo para marketing digital, alimentado por IA. Usa 
 | BullMQ + Redis | Fila de jobs e orquestracao |
 | Tavily AI SDK | Pesquisa de mercado |
 | Playwright | Render HTML -> PNG |
-| ffmpeg / Remotion | Render de video |
+| ffmpeg | Render de video basico (Video Quick) |
+| Remotion | Render de video profissional (Video Pro) |
 | Supabase | Hosting de midia |
 | Instagram Graph API | Publicacao Instagram |
 | YouTube Data API | Publicacao YouTube |

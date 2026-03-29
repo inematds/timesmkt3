@@ -1,11 +1,11 @@
-# Pipeline & Aprovacoes — ITAGMKT v4.0.0
+# Pipeline & Aprovacoes — ITAGMKT v4.2.6
 
 ## Stages (orchestrator.js)
 
 ```
 stage1: [research_agent, creative_director, copywriter_agent]
 stage2: [ad_creative_designer]
-stage3: [video_editor_agent]  // video_quick (default) ou video_pro
+stage3: [video_quick, video_pro]  // independentes, podem rodar juntos
 stage4: [platform_instagram, platform_youtube, platform_tiktok, platform_facebook, platform_threads, platform_linkedin]
 stage5: [distribution_agent]
 ```
@@ -84,6 +84,22 @@ Agentes de plataforma (stage 4) podem sinalizar:
 - `video_format_request`: pedido de formato especifico
 
 O Distribution Agent loga warnings no Publish MD.
+
+## /rerun — Reprocessar Stages
+
+O comando `/rerun <campanha> [stage]` permite reprocessar stages de campanhas existentes sem rodar o pipeline inteiro.
+
+- Reusa outputs existentes dos stages anteriores
+- Util para: refazer video com novos parametros, regerar copy, redistribuir
+- Se nenhum stage e especificado, o bot pergunta qual reprocessar
+
+## Video Pro — Fase de Rascunho
+
+O Video Pro opera em 2 fases:
+1. **Rascunho** — gera preview com placeholders/SVG para aprovacao rapida
+2. **Final** — apos aprovacao do rascunho, gera imagens reais via API e renderiza o video completo
+
+Isso evita desperdicio de creditos de API com versoes que serao rejeitadas.
 
 ## Timeout e Cleanup
 

@@ -1,4 +1,4 @@
-# Agentes de Criacao — ITAGMKT v4.0.0
+# Agentes de Criacao — ITAGMKT v4.2.6
 
 ## Pipeline 5 Estagios
 
@@ -9,7 +9,7 @@ Stage 1: Research + Diretor Criativo + Copywriter (narrativa)
 Stage 2: Ad Creative Designer (imagens estaticas)
             -> aprovacao 2 (imagens)
 
-Stage 3: Video (Quick default / Pro sob demanda)
+Stage 3: Video (Quick + Pro independentes, podem rodar juntos)
             -> aprovacao 3 (video)
 
 Stage 4: Agentes de Plataforma (Instagram, YouTube, TikTok, Facebook, Threads, LinkedIn)
@@ -63,17 +63,25 @@ Stage 5: Distribution (guardar + agendar + publicar)
 - 10-20s slideshow com transicoes
 - Narracao: opcional (se ElevenLabs configurado)
 - Musica: opcional (se disponivel)
-- Renderizacao: ffmpeg simples
+- Renderizacao: ffmpeg (`pipeline/render-video-ffmpeg.js`)
 
 ### Video Pro (sob demanda — video_mode: 'pro')
 - Ativado quando usuario pede "video pro"
+- **Independente do Quick** — ambos podem rodar na mesma campanha
 - Producao profissional: 30-60s, 30-50 cortes
 - Narracao + musica obrigatorios
 - Frameworks narrativos (AIDA, PAS, Hero's Journey)
+- Renderizacao: Remotion (`pipeline/render-video.js`) — qualidade profissional
 - Fluxo em 2 fases:
   1. Rascunho: SVG/placeholders/Remotion preview -> aprovacao
   2. Final: gera imagens reais via API + renderiza completo
 - Pode pedir retrabalho ao Designer
+
+### Video Art Direction
+- Skill dedicada: `skills/video-art-direction/SKILL.md`
+- 12 presets de estilo visual (cinematic, editorial, bold, minimal, etc.)
+- Define paleta de cores, tipografia, transicoes e mood por preset
+- Aplicavel tanto ao Quick quanto ao Pro
 
 ## Stage 4 — Plataformas
 

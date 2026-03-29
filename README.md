@@ -1,4 +1,4 @@
-# ITAGMKT v4.0.0
+# ITAGMKT v4.2.6
 
 **INEMA Time de Agentes de Marketing** — sistema de automacao de conteudo para marketing digital usando agentes de IA coordenados por um bot Telegram.
 
@@ -25,7 +25,7 @@ Usuario define campanha no Telegram
     |
     v
 [Stage 3] Video
-    Video Quick (default, 10-20s) ou Video Pro (sob demanda, 30-60s)
+    Video Quick (default, 10-20s) + Video Pro (sob demanda, 30-60s) — independentes, podem rodar juntos
     >>> aprovacao 3 (video + selecao de plataformas)
     |
     v
@@ -116,6 +116,7 @@ Classificacao automatica:
 
 | | Quick (default) | Pro (sob demanda) |
 |---|---|---|
+| Relacao | Independentes — podem rodar juntos na mesma campanha | Independentes — podem rodar juntos na mesma campanha |
 | Trigger | Sempre roda (skip_video para pular) | `video_mode: 'pro'` no payload |
 | Duracao | 10-20s | 30-60s |
 | Imagens | Usa PNGs do Designer (ads/) | Gera proprias (API/brand/free) |
@@ -284,7 +285,7 @@ itagmkt/
 │   ├── orchestrator.js              # Enfileira jobs no BullMQ (5 stages)
 │   ├── worker.js                    # Executa agentes via Claude CLI
 │   ├── render-video-ffmpeg.js       # Renderiza video com ffmpeg
-│   ├── render-video.js              # Renderiza video com Remotion
+│   ├── render-video.js              # Renderiza video com Remotion (qualidade profissional)
 │   ├── generate-image-kie.js        # Geracao de imagens via KIE API
 │   ├── generate-image-pollinations.js # Geracao de imagens via Pollinations
 │   ├── generate-audio.js            # Narracao via ElevenLabs
@@ -322,6 +323,7 @@ itagmkt/
 | `/relatorio <campanha>` | Resumo + inventario de arquivos |
 | `/enviar <campanha> [tipo]` | Recebe arquivos (imagens, videos, audio, copy, tudo) |
 | `/modos [etapa] [humano\|agente\|auto]` | Configura modos de aprovacao |
+| `/rerun <campanha> [stage]` | Reprocessa stages de campanhas existentes |
 | `/aprovar` | Re-verifica aprovacoes pendentes |
 
 ---
@@ -434,3 +436,4 @@ npm run media:status
 | [doc/pipeline-aprovacoes.md](doc/pipeline-aprovacoes.md) | Pipeline e fluxo de aprovacoes |
 | [doc/agentes-criacao.md](doc/agentes-criacao.md) | Agentes de criacao (stages 1-3) |
 | [doc/agentes-distribuicao.md](doc/agentes-distribuicao.md) | Agentes de plataforma e distribuicao (stages 4-5) |
+| [skills/video-art-direction/SKILL.md](skills/video-art-direction/SKILL.md) | Video Art Direction — 12 presets de estilo visual |
