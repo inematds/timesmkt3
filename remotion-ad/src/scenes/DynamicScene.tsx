@@ -2,8 +2,14 @@ import React from 'react';
 import { AbsoluteFill } from 'remotion';
 import { TextOverlay, TextAnimation, getTextAnimationForScene } from '../components/TextOverlay';
 import { ProductImage } from '../components/ProductImage';
-import { CTAButton } from '../components/CTAButton';
-import { CameraMotion, CameraEffect, getDefaultCameraEffect, getDefaultOverlay } from '../components/CameraMotion';
+import { CTAButton, CTAStyle } from '../components/CTAButton';
+import { CameraMotion, CameraEffect, ColorGrading, getDefaultCameraEffect, getDefaultOverlay } from '../components/CameraMotion';
+import { TextBackgroundBand, BandStyle, BandPosition } from '../components/TextBackgroundBand';
+import { LowerThird, LowerThirdStyle } from '../components/LowerThird';
+import { Subtitles, SubtitleSegment, SubtitleStyle } from '../components/Subtitles';
+import { ParticleEffects, ParticleType } from '../components/ParticleEffects';
+import { SplitScreen, SplitDirection, SplitAnimation } from '../components/SplitScreen';
+import { KineticText, KineticStyle } from '../components/KineticText';
 import {
   SolidBackground, FloodBackground, GlowRings,
   FlashTransition, Vignette,
@@ -27,13 +33,57 @@ export interface SceneData {
   assets_remotion?: string[];
   cta_acao?: string;
   cta_variants?: Record<string, string>;
-  // New: scene-level overrides
+  // Scene-level overrides
   camera_effect?: CameraEffect;
   background_image?: string;
   overlay?: 'dark' | 'light' | 'warm' | 'cool' | 'sepia' | 'none';
   overlay_opacity?: number;
   text_animation?: TextAnimation;
   blur?: number;
+  // Transition to next scene
+  transition?: 'crossfade' | 'fade_black' | 'slide_left' | 'slide_right' | 'wipe' | 'none';
+  transition_duration?: number; // frames
+  // Color grading
+  color_grading?: ColorGrading;
+  // Text background band
+  text_band?: {
+    style?: BandStyle;
+    color?: string;
+    opacity?: number;
+    height?: string;
+  };
+  // Lower third
+  lower_third?: {
+    text: string;
+    subtext?: string;
+    style?: LowerThirdStyle;
+  };
+  // Subtitles
+  subtitles?: SubtitleSegment[];
+  subtitle_style?: SubtitleStyle;
+  // CTA style
+  cta_style?: CTAStyle;
+  // Particles
+  particles?: {
+    type?: ParticleType;
+    count?: number;
+    color?: string;
+    opacity?: number;
+  };
+  // Split screen
+  split_screen?: {
+    leftSrc: string;
+    rightSrc: string;
+    direction?: SplitDirection;
+    animation?: SplitAnimation;
+    labelLeft?: string;
+    labelRight?: string;
+  };
+  // Kinetic text (replaces standard TextOverlay)
+  kinetic_text?: {
+    style?: KineticStyle;
+    beats?: number[];
+  };
 }
 
 export interface SceneProps {
@@ -204,8 +254,12 @@ export const DynamicScene: React.FC<SceneProps> = ({
   const sceneFontSize = sceneTextOverlay?.tamanho || null;
   const sceneFontWeight = sceneTextOverlay?.peso ? Number(sceneTextOverlay.peso) || 800 : null;
   const sceneTextColor = sceneTextOverlay?.cor || null;
-  const sceneTextPosition = sceneTextOverlay?.posicao || null;
+  const sceneTextPosition: 'top' | 'center' | 'bottom' | null =
+    sceneTextOverlay?.posicao && ['top', 'center', 'bottom'].includes(sceneTextOverlay.posicao)
+      ? sceneTextOverlay.posicao
+      : null;
   const sceneLineHeight = sceneTextOverlay?.line_height || null;
+  const sceneFontFamily = sceneTextOverlay?.font_family || null;
 
   // ── Resolve camera, overlay, text animation from scene data + description ──
   const cameraEffect: CameraEffect =
@@ -225,6 +279,51 @@ export const DynamicScene: React.FC<SceneProps> = ({
 
   const bgImage = pickBackgroundImage(scene, sceneImages);
   const bgBlur = scene.blur ?? (tipo.includes('close') ? 2 : 0);
+
+  // ── Shared overlay elements (text band, lower third, subtitles) ──────────
+  const textBandEl = scene.text_band ? (
+    <TextBackgroundBand
+      position={(sceneTextPosition as BandPosition) || 'top'}
+      color={scene.text_band.color || '#000000'}
+      opacity={scene.text_band.opacity || 0.5}
+      style={scene.text_band.style || 'gradient'}
+      height={scene.text_band.height || '45%'}
+      startFrame={Math.max(0, textStart - 5)}
+      gradientDirection={sceneTextPosition === 'bottom' ? 'down' : 'up'}
+    />
+  ) : null;
+
+  const lowerThirdEl = scene.lower_third ? (
+    <LowerThird
+      text={scene.lower_third.text}
+      subtext={scene.lower_third.subtext}
+      style={scene.lower_third.style || 'bar'}
+      accentColor={amber(palette)}
+      fontFamily={sceneFontFamily || undefined}
+      startFrame={Math.floor(scene.duracao_frames * 0.2)}
+    />
+  ) : null;
+
+  const subtitlesEl = scene.subtitles && scene.subtitles.length > 0 ? (
+    <Subtitles
+      segments={scene.subtitles}
+      style={scene.subtitle_style || 'default'}
+      fontFamily={sceneFontFamily || undefined}
+    />
+  ) : null;
+
+  const particlesEl = scene.particles ? (
+    <ParticleEffects
+      type={scene.particles.type || 'bokeh'}
+      count={scene.particles.count || 15}
+      color={scene.particles.color || light(palette)}
+      opacity={scene.particles.opacity || 0.4}
+      startFrame={5}
+    />
+  ) : null;
+
+  // If kinetic_text is set, use KineticText instead of TextOverlay
+  const useKinetic = !!scene.kinetic_text;
 
   // ── CTA scene ─────────────────────────────────────────────────────────────
   if (tipo === 'cta') {
@@ -247,14 +346,18 @@ export const DynamicScene: React.FC<SceneProps> = ({
             text={ctaMainText}
             fontSize={sceneFontSize || 60}
             color={sceneTextColor || dark(palette)}
+            fontFamily={sceneFontFamily || undefined}
             animation={textAnim || "bounce-in"}
             startFrame={textStart > 0 ? textStart : 15}
-            position={sceneTextPosition || undefined}
+            position={sceneTextPosition || 'center'}
             positionPercent={!sceneTextPosition ? 55 : undefined}
             fontWeight={sceneFontWeight || 800}
             lineHeight={sceneLineHeight || undefined}
           />
-          <CTAButton text={buttonText} bgColor={amber(palette)} textColor={light(palette)} startFrame={Math.floor(scene.duracao_frames * 0.6)} />
+          {textBandEl}
+          <CTAButton text={buttonText} bgColor={amber(palette)} textColor={light(palette)} startFrame={Math.floor(scene.duracao_frames * 0.6)} style={scene.cta_style || 'solid'} fontFamily={sceneFontFamily || undefined} />
+          {lowerThirdEl}
+          {subtitlesEl}
         </CameraMotion>
       );
     }
@@ -265,18 +368,47 @@ export const DynamicScene: React.FC<SceneProps> = ({
         {showProduct && (
           <ProductImage src={productSrc} size={280} entrance="spring-pop" startFrame={8} floating positionPercent={25} />
         )}
+        {textBandEl}
         <TextOverlay
           text={ctaMainText}
           fontSize={sceneFontSize || 60}
           color={sceneTextColor || dark(palette)}
+          fontFamily={sceneFontFamily || undefined}
           animation={textAnim || "bounce-in"}
           startFrame={textStart > 0 ? textStart : 15}
-          position={sceneTextPosition || undefined}
+          position={sceneTextPosition || 'center'}
           positionPercent={!sceneTextPosition ? 55 : undefined}
           fontWeight={sceneFontWeight || 800}
           lineHeight={sceneLineHeight || undefined}
         />
-        <CTAButton text={buttonText} bgColor={amber(palette)} textColor={light(palette)} startFrame={Math.floor(scene.duracao_frames * 0.6)} />
+        <CTAButton text={buttonText} bgColor={amber(palette)} textColor={light(palette)} startFrame={Math.floor(scene.duracao_frames * 0.6)} style={scene.cta_style || 'solid'} fontFamily={sceneFontFamily || undefined} />
+        {lowerThirdEl}
+        {subtitlesEl}
+      </AbsoluteFill>
+    );
+  }
+
+  // ── Split screen scene ────────────────────────────────────────────────────
+  if (scene.split_screen) {
+    return (
+      <AbsoluteFill>
+        <SplitScreen
+          leftSrc={scene.split_screen.leftSrc}
+          rightSrc={scene.split_screen.rightSrc}
+          direction={scene.split_screen.direction || 'horizontal'}
+          animation={scene.split_screen.animation || 'slide'}
+          labelLeft={scene.split_screen.labelLeft}
+          labelRight={scene.split_screen.labelRight}
+          startFrame={10}
+        />
+        {textBandEl}
+        {useKinetic ? (
+          <KineticText text={text} style={scene.kinetic_text?.style} fontSize={sceneFontSize || 52} color={sceneTextColor || light(palette)} fontFamily={sceneFontFamily || undefined} fontWeight={sceneFontWeight || 800} startFrame={textStart} beats={scene.kinetic_text?.beats} />
+        ) : (
+          <TextOverlay text={text} fontSize={sceneFontSize || 52} color={sceneTextColor || light(palette)} fontFamily={sceneFontFamily || undefined} animation={textAnim} startFrame={textStart} position={sceneTextPosition || 'bottom'} fontWeight={sceneFontWeight || 800} lineHeight={sceneLineHeight || undefined} />
+        )}
+        {lowerThirdEl}
+        {subtitlesEl}
       </AbsoluteFill>
     );
   }
@@ -291,6 +423,7 @@ export const DynamicScene: React.FC<SceneProps> = ({
         overlay={overlayType}
         overlayOpacity={overlayOpacity}
         blur={bgBlur}
+        colorGrading={scene.color_grading}
       >
         {/* Flash transition for 'presente' scenes */}
         {tipo.includes('presente') && <FlashTransition />}
@@ -319,19 +452,45 @@ export const DynamicScene: React.FC<SceneProps> = ({
         {/* Vignette for close/flashback */}
         {(tipo.includes('close') || tipo.includes('flashback')) && <Vignette intensity={0.6} />}
 
-        {/* Text */}
-        <TextOverlay
-          text={text}
-          fontSize={sceneFontSize || (tipo.includes('hook') ? 68 : tipo.includes('cta') ? 60 : 52)}
-          color={sceneTextColor || (overlayType === 'light' ? dark(palette) : light(palette))}
-          animation={textAnim}
-          startFrame={textStart}
-          position={sceneTextPosition || undefined}
-          positionPercent={!sceneTextPosition ? (tipo.includes('hook') ? 55 : tipo.includes('close') ? 18 : 72) : undefined}
-          italic={tipo.includes('flashback')}
-          fontWeight={sceneFontWeight || (tipo.includes('hook') ? 900 : 700)}
-          lineHeight={sceneLineHeight || undefined}
-        />
+        {/* Particles */}
+        {particlesEl}
+
+        {/* Text background band */}
+        {textBandEl}
+
+        {/* Text — kinetic or standard */}
+        {/* Magazine style: large text at top by default, like a cover */}
+        {useKinetic ? (
+          <KineticText
+            text={text}
+            style={scene.kinetic_text?.style || 'grow'}
+            fontSize={sceneFontSize || (tipo.includes('hook') ? 96 : tipo.includes('cta') ? 80 : 72)}
+            color={sceneTextColor || (overlayType === 'light' ? dark(palette) : light(palette))}
+            fontFamily={sceneFontFamily || undefined}
+            fontWeight={sceneFontWeight || 900}
+            startFrame={textStart}
+            beats={scene.kinetic_text?.beats}
+          />
+        ) : (
+          <TextOverlay
+            text={text}
+            fontSize={sceneFontSize || (tipo.includes('hook') ? 96 : tipo.includes('cta') ? 80 : 72)}
+            color={sceneTextColor || (overlayType === 'light' ? dark(palette) : light(palette))}
+            fontFamily={sceneFontFamily || undefined}
+            animation={textAnim}
+            startFrame={textStart}
+            position={sceneTextPosition || 'top'}
+            positionPercent={sceneTextPosition ? undefined : undefined}
+            italic={tipo.includes('flashback')}
+            fontWeight={sceneFontWeight || 900}
+            lineHeight={sceneLineHeight || 1.05}
+            uppercase
+          />
+        )}
+
+        {/* Lower third & subtitles */}
+        {lowerThirdEl}
+        {subtitlesEl}
       </CameraMotion>
     );
   }
@@ -390,10 +549,12 @@ export const DynamicScene: React.FC<SceneProps> = ({
         </div>
       )}
 
+      {textBandEl}
       <TextOverlay
         text={text}
         fontSize={sceneFontSize || 56}
         color={sceneTextColor || (tipo.includes('benefit') ? dark(palette) : light(palette))}
+        fontFamily={sceneFontFamily || undefined}
         animation={textAnim}
         startFrame={textStart}
         position={sceneTextPosition || 'center'}
@@ -401,6 +562,8 @@ export const DynamicScene: React.FC<SceneProps> = ({
         fontWeight={sceneFontWeight || 700}
         lineHeight={sceneLineHeight || undefined}
       />
+      {lowerThirdEl}
+      {subtitlesEl}
     </AbsoluteFill>
   );
 };

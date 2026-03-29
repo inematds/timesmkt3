@@ -2,10 +2,24 @@ import React from 'react';
 import { Composition } from 'remotion';
 import { ColdBrewAd } from './ColdBrewAd';
 import { DynamicAd, ScenePlanProps } from './DynamicAd';
-import { loadFont } from '@remotion/google-fonts/Inter';
+import { loadFont as loadInter } from '@remotion/google-fonts/Inter';
+import { loadFont as loadMontserrat } from '@remotion/google-fonts/Montserrat';
+import { loadFont as loadPlayfair } from '@remotion/google-fonts/PlayfairDisplay';
+import { loadFont as loadOswald } from '@remotion/google-fonts/Oswald';
+import { loadFont as loadSpaceGrotesk } from '@remotion/google-fonts/SpaceGrotesk';
+import { loadFont as loadPoppins } from '@remotion/google-fonts/Poppins';
+import { loadFont as loadRaleway } from '@remotion/google-fonts/Raleway';
+import { loadFont as loadBebas } from '@remotion/google-fonts/BebasNeue';
 
-// Pre-load the Inter font
-loadFont();
+// Pre-load fonts
+loadInter();
+loadMontserrat();
+loadPlayfair();
+loadOswald();
+loadSpaceGrotesk();
+loadPoppins();
+loadRaleway();
+loadBebas();
 
 // Default scene plan for preview in Remotion Studio
 const defaultScenePlan: ScenePlanProps = {

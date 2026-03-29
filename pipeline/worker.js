@@ -21,6 +21,22 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 const kieProvider = require('./generate-image-kie');
 const pollinationsProvider = require('./generate-image-pollinations');
 
+// Video renderer dispatcher — Remotion for Pro, ffmpeg for Quick (fallback)
+const RENDER_FFMPEG = path.resolve(__dirname, 'render-video-ffmpeg.js');
+const RENDER_REMOTION = path.resolve(__dirname, 'render-video-remotion.js');
+
+function getVideoRenderer(mode = 'quick') {
+  if (mode === 'pro') {
+    // Check if Remotion is available
+    const remotionDir = path.resolve(PROJECT_ROOT, 'remotion-ad');
+    const remotionBin = path.join(remotionDir, 'node_modules', '.bin', 'remotion');
+    if (fs.existsSync(remotionBin)) return RENDER_REMOTION;
+    // Fallback to ffmpeg if Remotion not installed
+    return RENDER_FFMPEG;
+  }
+  return RENDER_FFMPEG;
+}
+
 // Active provider — default KIE, switch to pollinations via IMAGE_PROVIDER env or job.data.image_provider
 const IMAGE_PROVIDER = (process.env.IMAGE_PROVIDER || 'kie').toLowerCase();
 
@@ -820,6 +836,15 @@ async function handleVideoQuick(job) {
   const absVideoDir = path.resolve(PROJECT_ROOT, output_dir, 'video');
   fs.mkdirSync(absVideoDir, { recursive: true });
 
+  // Skip if already completed (rerun optimization)
+  if (job.data.skip_completed) {
+    const finalVideo = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_video_01.mp4`);
+    if (fs.existsSync(finalVideo)) {
+      log(output_dir, 'video_quick', `Skipping — video already exists: ${finalVideo}`);
+      return { status: 'skipped', reason: 'already completed' };
+    }
+  }
+
   const lang = language || 'en';
   const langInstruction = lang === 'pt-BR'
     ? 'IMPORTANT: All text overlays MUST be in Brazilian Portuguese (pt-BR).'
@@ -1354,6 +1379,15 @@ async function handleVideoPro(job) {
   };
   fs.mkdirSync(absVideoDir, { recursive: true });
 
+  // Skip if already completed (rerun optimization)
+  if (job.data.skip_completed) {
+    const finalVideo = path.resolve(PROJECT_ROOT, output_dir, 'video', vf('01', '.mp4'));
+    if (fs.existsSync(finalVideo)) {
+      log(output_dir, 'video_pro', `Skipping — final video already exists: ${finalVideo}`);
+      return { status: 'skipped', reason: 'already completed' };
+    }
+  }
+
   const lang = language || 'en';
   const langInstruction = lang === 'pt-BR'
     ? 'IMPORTANT: All text overlays, narration and copy MUST be in Brazilian Portuguese (pt-BR).'
@@ -1474,6 +1508,8 @@ STEP 1 — Read ALL knowledge files:
 - ${output_dir}/creative/creative_brief.json (if exists)
 - skills/video-composition/advanced-composition-reference.md
 - skills/video-editor-agent/SKILL.md
+- skills/typography-on-image/SKILL.md (CRITICAL: follow these typography rules for text_layout in every scene)
+- skills/video-art-direction/SKILL.md
 
 STEP 2 — Image assets:
 ${imageSourceSection}
@@ -1503,6 +1539,16 @@ CRITICAL RULES (enforced — plan will be rejected if violated):
 - Text overlay COMPLEMENTS narration, never repeats it
 - Sum of all durations must equal video_length (tolerance ±2s)
 
+TYPOGRAPHY — MAGAZINE COVER STYLE (read skills/typography-on-image/SKILL.md):
+- text_layout.position: ONLY "top" or "center". NEVER "bottom" — social media UI covers the bottom 35% of 9:16 videos (like, comment, share, profile, audio buttons)
+- text_layout.font_size: LARGE — hook 96-140px, headlines 80-120px, body 60-80px. NEVER below 60px
+- text_layout.font_weight: 900 for headlines, 700 for body
+- text_layout.font_family: "Montserrat" (default, clean professional), "Oswald" for impact, "Playfair Display" for editorial/luxury, "Poppins" for young/social
+- text_layout.line_height: 1.0 for tight headlines, 1.15 for body text
+- text_layout.color: "#FFFFFF" on dark overlays, "#0D0D0D" on light overlays — NEVER gray
+- Every scene with text MUST have text_layout with ALL fields (font_size, font_weight, font_family, position, color, line_height)
+- FORBIDDEN: position "bottom" will be rejected and moved to "top" automatically
+
 Save each plan to: ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
 
 The JSON schema is defined in SKILL.md — follow it exactly.
@@ -1517,6 +1563,7 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
   // ── PHASE 1.5: Draft render (placeholders) for approval ─────────────────────
   // Render a draft video with solid-color backgrounds (brand colors) so the user
   // can approve the timing, narration, and structure before we generate real images.
+  process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} plan_ready\n`);
   log(output_dir, 'video_pro', 'Rendering draft video(s) with placeholder backgrounds...');
   for (let i = 1; i <= video_count; i++) {
     const idx = String(i).padStart(2, '0');
@@ -1539,8 +1586,9 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
       const draftOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', vf(idx, '_draft.mp4'));
       try {
+        // Draft uses ffmpeg (fast, placeholder quality)
         execFileSync('node', [
-          path.resolve(PROJECT_ROOT, 'pipeline/render-video-ffmpeg.js'),
+          RENDER_FFMPEG,
           `${output_dir}/video/${vf(idx, '_draft.json')}`,
           `${output_dir}/video/${vf(idx, '_draft.mp4')}`,
         ], { cwd: PROJECT_ROOT, stdio: 'pipe', timeout: 300000 });
@@ -1555,6 +1603,7 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
   }
 
   // ── PHASE 2: Generate real images (API mode) ───────────────────────────────
+  process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} images_start\n`);
   if (image_source === 'api') {
     const jobProvider = job.data.image_provider || IMAGE_PROVIDER;
     const imageProvider = getImageProvider(jobProvider);
@@ -1697,6 +1746,7 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
   }
 
   // ── PHASE 4: Render (no motion_director needed — plan already enriched) ────
+  process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} render_start\n`);
   log(output_dir, 'video_pro', 'Starting video render...');
 
   for (let i = 1; i <= video_count; i++) {
@@ -1710,20 +1760,35 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       continue;
     }
 
-    log(output_dir, 'video_pro', `Rendering video ${i}/${video_count}...`);
+    const renderer = getVideoRenderer('pro');
+    const rendererName = renderer === RENDER_REMOTION ? 'Remotion' : 'ffmpeg';
+    log(output_dir, 'video_pro', `Rendering video ${i}/${video_count} via ${rendererName}...`);
     try {
       execFileSync('node', [
-        path.resolve(PROJECT_ROOT, 'pipeline/render-video-ffmpeg.js'),
+        renderer,
         planToRender,
         `${output_dir}/video/${vf(idx, '.mp4')}`,
       ], {
         cwd: PROJECT_ROOT,
         stdio: 'pipe',
-        timeout: 300000,
+        timeout: 600000,
       });
-      log(output_dir, 'video_pro', `Video ${i} rendered: ${videoOutput}`);
+      log(output_dir, 'video_pro', `Video ${i} rendered via ${rendererName}: ${videoOutput}`);
     } catch (renderErr) {
-      log(output_dir, 'video_pro', `ffmpeg render ${i} failed: ${renderErr.message.slice(0, 200)}`);
+      // If Remotion fails, fallback to ffmpeg
+      if (renderer === RENDER_REMOTION) {
+        log(output_dir, 'video_pro', `Remotion render ${i} failed, falling back to ffmpeg: ${renderErr.message.slice(0, 150)}`);
+        try {
+          execFileSync('node', [RENDER_FFMPEG, planToRender, `${output_dir}/video/${vf(idx, '.mp4')}`], {
+            cwd: PROJECT_ROOT, stdio: 'pipe', timeout: 300000,
+          });
+          log(output_dir, 'video_pro', `Video ${i} rendered via ffmpeg (fallback): ${videoOutput}`);
+        } catch (fbErr) {
+          log(output_dir, 'video_pro', `ffmpeg fallback ${i} also failed: ${fbErr.message.slice(0, 200)}`);
+        }
+      } else {
+        log(output_dir, 'video_pro', `ffmpeg render ${i} failed: ${renderErr.message.slice(0, 200)}`);
+      }
     }
   }
 

@@ -254,9 +254,9 @@ function getPositionStyle(
     };
   }
   const map: Record<string, React.CSSProperties> = {
-    top: { position: 'absolute', top: '12%', left: '50%', transform: 'translateX(-50%)', width: maxWidth },
+    top: { position: 'absolute', top: '8%', left: '50%', transform: 'translateX(-50%)', width: maxWidth },
     center: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: maxWidth },
-    bottom: { position: 'absolute', bottom: '10%', left: '50%', transform: 'translateX(-50%)', width: maxWidth },
+    bottom: { position: 'absolute', bottom: '8%', left: '50%', transform: 'translateX(-50%)', width: maxWidth },
   };
   return map[position] || map.center;
 }

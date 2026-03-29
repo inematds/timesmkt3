@@ -1054,6 +1054,7 @@ bot.command('rerun', async (ctx) => {
     approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
     notifications: true,
     skip_dependencies: true,
+    skip_completed: true,
   };
 
   const stageLabels = { 1: 'Brief & Narrativa', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
@@ -1918,6 +1919,34 @@ function runPipelineV3(ctx, chatId, payload, outputDir) {
         fs.mkdirSync(path.dirname(approvedPath), { recursive: true });
         fs.writeFileSync(approvedPath, JSON.stringify({ approved: true, by: 'v3_stage_gate', ts: Date.now() }));
         console.log('[v3] auto-approved worker video gate:', match[1]);
+      }
+    }
+
+    // Video Pro progress notifications
+    if (text.includes('[VIDEO_PRO_PROGRESS]')) {
+      const match = text.match(/\[VIDEO_PRO_PROGRESS\]\s*\S+\s+(\S+)/);
+      if (match) {
+        const phase = match[1];
+        const labels = {
+          plan_ready: '📋 Video Pro: roteiro pronto, gerando draft...',
+          images_start: '🖼 Video Pro: gerando imagens...',
+          render_start: '🎬 Video Pro: renderizando vídeo final...',
+        };
+        const msg = labels[phase] || `🎬 Video Pro: ${phase}`;
+        bot.api.sendMessage(chatId, msg).catch(() => {});
+      }
+    }
+
+    // Video Pro draft ready — send draft video file
+    if (text.includes('[STAGE3_DRAFT_READY]')) {
+      const match = text.match(/\[STAGE3_DRAFT_READY\]\s*\S+\s+(\S+)/);
+      if (match) {
+        const draftPath = match[1];
+        if (fs.existsSync(draftPath)) {
+          bot.api.sendVideo(chatId, new InputFile(draftPath), {
+            caption: '📹 Draft do Video Pro — confira o roteiro e timing',
+          }).catch(e => console.error('[video_pro draft]', e.message));
+        }
       }
     }
 

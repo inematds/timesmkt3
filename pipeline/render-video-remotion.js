@@ -64,6 +64,67 @@ const ANIM_MAP = {
   'fade': 'fade',
 };
 
+// Font family normalization — scene plan can use short names
+const FONT_MAP = {
+  'inter': 'Inter, sans-serif',
+  'montserrat': 'Montserrat, sans-serif',
+  'playfair': 'Playfair Display, serif',
+  'playfair display': 'Playfair Display, serif',
+  'oswald': 'Oswald, sans-serif',
+  'space grotesk': 'Space Grotesk, sans-serif',
+  'space_grotesk': 'Space Grotesk, sans-serif',
+  'poppins': 'Poppins, sans-serif',
+  'raleway': 'Raleway, sans-serif',
+  'bebas': 'Bebas Neue, sans-serif',
+  'bebas neue': 'Bebas Neue, sans-serif',
+};
+
+// Transition type normalization
+const TRANSITION_MAP = {
+  'crossfade': 'crossfade',
+  'fade': 'crossfade',
+  'fade_black': 'fade_black',
+  'fade_to_black': 'fade_black',
+  'slide_left': 'slide_left',
+  'slide_right': 'slide_right',
+  'wipe': 'wipe',
+  'none': 'none',
+  'cut': 'none',
+};
+
+// Resolve text position — NEVER bottom (social media UI covers that area)
+// Only "top" and "center" are safe positions
+function resolveTextPosition(rawPos, sceneType) {
+  // RULE: bottom is FORBIDDEN — social media UI (buttons, swipe, handles) covers it
+  if (rawPos === 'bottom') return 'top';
+  // top is always good
+  if (rawPos === 'top') return 'top';
+  // center is OK for CTA, impact words, short text
+  if (rawPos === 'center') {
+    if (sceneType === 'cta') return 'center';
+    // For other types, prefer top unless it's a single-word impact scene
+    return 'top';
+  }
+  // Default: top (magazine cover style)
+  return 'top';
+}
+
+// Default font size by scene type — magazine cover style (large, impactful)
+function getDefaultFontSize(sceneType) {
+  const sizes = {
+    'hook': 96,
+    'intro': 88,
+    'problem': 80,
+    'tension': 80,
+    'middle': 72,
+    'benefit': 80,
+    'solution': 88,
+    'social_proof': 72,
+    'cta': 80,
+  };
+  return sizes[sceneType] || 76;
+}
+
 // Default animation by scene type
 const DEFAULT_ANIM = {
   'hook': 'blur-in',
@@ -132,16 +193,43 @@ function adaptScenePlan(plan) {
         texto: s.text_overlay,
         animacao: textAnim,
         cor: s.text_color || s.text_layout?.color || '#FFFFFF',
-        posicao: s.text_position || s.text_layout?.position || 'center',
-        tamanho: s.text_layout?.font_size || 60,
-        peso: s.text_layout?.font_weight || 800,
-        line_height: s.text_layout?.line_height || 1.15,
+        // Magazine style: "center" from old plans is treated as unset → default to "top"
+        posicao: resolveTextPosition(s.text_position || s.text_layout?.position, s.type),
+        tamanho: s.text_layout?.font_size || getDefaultFontSize(s.type),
+        peso: s.text_layout?.font_weight || 900,
+        line_height: s.text_layout?.line_height || 1.0,
+        font_family: s.text_layout?.font_family
+          ? (FONT_MAP[(s.text_layout.font_family || '').toLowerCase()] || s.text_layout.font_family)
+          : 'Montserrat, sans-serif',
       } : null,
       overlay: s.overlay || 'dark',
-      overlay_opacity: s.overlay_opacity || 0.4,
+      overlay_opacity: s.overlay_opacity || 0.45,
+      transition: TRANSITION_MAP[s.transition] || (i > 0 ? 'crossfade' : 'none'),
+      transition_duration: s.transition_duration || 10,
+      color_grading: s.color_grading || null,
+      // Auto text_band for scenes with text overlay (magazine readability)
+      text_band: s.text_band || (s.text_overlay ? {
+        style: 'gradient',
+        color: '#000000',
+        opacity: 0.5,
+        height: '45%',
+      } : null),
+      lower_third: s.lower_third || null,
+      subtitles: s.subtitles || null,
+      subtitle_style: s.subtitle_style || null,
+      cta_style: s.cta_style || 'solid',
     });
 
     frameOffset += durationFrames;
+  }
+
+  // Add 2s padding at the end so narration never gets cut off
+  const END_PADDING_FRAMES = FPS * 2; // 60 frames = 2 seconds
+  if (scenes.length > 0) {
+    const lastScene = scenes[scenes.length - 1];
+    lastScene.duracao_frames += END_PADDING_FRAMES;
+    lastScene.frame_fim += END_PADDING_FRAMES;
+    frameOffset += END_PADDING_FRAMES;
   }
 
   // Copy audio files

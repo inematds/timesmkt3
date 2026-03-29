@@ -21,6 +21,14 @@ export type CameraEffect =
   | 'breathe'            // subtle scale pulse (living photo)
   | 'none';              // static
 
+export interface ColorGrading {
+  brightness?: number;  // default 1.0
+  contrast?: number;    // default 1.0
+  saturate?: number;    // default 1.0
+  sepia?: number;       // 0-1
+  hueRotate?: number;   // degrees
+}
+
 interface CameraMotionProps {
   src: string;
   effect?: CameraEffect;
@@ -29,6 +37,7 @@ interface CameraMotionProps {
   overlay?: 'dark' | 'light' | 'warm' | 'cool' | 'sepia' | 'none';
   overlayOpacity?: number;
   blur?: number;
+  colorGrading?: ColorGrading;
 }
 
 export const CameraMotion: React.FC<CameraMotionProps> = ({
@@ -39,6 +48,7 @@ export const CameraMotion: React.FC<CameraMotionProps> = ({
   overlay = 'dark',
   overlayOpacity = 0.4,
   blur = 0,
+  colorGrading,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
@@ -136,10 +146,18 @@ export const CameraMotion: React.FC<CameraMotionProps> = ({
     none: 'transparent',
   };
 
-  const filterStr = [
+  const filterParts = [
     blur > 0 ? `blur(${blur}px)` : '',
     overlay === 'sepia' ? 'saturate(0.5) sepia(0.3)' : '',
-  ].filter(Boolean).join(' ') || 'none';
+  ];
+  if (colorGrading) {
+    if (colorGrading.brightness != null && colorGrading.brightness !== 1) filterParts.push(`brightness(${colorGrading.brightness})`);
+    if (colorGrading.contrast != null && colorGrading.contrast !== 1) filterParts.push(`contrast(${colorGrading.contrast})`);
+    if (colorGrading.saturate != null && colorGrading.saturate !== 1) filterParts.push(`saturate(${colorGrading.saturate})`);
+    if (colorGrading.sepia != null && colorGrading.sepia > 0) filterParts.push(`sepia(${colorGrading.sepia})`);
+    if (colorGrading.hueRotate != null && colorGrading.hueRotate !== 0) filterParts.push(`hue-rotate(${colorGrading.hueRotate}deg)`);
+  }
+  const filterStr = filterParts.filter(Boolean).join(' ') || 'none';
 
   return (
     <AbsoluteFill style={{ overflow: 'hidden' }}>

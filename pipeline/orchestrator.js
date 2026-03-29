@@ -277,7 +277,8 @@ async function enqueueStage(payload, agentNames) {
   // Resolve video agents based on video_mode / video_quick / video_pro flags
   let resolvedNames = [...agentNames];
   if (agentNames.includes('video_quick')) {
-    const wantQuick = payload.video_quick !== false && payload.video_mode !== 'pro';
+    // Quick always runs unless explicitly disabled; Pro runs when requested
+    const wantQuick = payload.video_quick !== false;
     const wantPro = payload.video_pro === true || payload.video_mode === 'pro' || payload.video_mode === 'both';
 
     // Replace the default video_quick entry with what's actually requested
