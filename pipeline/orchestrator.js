@@ -274,11 +274,20 @@ async function enqueueStage(payload, agentNames) {
     source_folder = null,
   } = payload;
 
-  // Swap video_quick → video_pro when video_mode === 'pro'
-  let resolvedNames = agentNames;
-  if (payload.video_mode === 'pro' && agentNames.includes('video_quick')) {
-    resolvedNames = agentNames.map(a => a === 'video_quick' ? 'video_pro' : a);
-    console.log('  [video_mode=pro] Swapping video_quick → video_pro');
+  // Resolve video agents based on video_mode / video_quick / video_pro flags
+  let resolvedNames = [...agentNames];
+  if (agentNames.includes('video_quick')) {
+    const wantQuick = payload.video_quick !== false && payload.video_mode !== 'pro';
+    const wantPro = payload.video_pro === true || payload.video_mode === 'pro' || payload.video_mode === 'both';
+
+    // Replace the default video_quick entry with what's actually requested
+    resolvedNames = resolvedNames.filter(a => a !== 'video_quick');
+    if (wantQuick) resolvedNames.push('video_quick');
+    if (wantPro) resolvedNames.push('video_pro');
+
+    if (wantQuick && wantPro) console.log('  [video] Running both video_quick + video_pro');
+    else if (wantPro) console.log('  [video] Running video_pro only');
+    else if (wantQuick) console.log('  [video] Running video_quick');
   }
 
   const stageAgentDefs = AGENTS.filter(a => resolvedNames.includes(a.name));

@@ -952,16 +952,18 @@ bot.command('rerun', async (ctx) => {
       '<b>/rerun — Reprocessar etapas de campanha existente</b>\n\n' +
       'Uso: <code>/rerun &lt;campanha&gt; &lt;etapas&gt;</code>\n\n' +
       'Exemplos:\n' +
-      '<code>/rerun c12 imagens</code>\n' +
-      '<code>/rerun c12 imagens,video</code>\n' +
-      '<code>/rerun c12 2,3,4</code>',
+      '<code>/rerun c13 imagens</code>\n' +
+      '<code>/rerun c13 video quick</code>\n' +
+      '<code>/rerun c13 video pro</code>\n' +
+      '<code>/rerun c13 imagens,video quick</code>\n' +
+      '<code>/rerun c13 2,3</code>',
       { parse_mode: 'HTML' }
     );
   }
 
   const args = raw.split(/\s+/);
   const campaignQuery = args[0];
-  const stageArgs = args.slice(1).join(',').split(',').map(x => x.trim()).filter(Boolean);
+  const stageArgs = args.slice(1).join(' ').split(',').map(x => x.trim()).filter(Boolean);
 
   // Find campaign: try active project, then all projects
   let projectDir = s.projectDir;
@@ -986,14 +988,40 @@ bot.command('rerun', async (ctx) => {
   const outputDir = `${projectDir}/outputs/${campaignFolder}`;
   const absOutputDir = path.resolve(PROJECT_ROOT, outputDir);
 
-  // Resolve stages
+  // Resolve stages and detect video type
   if (stageArgs.length === 0) {
-    return ctx.reply('Especifique quais etapas. Ex: <code>/rerun c12 imagens,video</code>', { parse_mode: 'HTML' });
+    return ctx.reply('Especifique quais etapas. Ex: <code>/rerun c13 video quick</code>', { parse_mode: 'HTML' });
   }
 
-  const stageNumbers = [...new Set(stageArgs.map(resolveStageAlias).filter(Boolean))].sort();
-  if (stageNumbers.length === 0) {
-    return ctx.reply('Etapas nao reconhecidas. Use: brief, imagens, video, plataformas, distribuicao (ou 1-5).');
+  // Parse stage args — detect "video quick", "video pro" as compound tokens
+  const allTokens = stageArgs.join(' ').toLowerCase().split(/[\s,]+/);
+  const stageNumbers = new Set();
+  let videoQuick = false;
+  let videoPro = false;
+
+  for (let i = 0; i < allTokens.length; i++) {
+    const token = allTokens[i];
+    const next = allTokens[i + 1];
+
+    if ((token === 'video' || token === 'videos') && next === 'quick') {
+      stageNumbers.add(3); videoQuick = true; i++; continue;
+    }
+    if ((token === 'video' || token === 'videos') && next === 'pro') {
+      stageNumbers.add(3); videoPro = true; i++; continue;
+    }
+    if (token === 'quick') { stageNumbers.add(3); videoQuick = true; continue; }
+    if (token === 'pro') { stageNumbers.add(3); videoPro = true; continue; }
+
+    const resolved = resolveStageAlias(token);
+    if (resolved) {
+      stageNumbers.add(resolved);
+      if (resolved === 3 && !videoQuick && !videoPro) videoQuick = true; // "video" alone = quick
+    }
+  }
+
+  const sortedStages = [...stageNumbers].sort();
+  if (sortedStages.length === 0) {
+    return ctx.reply('Etapas nao reconhecidas. Use: brief, imagens, video quick, video pro, plataformas, distribuicao.');
   }
 
   // Read existing brief
@@ -1002,6 +1030,9 @@ bot.command('rerun', async (ctx) => {
   if (fs.existsSync(briefPath)) {
     try { briefData = JSON.parse(fs.readFileSync(briefPath, 'utf-8')); } catch {}
   }
+
+  // Determine which video agents to run
+  const videoMode = videoPro && videoQuick ? 'both' : videoPro ? 'pro' : 'quick';
 
   const payload = {
     task_name: campaignFolder,
@@ -1017,14 +1048,20 @@ bot.command('rerun', async (ctx) => {
     image_model: process.env.KIE_DEFAULT_MODEL || 'z-image',
     use_brand_overlay: true,
     campaign_brief: briefData.campaign_angle || '',
-    video_mode: 'quick',
+    video_mode: videoMode,
+    video_quick: videoQuick,
+    video_pro: videoPro,
     approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
     notifications: true,
     skip_dependencies: true,
   };
 
   const stageLabels = { 1: 'Brief & Narrativa', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
-  const stageList = stageNumbers.map(n => `  <b>${n}.</b> ${stageLabels[n]}`).join('\n');
+  const videoLabel = videoQuick && videoPro ? 'Video Quick + Pro' : videoPro ? 'Video Pro' : 'Video Quick';
+  const stageList = sortedStages.map(n => {
+    const label = n === 3 ? videoLabel : stageLabels[n];
+    return `  <b>${n}.</b> ${label}`;
+  }).join('\n');
 
   await ctx.reply(
     `<b>Reprocessar: ${campaignFolder}</b>\n` +
@@ -1034,7 +1071,7 @@ bot.command('rerun', async (ctx) => {
     { parse_mode: 'HTML' }
   );
 
-  session.setPendingRerun(chatId, { payload, stages: stageNumbers, campaignFolder });
+  session.setPendingRerun(chatId, { payload, stages: sortedStages, campaignFolder });
 });
 
 // ── Free text → campaign confirmation or Claude conversation ─────────────────

@@ -23,7 +23,7 @@
 - `v3.2.1` → Motion Director + brand visual context (RECURSO+1, BUG acumulado = 1, não zerou)
 - `v4.0.0` → pipeline 5 estágios, 6 agentes de plataforma, video quick/pro, publish genérico (MAJOR+1, tudo zera)
 
-**Versão atual:** `ITAGMKT v4.0.4`
+**Versão atual:** `ITAGMKT v4.0.5`
 
 Sempre atualizar a versão no topo deste arquivo e no `package.json` ao fazer uma alteração relevante.
 
