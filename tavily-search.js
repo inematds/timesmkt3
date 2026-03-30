@@ -11,11 +11,11 @@ if (!TAVILY_API_KEY) {
 const client = tavily({ apiKey: TAVILY_API_KEY });
 
 const queries = [
-  "pascoa 2026 tendencias marketing digital instagram reels carrossel brasil ovos coloridos chocolate familia renovacao celebracao",
-  "campanha pascoa educacao empreendedorismo comunidade digital estrategias instagram reels engajamento marcas brasileiras 2025 2026",
-  "publico-alvo pascoa empreendedores profissionais motivacoes renovacao esperanca ciclo novo conexao familia crescimento pessoal brasil",
-  "melhores hooks pascoa reels instagram viral ovos coloridos primavera familia celebracao renovacao espiritual narrativa emocional feminina",
-  "conteudo viral pascoa comunidade online solidariedade renovacao esperanca carrossel instagram stories engajamento educacao digital 2026"
+  "pascoa 2026 tendencias marketing digital brasil educacao tecnologia inteligencia artificial campanhas criativas",
+  "pascoa tecnologia educacao online brasil conteudo viral instagram reels carrossel ideias criativas 2025 2026",
+  "publico brasileiro interesse pascoa aprendizado ia motivacoes comportamento digital redes sociais engajamento",
+  "hooks virais pascoa humor criativo educacao tecnologia ia instagram tiktok reels brasil engajamento 2026",
+  "campanhas pascoa marcas educacionais tech brasil posicionamento diferenciado criativo futurista tendencias"
 ];
 
 async function runSearches() {

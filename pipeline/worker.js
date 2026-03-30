@@ -55,7 +55,7 @@ function getImageProvider(jobProvider) {
  * Returns { source, folder } where folder is only set for 'folder' source.
  */
 function resolveImageSource(imageSource, imageFolder) {
-  const aliases = { marca: 'brand', pasta: 'folder', gratis: 'free' };
+  const aliases = { marca: 'brand', pasta: 'folder', gratis: 'free', captura: 'screenshot', capturas: 'screenshot' };
   const source = aliases[imageSource] || imageSource || 'brand';
   return { source, folder: source === 'folder' ? imageFolder : null };
 }
@@ -293,9 +293,25 @@ async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, c
   const formatList = [];
   for (let i = 0; i < count; i++) formatList.push(formats[i % formats.length]);
 
+  // Pre-generate ALL prompts and save as individual _prompt.txt files before calling API
+  const allPrompts = [];
+  for (let pi = 0; pi < formatList.length; pi++) {
+    const fmt = formatList[pi];
+    const ratio = formatToRatio[fmt] || '1:1';
+    const taskPrefix = path.basename(outputDir);
+    const filename = `${taskPrefix}_generated_${String(pi + 1).padStart(2, '0')}_${fmt}.jpg`;
+    const sceneType = scenePurposes[pi] || defaultSceneOrder[pi % defaultSceneOrder.length];
+    const sceneDesc = sceneDescriptions[pi] || '';
+    const prompt = buildImagePrompt(brief, brand, fmt, pi + 1, count, sceneType, sceneDesc);
+    allPrompts.push({ index: pi + 1, filename, format: fmt, ratio, sceneType, prompt });
+    // Save individual prompt file
+    const promptTxtPath = path.join(absImgsDir, filename.replace(/\.[^.]+$/, '_prompt.txt'));
+    fs.writeFileSync(promptTxtPath, prompt);
+  }
+  log(outputDir, 'api_image_gen', `All ${allPrompts.length} prompts saved as _prompt.txt files`);
+
   for (const fmt of formatList) {
     const ratio = formatToRatio[fmt] || '1:1';
-    // Prefix with campaign task_name for uniqueness
     const taskPrefix = path.basename(outputDir);
     const filename = `${taskPrefix}_generated_${String(imgIndex).padStart(2, '0')}_${fmt}.jpg`;
     const outputPath = path.join(absImgsDir, filename);
@@ -305,7 +321,7 @@ async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, c
     if (fs.existsSync(outputPath)) {
       log(outputDir, 'api_image_gen', `Already exists, skipping: ${filename}`);
     } else {
-      const prompt = buildImagePrompt(brief, brand, fmt, imgIndex, count, sceneType, sceneDesc);
+      const prompt = allPrompts[imgIndex - 1].prompt;
       log(outputDir, 'api_image_gen', `Generating ${imgIndex}/${count}: ${filename} [${sceneType}] (${provider}/${model}, ${ratio})`);
       log(outputDir, 'api_image_gen', `Prompt: ${prompt.slice(0, 200)}`);
 
@@ -353,6 +369,14 @@ async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, c
       log(outputDir, 'api_image_gen', 'Retrying image generation by user request...');
       return generateApiImages(outputDir, projectDir, model, count, formats, brief, useBrandOverlay, scenePurposes);
     }
+    if (decision.action === 'change_source') {
+      log(outputDir, 'api_image_gen', `Changing image source to: ${decision.image_source}`);
+      // Signal the worker to use a different source — write source override file
+      const overridePath = path.resolve(PROJECT_ROOT, outputDir, 'imgs', 'source_override.json');
+      fs.writeFileSync(overridePath, JSON.stringify({ image_source: decision.image_source, image_folder: decision.image_folder || null }));
+      // Return empty — the ad_creative_designer will pick up brand/free assets instead
+      return [];
+    }
     // action === 'advance' — continue without images (CSS-only fallback)
     log(outputDir, 'api_image_gen', 'Advancing without images by user request.');
   }
@@ -374,12 +398,12 @@ async function waitForFile(filePath, timeoutMs = 1800000, intervalMs = 3000) {
 
 // ── Claude CLI invocation ────────────────────────────────────────────────────
 
-function runClaude(prompt, agentName, outputDir, timeoutMs = 600000) {
+function runClaude(prompt, agentName, outputDir, timeoutMs = 600000, { model = 'sonnet' } = {}) {
   return new Promise((resolve, reject) => {
     const args = [
       '-p', prompt,
       '--dangerously-skip-permissions',
-      '--model', 'sonnet',
+      '--model', model,
     ];
 
     log(outputDir, agentName, `Invoking Claude CLI...`);
@@ -709,6 +733,29 @@ STEP 2 — Image source: folder "${imageFolder || '(not specified)'}" — no ima
 - Falling back to CSS-only: gradients, bold typography, and geometric shapes
 - No <img> tags — pure HTML/CSS visual design`;
     }
+  } else if (image_source === 'screenshot') {
+    const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
+    const briefPath = path.resolve(PROJECT_ROOT, output_dir, 'creative', 'creative_brief.json');
+    const researchPath = path.resolve(PROJECT_ROOT, output_dir, 'research_results.json');
+    const productPath = path.resolve(PROJECT_ROOT, project_dir, 'knowledge', 'product_campaign.md');
+    const extractedUrls = extractUrlsFromFiles([briefPath, researchPath, productPath]);
+    const explicitUrls = job.data.screenshot_urls || [];
+    const allUrls = [...new Set([...explicitUrls, ...extractedUrls])];
+    log(output_dir, 'ad_creative_designer', `Capturing screenshots from ${allUrls.length} URLs...`);
+    const screenshotAssets = await captureScreenshots(allUrls, path.resolve(PROJECT_ROOT, output_dir));
+    const brandAssets = getProjectAssets(project_dir);
+    const combinedAssets = [...screenshotAssets, ...brandAssets];
+    const assetList = formatAssetList(combinedAssets);
+    imageSourceSection = `
+STEP 2 — Screenshots + brand images (${screenshotAssets.length} screenshots + ${brandAssets.length} brand):
+${assetList}
+
+CRITICAL IMAGE RULES:
+- Embed as <img src="file://<absolute_path>"> in your HTML
+- Screenshots show the real product interface — prioritize them
+- Combine with brand photos for variety
+- Apply CSS overlays, gradients, blur for text readability
+- BANNER images (marked [banner]): use object-fit: contain, never cover`;
   } else {
     // brand (default)
     const brandAssets = getProjectAssets(project_dir);
@@ -742,6 +789,7 @@ STEP 1 — Read ALL inputs FIRST (before designing anything):
 - ${project_dir}/knowledge/brand_identity.md — color palette, typography, tone
 - ${project_dir}/knowledge/product_campaign.md — product features, assets described
 - ${project_dir}/knowledge/platform_guidelines.md — format requirements per platform
+- skills/typography-on-image/SKILL.md — CRITICAL: text positioning, font sizing, contrast rules, and legibility over images
 
 COPY RULE: You MUST use the text from narrative.json. Do NOT invent headlines, subtext, or CTAs.
 - For carousel slides: read narrative.json → carousel_texts (one entry per slide)
@@ -905,6 +953,8 @@ STEP 1 — Read inputs:
 - ${output_dir}/copy/narrative.json — campaign narrative, emotional_arc, headlines, key_phrases
 - ${output_dir}/creative/creative_brief.json — campaign angle, visual direction, approved CTAs
 - ${project_dir}/knowledge/brand_identity.md — brand colors, tone
+- skills/typography-on-image/SKILL.md — CRITICAL: rules for text positioning, font size, contrast, and legibility over images
+- skills/video-art-direction/SKILL.md — visual style presets (colors, typography, transitions)
 
 STEP 2 — Available images from Designer (use these, do NOT generate new ones):
 ${adImageList}
@@ -946,6 +996,14 @@ RULES:
 - Each scene uses a DIFFERENT image
 - Motion: alternate between push-in, ken-burns-in, drift, breathe (never same 2x in a row)
 - Format: 9:16 (1080x1920) for Reels/Shorts/Stories
+
+TYPOGRAPHY RULES (from typography-on-image/SKILL.md):
+- ANALYZE each image before placing text — avoid overlapping text on busy areas or existing text in the image
+- text_position: ONLY "top" or "center" — NEVER "bottom" (mobile UI covers it)
+- Font size minimum: 60px for headlines, 36px for subtitles (1080p)
+- Always use text shadow or overlay for contrast: overlay_opacity 0.4-0.6 on medium images
+- Max 6 words per text_overlay
+- If image has text/graphics already, use stronger overlay (0.5+) or position text in empty area
 
 After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
@@ -1127,6 +1185,29 @@ IMAGE ANALYSIS RULES (mandatory before building scene plan):
 STEP 2 — Image source: folder "${imageFolder || '(not specified)'}" — no images found
 - Use CSS-only backgrounds in the scene plan`;
     }
+  } else if (image_source === 'screenshot') {
+    const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
+    const briefPath = path.resolve(PROJECT_ROOT, output_dir, 'creative', 'creative_brief.json');
+    const researchPath = path.resolve(PROJECT_ROOT, output_dir, 'research_results.json');
+    const productPath = path.resolve(PROJECT_ROOT, project_dir, 'knowledge', 'product_campaign.md');
+    const extractedUrls = extractUrlsFromFiles([briefPath, researchPath, productPath]);
+    const explicitUrls = job.data.screenshot_urls || [];
+    const allUrls = [...new Set([...explicitUrls, ...extractedUrls])];
+    log(output_dir, 'video_quick', `Capturing screenshots from ${allUrls.length} URLs...`);
+    const screenshotAssets = await captureScreenshots(allUrls, path.resolve(PROJECT_ROOT, output_dir));
+    const brandAssets = getProjectAssets(project_dir);
+    const combinedAssets = [...screenshotAssets, ...brandAssets];
+    const assetList = formatAssetList(combinedAssets);
+    imageSourceSection = `
+STEP 2 — Screenshots + brand images (${screenshotAssets.length} screenshots + ${brandAssets.length} brand):
+${assetList}
+
+IMAGE ANALYSIS RULES:
+- Screenshots show the real product interface — prioritize them
+- Combine with brand photos for variety
+- Read orientation: portrait images best for 1080x1920
+- Never assign the same image to two scenes
+- BANNER images (marked [banner]): set "image_type": "banner"`;
   } else {
     // brand (default) — include metadata so agent can make smart decisions
     const brandAssets = getProjectAssets(project_dir);
@@ -1512,6 +1593,38 @@ REUSE STRATEGY (with ${folderAssets.length} images for 30-50 cuts):
       imageSourceSection = `
 IMAGE SOURCE: folder "${imageFolder || '(not specified)'}" — no images found`;
     }
+  } else if (image_source === 'screenshot') {
+    // Capture screenshots from URLs in brief/research/payload
+    const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
+    const briefPath = path.resolve(PROJECT_ROOT, output_dir, 'creative', 'creative_brief.json');
+    const researchPath = path.resolve(PROJECT_ROOT, output_dir, 'research_results.json');
+    const productPath = path.resolve(PROJECT_ROOT, project_dir, 'knowledge', 'product_campaign.md');
+    const extractedUrls = extractUrlsFromFiles([briefPath, researchPath, productPath]);
+    const explicitUrls = job.data.screenshot_urls || [];
+    const allUrls = [...new Set([...explicitUrls, ...extractedUrls])];
+    log(output_dir, 'video_pro', `Capturing screenshots from ${allUrls.length} URLs: ${allUrls.join(', ')}`);
+    const screenshotAssets = await captureScreenshots(allUrls, path.resolve(PROJECT_ROOT, output_dir));
+    // Also include brand assets alongside screenshots
+    const brandAssets = getProjectAssets(project_dir);
+    const combinedAssets = [...screenshotAssets, ...brandAssets];
+    const assetList = formatAssetList(combinedAssets);
+    imageSourceSection = `
+SCREENSHOT + BRAND IMAGES (${screenshotAssets.length} screenshots + ${brandAssets.length} brand assets):
+${assetList}
+
+Screenshots are real captures of the brand's website/product. Prioritize them for:
+- Showing the actual product interface
+- Social proof (real content, real community)
+- Visual reference for brand style
+Combine with brand photos (Nei, logos, banners) for variety.
+
+REUSE STRATEGY (with ${combinedAssets.length} images for 30-50 cuts):
+- Same image + different crop_focus = visually distinct
+- Same image + different motion = feels new
+- Same image + different overlay = different mood
+- Maximum 5 uses per image
+- Never assign same image to 2 CONSECUTIVE cuts`;
+    log(output_dir, 'video_pro', `Screenshots captured: ${screenshotAssets.length}, brand: ${brandAssets.length}`);
   } else {
     // brand (default)
     const brandAssets = getProjectAssets(project_dir);
@@ -1528,26 +1641,69 @@ REUSE STRATEGY (with ${brandAssets.length} images for 30-50 cuts):
 - Never assign same image to 2 CONSECUTIVE cuts`;
   }
 
-  // ── Build the Video Editor Agent prompt ──────────────────────────────────────
-  const prompt = `You are the Video Editor Agent (Diretor de Edição). Follow the skill defined in skills/video-editor-agent/SKILL.md exactly.
+  // ── PHASE 1: Narration (Sonnet — fast) ───────────────────────────────────────
+  // Check if narration already exists (rerun optimization)
+  const absAudioDir = path.resolve(PROJECT_ROOT, output_dir, 'audio');
+  fs.mkdirSync(absAudioDir, { recursive: true });
+  let narrationExists = false;
+  for (let i = 1; i <= video_count; i++) {
+    const idx = String(i).padStart(2, '0');
+    const narPath = path.resolve(absAudioDir, `${task_name}_video_${idx}_narration.mp3`);
+    if (fs.existsSync(narPath)) { narrationExists = true; break; }
+  }
+
+  if (!narrationExists && hasElevenLabs) {
+    log(output_dir, 'video_pro', 'Phase 1: Generating narration (Sonnet)...');
+    const narrationPrompt = `You are a professional copywriter creating narration for a video ad.
+
+Read these files to understand the campaign:
+- ${project_dir}/knowledge/brand_identity.md
+- ${output_dir}/creative/creative_brief.json
+${langInstruction}${briefInstruction}
+
+For each of the ${video_count} video(s), write a narration script (50-60 seconds of natural speech for 60s videos).
+Then generate the audio using: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|antoni]
+Save narration to: ${output_dir}/audio/${task_name}_video_0N_narration.mp3
+Recommended voices: rachel (warm/emotional), bella (clear/friendly), antoni (professional)
+
+IMPORTANT: ONLY generate narration audio files. Do NOT create scene plans or any other files.
+After generating all narrations, print: [NARRATION_DONE]`;
+
+    await runClaude(narrationPrompt, 'video_pro', output_dir, 300000, { model: 'sonnet' });
+    log(output_dir, 'video_pro', 'Narration generated.');
+  } else {
+    log(output_dir, 'video_pro', 'Narration already exists, skipping.');
+  }
+
+  // ── PHASE 2: Scene Plan (Opus — complex planning) ──────────────────────────
+  log(output_dir, 'video_pro', 'Phase 2: Creating scene plan (Opus)...');
+
+  // Build list of existing narration files for the scene plan prompt
+  const narrationFiles = [];
+  for (let i = 1; i <= video_count; i++) {
+    const idx = String(i).padStart(2, '0');
+    const narPath = `${output_dir}/audio/${task_name}_video_${idx}_narration.mp3`;
+    if (fs.existsSync(path.resolve(PROJECT_ROOT, narPath))) narrationFiles.push(narPath);
+  }
+  const narrationNote = narrationFiles.length > 0
+    ? `Narration audio already generated:\n${narrationFiles.map(f => `  - ${f}`).join('\n')}\nDo NOT regenerate narration. Use it as timing reference.`
+    : 'No narration audio available.';
+
+  const scenePlanPrompt = `You are the Video Editor Agent (Diretor de Edição). Follow the skill defined in skills/video-editor-agent/SKILL.md exactly.
 
 You think like a PROFESSIONAL VIDEO EDITOR. You create 30-50 rapid cuts in 60 seconds — NOT a 5-scene slideshow.
 
 Task: Create professional edit plans for ${video_count} videos — "${task_name}" campaign.
 Date: ${task_date}
 Platforms: ${platform_targets.join(', ')}
-Research input: ${output_dir}/research_results.json
-Creative brief: ${output_dir}/creative/creative_brief.json
 ${langInstruction}${briefInstruction}
 
-STEP 1 — Read ALL knowledge files:
+STEP 1 — Read these knowledge files:
 - ${project_dir}/knowledge/brand_identity.md
 - ${project_dir}/knowledge/product_campaign.md
-- ${output_dir}/research_results.json
-- ${output_dir}/creative/creative_brief.json (if exists)
-- skills/video-composition/advanced-composition-reference.md
+- ${output_dir}/creative/creative_brief.json
 - skills/video-editor-agent/SKILL.md
-- skills/typography-on-image/SKILL.md (CRITICAL: follow these typography rules for text_layout in every scene)
+- skills/typography-on-image/SKILL.md
 - skills/video-art-direction/SKILL.md
 
 STEP 2 — Image assets:
@@ -1557,12 +1713,13 @@ STEP 3 — Video briefs:
 ${videoBriefsText}
 
 STEP 4 — Audio:
-${audioInstructions}
+${narrationNote}
+${musicInstructions}
 
-STEP 5 — For EACH video, follow the 4-phase process in SKILL.md:
+STEP 5 — Create the scene plan JSON following the 4-phase process in SKILL.md:
 
-Phase A: Analyze inputs, select narrative framework, write narration script (50-60s)
-Phase B: Create Edit Decision List with 30-50 cuts (MANDATORY minimum 25 cuts for 60s energetic)
+Phase A: Analyze inputs, select narrative framework
+Phase B: Create Edit Decision List with 30-50 cuts (MANDATORY minimum 25 cuts for 60s)
 Phase C: Assign images to cuts (reuse creatively — same image, different treatment)
 Phase D: Assign motion, text animation, transitions per cut
 
@@ -1578,68 +1735,72 @@ CRITICAL RULES (enforced — plan will be rejected if violated):
 - Text overlay COMPLEMENTS narration, never repeats it
 - Sum of all durations must equal video_length (tolerance ±2s)
 
-TYPOGRAPHY — MAGAZINE COVER STYLE (read skills/typography-on-image/SKILL.md):
-- text_layout.position: ONLY "top" or "center". NEVER "bottom" — social media UI covers the bottom 35% of 9:16 videos (like, comment, share, profile, audio buttons)
-- text_layout.font_size: LARGE — hook 96-140px, headlines 80-120px, body 60-80px. NEVER below 60px
+TYPOGRAPHY — MAGAZINE COVER STYLE:
+- text_layout.position: ONLY "top" or "center". NEVER "bottom"
+- text_layout.font_size: hook 96-140px, headlines 80-120px, body 60-80px. NEVER below 60px
 - text_layout.font_weight: 900 for headlines, 700 for body
-- text_layout.font_family: "Montserrat" (default, clean professional), "Oswald" for impact, "Playfair Display" for editorial/luxury, "Poppins" for young/social
-- text_layout.line_height: 1.0 for tight headlines, 1.15 for body text
-- text_layout.color: "#FFFFFF" on dark overlays, "#0D0D0D" on light overlays — NEVER gray
+- text_layout.font_family: "Montserrat" (default), "Oswald" for impact, "Playfair Display" for editorial, "Poppins" for young/social
+- text_layout.line_height: 1.0 for tight headlines, 1.15 for body
+- text_layout.color: "#FFFFFF" on dark overlays, "#0D0D0D" on light — NEVER gray
 - Every scene with text MUST have text_layout with ALL fields (font_size, font_weight, font_family, position, color, line_height)
-- FORBIDDEN: position "bottom" will be rejected and moved to "top" automatically
 
 Save each plan to: ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
 
 The JSON schema is defined in SKILL.md — follow it exactly.
 
-Also generate the ElevenLabs narration audio BEFORE saving the scene plan.
-
-IMPORTANT: ONLY generate scene plans and audio. Do NOT run render-video-ffmpeg.js.
+IMPORTANT: ONLY generate scene plan JSON files. Do NOT generate audio or run any render scripts.
 After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
-  await runClaude(prompt, 'video_pro', output_dir, 900000);
+  await runClaude(scenePlanPrompt, 'video_pro', output_dir, 900000, { model: 'opus' });
 
-  // ── PHASE 1.5: Draft render (placeholders) for approval ─────────────────────
-  // Render a draft video with solid-color backgrounds (brand colors) so the user
-  // can approve the timing, narration, and structure before we generate real images.
+  // Extend lock after each heavy phase to prevent BullMQ stall
+  await job.extendLock(job.token, 900000).catch(() => {});
+
+  // ── PHASE 1.5: Draft render (optional — only when video_draft: true) ────────
   process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} plan_ready\n`);
-  log(output_dir, 'video_pro', 'Rendering draft video(s) with placeholder backgrounds...');
-  for (let i = 1; i <= video_count; i++) {
-    const idx = String(i).padStart(2, '0');
-    const planPath = vfFind(idx, '_scene_plan_motion.json');
-    if (!fs.existsSync(planPath)) continue;
+  const wantDraft = job.data.video_draft === true;
+  if (wantDraft) {
+    log(output_dir, 'video_pro', 'Rendering draft video(s) with placeholder backgrounds...');
+    for (let i = 1; i <= video_count; i++) {
+      const idx = String(i).padStart(2, '0');
+      const planPath = vfFind(idx, '_scene_plan_motion.json');
+      if (!fs.existsSync(planPath)) continue;
 
-    // Mark as draft — create temp plan with solid color backgrounds
-    try {
-      const plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
-      const draftPlan = JSON.parse(JSON.stringify(plan));
-      const brandColors = ['#1a1a2e', '#16213e', '#0f3460', '#533483', '#e94560'];
-      draftPlan.scenes.forEach((scene, si) => {
-        if (!scene.image || !fs.existsSync(scene.image)) {
-          scene.image = null;
-          scene.background_color = brandColors[si % brandColors.length];
-        }
-      });
-      const draftPlanPath = path.resolve(PROJECT_ROOT, output_dir, 'video', vf(idx, '_draft.json'));
-      fs.writeFileSync(draftPlanPath, JSON.stringify(draftPlan, null, 2));
-
-      const draftOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', vf(idx, '_draft.mp4'));
       try {
-        // Draft uses ffmpeg (fast, placeholder quality)
-        execFileSync('node', [
-          RENDER_FFMPEG,
-          `${output_dir}/video/${vf(idx, '_draft.json')}`,
-          `${output_dir}/video/${vf(idx, '_draft.mp4')}`,
-        ], { cwd: PROJECT_ROOT, stdio: 'pipe', timeout: 300000 });
-        log(output_dir, 'video_pro', `Draft ${idx} rendered: ${draftOutput}`);
-        process.stdout.write(`[STAGE3_DRAFT_READY] ${output_dir} ${draftOutput}\n`);
-      } catch (draftErr) {
-        log(output_dir, 'video_pro', `Draft render failed: ${draftErr.message.slice(0, 200)}`);
+        const plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+        const draftPlan = JSON.parse(JSON.stringify(plan));
+        const brandColors = ['#1a1a2e', '#16213e', '#0f3460', '#533483', '#e94560'];
+        draftPlan.scenes.forEach((scene, si) => {
+          if (!scene.image || !fs.existsSync(scene.image)) {
+            scene.image = null;
+            scene.background_color = brandColors[si % brandColors.length];
+          }
+        });
+        const draftPlanPath = path.resolve(PROJECT_ROOT, output_dir, 'video', vf(idx, '_draft.json'));
+        fs.writeFileSync(draftPlanPath, JSON.stringify(draftPlan, null, 2));
+
+        const draftOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', vf(idx, '_draft.mp4'));
+        try {
+          execFileSync('node', [
+            RENDER_FFMPEG,
+            `${output_dir}/video/${vf(idx, '_draft.json')}`,
+            `${output_dir}/video/${vf(idx, '_draft.mp4')}`,
+          ], { cwd: PROJECT_ROOT, stdio: 'pipe', timeout: 300000 });
+          log(output_dir, 'video_pro', `Draft ${idx} rendered: ${draftOutput}`);
+          process.stdout.write(`[STAGE3_DRAFT_READY] ${output_dir} ${draftOutput}\n`);
+        } catch (draftErr) {
+          log(output_dir, 'video_pro', `Draft render failed: ${draftErr.message.slice(0, 200)}`);
+        }
+      } catch (e) {
+        log(output_dir, 'video_pro', `Draft prep failed for video ${idx}: ${e.message}`);
       }
-    } catch (e) {
-      log(output_dir, 'video_pro', `Draft prep failed for video ${idx}: ${e.message}`);
     }
+  } else {
+    log(output_dir, 'video_pro', 'Draft skipped (default). Use video_draft:true to enable.');
   }
+
+  // Extend lock before image generation
+  await job.extendLock(job.token, 900000).catch(() => {});
 
   // ── PHASE 2: Generate real images (API mode) ───────────────────────────────
   process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} images_start\n`);
@@ -1795,6 +1956,9 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
     log(output_dir, 'video_pro', 'Approval timeout. Skipping video render.');
     return { status: 'skipped', reason: 'approval timeout' };
   }
+
+  // Extend lock before final render
+  await job.extendLock(job.token, 900000).catch(() => {});
 
   // ── PHASE 4: Render (no motion_director needed — plan already enriched) ────
   process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} render_start\n`);
@@ -2593,8 +2757,8 @@ const worker = new Worker(
   {
     connection: redisConnection,
     concurrency: 5,
-    lockDuration: 600000,    // 10 min — agents run Claude CLI which takes a long time
-    stalledInterval: 60000,  // check stalled every 60s (default 30s)
+    lockDuration: 900000,    // 15 min — video pro agents can take 10+ min
+    stalledInterval: 120000, // check stalled every 2 min (default 30s)
   }
 );
 
@@ -2618,9 +2782,7 @@ worker.on('progress', (job, progress) => {
 });
 
 // Drain stale jobs left from previous worker runs (active/waiting jobs with no live worker)
-pipelineQueue.drain().then(() => {
-  console.log('   Stale queue drained.');
-}).catch(() => {});
+// Note: drain() was removed — it was deleting fresh jobs added just before worker startup
 
 console.log(`\n🔄 Worker started — listening on queue: "${QUEUE_NAME}"`);
 console.log('   Agents will be invoked via Claude CLI (claude -p)');

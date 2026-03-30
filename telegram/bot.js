@@ -63,6 +63,7 @@ bot.command('start', async (ctx) => {
     `<b>Comandos principais:</b>\n` +
     `/campanha &lt;nome&gt; — rodar pipeline 5 etapas\n` +
     `/rerun &lt;campanha&gt; &lt;etapas&gt; — reprocessar etapas\n` +
+    `/continue &lt;campanha&gt; — continuar de onde parou\n` +
     `/status — ver status do pipeline\n` +
     `/enviar &lt;campanha&gt; [tipo] — receber arquivos\n` +
     `/cancel — cancelar pipeline ativo\n` +
@@ -79,6 +80,7 @@ bot.command('help', async (ctx) => {
     `<b>Pipeline (5 etapas)</b>\n` +
     `/campanha &lt;nome&gt; [opcoes] — pipeline completo\n` +
     `/rerun &lt;campanha&gt; &lt;etapas&gt; — reprocessar\n` +
+    `/continue &lt;campanha&gt; — continuar de onde parou\n` +
     `/cancel — cancelar pipeline ativo\n` +
     `/status — status por etapa\n` +
     `/outputs — listar campanhas\n` +
@@ -111,9 +113,11 @@ bot.command('help', async (ctx) => {
     `/fotoprojeto — fotos vao para assets/\n` +
     `/fotocampanha — fotos vao para campanha ativa\n\n` +
 
-    `<b>Rerun — exemplos:</b>\n` +
+    `<b>Rerun / Continue:</b>\n` +
+    `<code>/continue c16</code> — continua de onde parou\n` +
+    `<code>/continue c16 screenshot</code> — com capturas do site\n` +
     `<code>/rerun c15 video pro</code>\n` +
-    `<code>/rerun c14 imagens</code>\n` +
+    `<code>/rerun c14 imagens api</code>\n` +
     `<code>/rerun c13 2,3</code>\n\n` +
 
     `<b>Conversa</b>\n` +
@@ -601,17 +605,28 @@ async function sendCampaignFiles(ctx, outputDir, tipo) {
   const sendDir = async (subdir, exts, sendFn) => {
     const d = path.join(outputDir, subdir);
     if (!fs.existsSync(d)) return 0;
-    const files = fs.readdirSync(d).filter(f => exts.includes(path.extname(f).toLowerCase()));
+    const files = fs.readdirSync(d).filter(f => exts.includes(path.extname(f).toLowerCase()) && !f.endsWith('_prompt.txt'));
+    let count = 0;
     for (const f of files) {
-      await sendFn(ctx, path.join(d, f), f);
+      try {
+        await sendFn(ctx, path.join(d, f), f);
+        count++;
+      } catch (err) {
+        console.error(`[enviar] Falha ao enviar ${f}: ${err.message}`);
+        // Send path as fallback
+        try {
+          await ctx.reply(`Nao consegui enviar: <code>${f}</code>\nCaminho: <code>${path.join(d, f)}</code>`, { parse_mode: 'HTML' });
+        } catch {}
+      }
     }
-    return files.length;
+    return count;
   };
 
   let sent = 0;
 
   if (tipo === 'imagens' || tipo === 'tudo') {
     sent += await sendDir('ads', imageExts, sendPhoto);
+    sent += await sendDir('imgs', imageExts, sendPhoto);
   }
   if (tipo === 'videos' || tipo === 'tudo') {
     sent += await sendDir('video', videoExts, sendVideo);
@@ -656,7 +671,7 @@ bot.command('campanha', async (ctx) => {
       '  --platforms instagram,youtube,threads\n' +
       '  --images N\n' +
       '  --videos N\n' +
-      '  --img-source brand|pexels|api\n' +
+      '  --img-source brand|pexels|api|screenshot\n' +
       '  --img-model flux-kontext-pro|flux-kontext-max|gpt-image-1\n' +
       '  --skip-research / --skip-image / --skip-video\n\n' +
       'Ou escreva livremente o que quer na campanha — eu organizo e confirmo antes de rodar.'
@@ -694,33 +709,123 @@ bot.command('status', async (ctx) => {
   }
 
   const stageAgents = {
-    '1 Brief & Narrativa': ['research_agent', 'creative_director', 'copywriter_agent'],
-    '2 Imagens': ['ad_creative_designer'],
-    '3 Video': ['video_quick', 'video_pro'],
-    '4 Plataformas': ['platform_instagram', 'platform_youtube', 'platform_tiktok', 'platform_facebook', 'platform_threads', 'platform_linkedin'],
-    '5 Distribuicao': ['distribution_agent'],
+    1: { name: 'Brief & Narrativa', agents: ['research_agent', 'creative_director', 'copywriter_agent'] },
+    2: { name: 'Imagens', agents: ['ad_creative_designer'] },
+    3: { name: 'Video', agents: ['video_quick', 'video_pro'] },
+    4: { name: 'Plataformas', agents: ['platform_instagram', 'platform_youtube', 'platform_tiktok', 'platform_facebook', 'platform_threads', 'platform_linkedin'] },
+    5: { name: 'Distribuicao', agents: ['distribution_agent'] },
   };
 
-  const lines = [];
-  for (const [stageName, agents] of Object.entries(stageAgents)) {
-    const agentStatuses = agents.map(a => {
-      const logFile = path.join(logsDir, `${a}.log`);
-      if (!fs.existsSync(logFile)) return null;
-      const content = fs.readFileSync(logFile, 'utf-8');
-      let status = 'em progresso';
-      if (content.includes('Completed successfully')) status = '✅';
-      else if (content.includes('FAILED')) status = '❌';
-      else if (content.includes('Invoking Claude')) status = '⏳';
-      return `    ${a}: ${status}`;
-    }).filter(Boolean);
+  // Determine agent status from log file (last 5 lines to handle retries)
+  function agentStatus(agentName) {
+    const logFile = path.join(logsDir, `${agentName}.log`);
+    if (!fs.existsSync(logFile)) return null;
+    const content = fs.readFileSync(logFile, 'utf-8');
+    const logLines = content.split('\n').filter(l => l.trim());
+    const tail = logLines.slice(-5).join('\n');
+    if (tail.includes('Completed successfully')) return '✅';
+    if (tail.includes('FAILED') && !tail.includes('Invoking Claude')) return '❌';
+    if (tail.includes('Invoking Claude') || tail.includes('Phase')) return '⏳';
+    return '🔄';
+  }
 
-    if (agentStatuses.length > 0) {
-      lines.push(`<b>${stageName}</b>`);
-      lines.push(...agentStatuses);
+  const rerunStages = s.runningTask?.rerunStages || null;
+  const videoMode = s.runningTask?.videoMode || '';
+  const lines = [];
+
+  for (const [stageNum, stage] of Object.entries(stageAgents)) {
+    const num = Number(stageNum);
+    let stagLabel = stage.name;
+    if (num === 3 && videoMode) stagLabel += ` (${videoMode})`;
+
+    // Get statuses for agents that have logs
+    const agentLines = [];
+    let hasAnyLog = false;
+    for (const a of stage.agents) {
+      // For video: only show relevant agent based on videoMode
+      if (num === 3) {
+        if (a === 'video_quick' && videoMode === 'Pro') continue;
+        if (a === 'video_pro' && videoMode === 'Quick') continue;
+      }
+      const st = agentStatus(a);
+      if (st) {
+        hasAnyLog = true;
+        agentLines.push(`    ${a}: ${st}`);
+      }
+    }
+
+    // Determine stage-level icon
+    let stageIcon = '⬜';  // not started
+    if (hasAnyLog) {
+      const allDone = agentLines.every(l => l.includes('✅'));
+      const anyFail = agentLines.some(l => l.includes('❌'));
+      const anyRunning = agentLines.some(l => l.includes('⏳') || l.includes('🔄'));
+      if (allDone) stageIcon = '✅';
+      else if (anyFail) stageIcon = '❌';
+      else if (anyRunning) stageIcon = '⏳';
+    } else if (rerunStages && rerunStages.includes(num)) {
+      stageIcon = '⏳';  // queued for rerun but not started yet
+    }
+
+    lines.push(`${stageIcon} <b>${num}. ${stagLabel}</b>`);
+
+    // Expand current + previous stages (all agents); future stages stay collapsed
+    const isStartedOrDone = hasAnyLog || stageIcon === '✅' || stageIcon === '❌' || stageIcon === '⏳';
+    if (isStartedOrDone) {
+      // Show ALL agents in this stage (not just ones with logs)
+      for (const a of stage.agents) {
+        if (num === 3) {
+          if (a === 'video_quick' && videoMode === 'Pro') continue;
+          if (a === 'video_pro' && videoMode === 'Quick') continue;
+        }
+        const st = agentStatus(a);
+        const icon = st || '⬜';
+        lines.push(`    ${icon} ${a}`);
+      }
+      // Show video sub-phases for both quick and pro
+      if (num === 3) {
+        const videoLogs = [
+          { file: 'video_quick.log', label: 'Quick' },
+          { file: 'video_pro.log', label: 'Pro' },
+        ];
+        for (const vl of videoLogs) {
+          const vLog = path.join(logsDir, vl.file);
+          if (!fs.existsSync(vLog)) continue;
+          const vContent = fs.readFileSync(vLog, 'utf-8');
+          const phases = [
+            { key: 'Generating narration', label: 'Narracao', icon: '⏳' },
+            { key: 'Narration already exists', label: 'Narracao', icon: '✅' },
+            { key: 'Narration generated', label: 'Narracao', icon: '✅' },
+            { key: 'Creating scene plan', label: 'Scene plan', icon: '⏳' },
+            { key: 'Scene plan saved', label: 'Scene plan', icon: '✅' },
+            { key: 'Capturing screenshots', label: 'Screenshots', icon: '⏳' },
+            { key: 'Screenshots captured', label: 'Screenshots', icon: '✅' },
+            { key: 'Rendering draft', label: 'Draft render', icon: '⏳' },
+            { key: 'Draft 01 rendered', label: 'Draft render', icon: '✅' },
+            { key: 'Generating image', label: 'Gerando imagens', icon: '⏳' },
+            { key: '[VIDEO_APPROVAL_NEEDED] Waiting', label: 'Aguardando aprovacao', icon: '⏳' },
+            { key: 'Rendering video', label: 'Render final', icon: '⏳' },
+            { key: 'render_start', label: 'Render final', icon: '⏳' },
+            { key: 'Video 1 rendered', label: 'Render final', icon: '✅' },
+            { key: 'Completed successfully', label: 'Completo', icon: '✅' },
+          ];
+          const phaseStatus = new Map();
+          for (const p of phases) {
+            if (vContent.includes(p.key)) phaseStatus.set(p.label, p.icon);
+          }
+          // If completed, remove the approval waiting line
+          if (phaseStatus.get('Completo') === '✅') phaseStatus.delete('Aguardando aprovacao');
+          if (phaseStatus.size > 0) {
+            lines.push(`      <i>${vl.label}:</i>`);
+            for (const [label, icon] of phaseStatus) {
+              lines.push(`      ${icon} ${label}`);
+            }
+          }
+        }
+      }
     }
   }
 
-  if (lines.length === 0) lines.push('Aguardando inicio dos agentes...');
 
   const cv = s.campaignV3;
   let approvalStatus = '';
@@ -968,6 +1073,174 @@ function findCampaignAcrossProjects(query) {
   return null;
 }
 
+// ── /continue ────────────────────────────────────────────────────────────────
+
+bot.command('continue', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+
+  if (s.runningTask) {
+    return ctx.reply('Ja existe um pipeline rodando. Use /status para acompanhar.');
+  }
+
+  const raw = ctx.match?.trim();
+  if (!raw) {
+    return ctx.reply(
+      '<b>/continue — Continuar campanha de onde parou</b>\n\n' +
+      'Uso: <code>/continue &lt;campanha&gt;</code>\n\n' +
+      'Detecta automaticamente quais etapas faltam e continua.\n' +
+      'Aceita flags de imagem: screenshot, api, free\n\n' +
+      'Exemplos:\n' +
+      '<code>/continue c16</code>\n' +
+      '<code>/continue c16 screenshot</code>\n' +
+      '<code>/continue c16 inema.club</code>',
+      { parse_mode: 'HTML' }
+    );
+  }
+
+  const tokens = raw.split(/\s+/);
+  const campaignQuery = tokens[0];
+
+  // Parse optional flags (image source, urls, video mode, draft) from remaining tokens
+  let imageSource = 'brand';
+  let userRequestedPro = false;
+  let userRequestedQuick = false;
+  let userRequestedDraft = false;
+  const screenshotUrls = [];
+  for (let i = 1; i < tokens.length; i++) {
+    const t = tokens[i].toLowerCase();
+    if (t === 'pro') { userRequestedPro = true; continue; }
+    if (t === 'quick') { userRequestedQuick = true; continue; }
+    if (t === 'draft') { userRequestedDraft = true; continue; }
+    if (t === 'screenshot' || t === 'screenshots' || t === 'captura' || t === 'capturas') { imageSource = 'screenshot'; continue; }
+    if (t === 'api') { imageSource = 'api'; continue; }
+    if (t === 'free' || t === 'gratis' || t === 'stock') { imageSource = 'free'; continue; }
+    if (t.match(/^https?:\/\//) || t.match(/\.\w{2,4}$/)) {
+      screenshotUrls.push(t.startsWith('http') ? t : `https://${t}`);
+      if (imageSource === 'brand') imageSource = 'screenshot';
+      continue;
+    }
+  }
+
+  // Find campaign
+  let projectDir = s.projectDir;
+  let campaignFolder = findCampaign(projectDir, campaignQuery);
+  if (!campaignFolder) {
+    const result = findCampaignAcrossProjects(campaignQuery);
+    if (result) { projectDir = result.projectDir; campaignFolder = result.campaignFolder; }
+  }
+  if (!campaignFolder) {
+    return ctx.reply(`Campanha "${campaignQuery}" nao encontrada em nenhum projeto.`);
+  }
+  if (projectDir !== s.projectDir) session.setProject(chatId, projectDir);
+
+  const outputDir = `${projectDir}/outputs/${campaignFolder}`;
+  const absOut = path.resolve(PROJECT_ROOT, outputDir);
+
+  // Detect what's done and what's missing
+  const has = (rel) => fs.existsSync(path.join(absOut, rel));
+  const hasAny = (dir, ext) => {
+    const d = path.join(absOut, dir);
+    if (!fs.existsSync(d)) return false;
+    return fs.readdirSync(d).some(f => f.endsWith(ext));
+  };
+
+  const stageStatus = {
+    1: has('creative/creative_brief.json') && has('copy/narrative.json'),
+    2: hasAny('ads', '.png'),
+    3: hasAny('video', '.mp4'),
+    4: hasAny('platforms', '.json'),
+    5: has(`Publish ${campaignFolder} ${new Date().toISOString().slice(0, 10)}.md`) || fs.readdirSync(absOut).some(f => f.startsWith('Publish ')),
+  };
+
+  // Find stages that need to run (incomplete or never started)
+  const missingStages = [];
+  for (let i = 1; i <= 5; i++) {
+    if (!stageStatus[i]) missingStages.push(i);
+  }
+
+  if (missingStages.length === 0) {
+    return ctx.reply(`Campanha <b>${campaignFolder}</b> esta completa! Todos os 5 estagios ja foram executados.\n\nUse /rerun para reprocessar etapas especificas.`, { parse_mode: 'HTML' });
+  }
+
+  // Read brief for platforms
+  let briefData = {};
+  const briefPath = path.join(absOut, 'creative', 'creative_brief.json');
+  if (fs.existsSync(briefPath)) {
+    try { briefData = JSON.parse(fs.readFileSync(briefPath, 'utf-8')); } catch {}
+  }
+
+  // Determine video mode: user flag > existing files > default quick
+  const videoDir = path.join(absOut, 'video');
+  const audioDir = path.join(absOut, 'audio');
+  const hasScenePlan = fs.existsSync(videoDir) && fs.readdirSync(videoDir).some(f => f.includes('scene_plan'));
+  const hasNarration = fs.existsSync(audioDir) && fs.readdirSync(audioDir).some(f => f.includes('narration'));
+  // Quick always runs; pro is additional when requested or detected
+  const videoPro = userRequestedPro || (!userRequestedQuick && (hasScenePlan || hasNarration));
+  const videoQuick = true;
+  const videoMode = videoPro ? 'both' : 'quick';
+
+  const payload = {
+    task_name: campaignFolder,
+    task_date: new Date().toISOString().slice(0, 10),
+    project_dir: projectDir,
+    output_dir: outputDir,
+    platform_targets: briefData.platforms || ['instagram'],
+    language: 'pt-BR',
+    image_count: 5,
+    image_formats: ['carousel_1080x1080', 'story_1080x1920'],
+    video_count: 1,
+    image_source: imageSource,
+    image_folder: null,
+    image_model: process.env.KIE_DEFAULT_MODEL || 'z-image',
+    screenshot_urls: screenshotUrls,
+    use_brand_overlay: true,
+    campaign_brief: briefData.campaign_angle || '',
+    video_mode: videoMode,
+    video_quick: videoQuick,
+    video_pro: videoPro,
+    video_draft: userRequestedDraft,
+    approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
+    notifications: true,
+    skip_dependencies: true,
+    skip_completed: true,
+  };
+
+  const stageLabels = { 1: 'Brief & Narrativa', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
+  const doneIcon = '✅';
+  const todoIcon = '⏳';
+
+  const statusLines = [];
+  for (let i = 1; i <= 5; i++) {
+    const icon = stageStatus[i] ? doneIcon : todoIcon;
+    if (i === 3) {
+      // Show video quick and pro as separate sub-items
+      const qIcon = stageStatus[3] ? '✅' : '▶️';
+      const pIcon = stageStatus[3] ? '✅' : (videoPro ? '▶️' : '⬜');
+      statusLines.push(`${icon} <b>${i}.</b> Video`);
+      statusLines.push(`    ${qIcon} Quick`);
+      if (videoPro) statusLines.push(`    ${pIcon} Pro`);
+    } else {
+      statusLines.push(`${icon} <b>${i}.</b> ${stageLabels[i]}`);
+    }
+  }
+
+  const imgLabels = { brand: 'marca', screenshot: 'screenshots do site', api: 'IA (API)', free: 'banco gratis' };
+  const imgInfo = imageSource !== 'brand' ? `\nImagens: <b>${imgLabels[imageSource] || imageSource}</b>` : '';
+  const urlInfo = screenshotUrls.length > 0 ? `\nURLs: ${screenshotUrls.join(', ')}` : '';
+
+  await ctx.reply(
+    `<b>Continuar: ${campaignFolder}</b>\n` +
+    `Projeto: <code>${projectDir}</code>${imgInfo}${urlInfo}\n\n` +
+    statusLines.join('\n') + '\n\n' +
+    `Vai executar ${missingStages.length} etapa(s) pendente(s).\n` +
+    `Responda <b>sim</b> para iniciar.`,
+    { parse_mode: 'HTML' }
+  );
+
+  session.setPendingRerun(chatId, { payload, stages: missingStages, campaignFolder });
+});
+
 // ── /rerun ───────────────────────────────────────────────────────────────────
 
 bot.command('rerun', async (ctx) => {
@@ -987,8 +1260,11 @@ bot.command('rerun', async (ctx) => {
       '<code>/rerun c13 imagens</code>\n' +
       '<code>/rerun c13 video quick</code>\n' +
       '<code>/rerun c13 video pro</code>\n' +
-      '<code>/rerun c13 imagens,video quick</code>\n' +
-      '<code>/rerun c13 2,3</code>',
+      '<code>/rerun c13 video pro screenshot</code>\n' +
+      '<code>/rerun c13 video pro inema.club</code>\n' +
+      '<code>/rerun c13 imagens api</code>\n' +
+      '<code>/rerun c13 2,3</code>\n\n' +
+      'Fonte de imagens: <i>brand</i> (default), <i>screenshot</i>, <i>api</i>, <i>free</i>, <i>pasta</i>',
       { parse_mode: 'HTML' }
     );
   }
@@ -1025,16 +1301,21 @@ bot.command('rerun', async (ctx) => {
     return ctx.reply('Especifique quais etapas. Ex: <code>/rerun c13 video quick</code>', { parse_mode: 'HTML' });
   }
 
-  // Parse stage args — detect "video quick", "video pro" as compound tokens
+  // Parse stage args — detect "video quick", "video pro", draft, image source flags
   const allTokens = stageArgs.join(' ').toLowerCase().split(/[\s,]+/);
   const stageNumbers = new Set();
   let videoQuick = false;
   let videoPro = false;
+  let videoDraft = false;
+  let imageSource = 'brand';
+  let payload_imageFolder = null;
+  const screenshotUrls = [];
 
   for (let i = 0; i < allTokens.length; i++) {
     const token = allTokens[i];
     const next = allTokens[i + 1];
 
+    // Video mode detection
     if ((token === 'video' || token === 'videos') && next === 'quick') {
       stageNumbers.add(3); videoQuick = true; i++; continue;
     }
@@ -1043,6 +1324,29 @@ bot.command('rerun', async (ctx) => {
     }
     if (token === 'quick') { stageNumbers.add(3); videoQuick = true; continue; }
     if (token === 'pro') { stageNumbers.add(3); videoPro = true; continue; }
+    if (token === 'draft') { videoDraft = true; continue; }
+
+    // Image source detection
+    if (token === 'screenshot' || token === 'screenshots' || token === 'captura' || token === 'capturas') {
+      imageSource = 'screenshot'; continue;
+    }
+    if (token === 'api') { imageSource = 'api'; continue; }
+    if (token === 'free' || token === 'gratis' || token === 'stock') { imageSource = 'free'; continue; }
+    if (token === 'pasta' || token === 'folder') {
+      imageSource = 'folder';
+      // Next token might be the folder path
+      if (next && !resolveStageAlias(next) && !['quick','pro','screenshot','api','free'].includes(next)) {
+        payload_imageFolder = next; i++;
+      }
+      continue;
+    }
+
+    // URL detection (for screenshot_urls)
+    if (token.match(/^https?:\/\//) || token.match(/\.\w{2,4}$/)) {
+      screenshotUrls.push(token.startsWith('http') ? token : `https://${token}`);
+      if (imageSource === 'brand') imageSource = 'screenshot'; // auto-detect
+      continue;
+    }
 
     const resolved = resolveStageAlias(token);
     if (resolved) {
@@ -1063,8 +1367,9 @@ bot.command('rerun', async (ctx) => {
     try { briefData = JSON.parse(fs.readFileSync(briefPath, 'utf-8')); } catch {}
   }
 
-  // Determine which video agents to run
-  const videoMode = videoPro && videoQuick ? 'both' : videoPro ? 'pro' : 'quick';
+  // Quick always runs; pro is additional when requested
+  if (videoPro) videoQuick = true;
+  const videoMode = videoPro ? 'both' : 'quick';
 
   const payload = {
     task_name: campaignFolder,
@@ -1076,13 +1381,16 @@ bot.command('rerun', async (ctx) => {
     image_count: 5,
     image_formats: ['carousel_1080x1080', 'story_1080x1920'],
     video_count: 1,
-    image_source: 'api',
+    image_source: imageSource,
+    image_folder: payload_imageFolder,
     image_model: process.env.KIE_DEFAULT_MODEL || 'z-image',
+    screenshot_urls: screenshotUrls,
     use_brand_overlay: true,
     campaign_brief: briefData.campaign_angle || '',
     video_mode: videoMode,
     video_quick: videoQuick,
     video_pro: videoPro,
+    video_draft: videoDraft,
     approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
     notifications: true,
     skip_dependencies: true,
@@ -1090,15 +1398,23 @@ bot.command('rerun', async (ctx) => {
   };
 
   const stageLabels = { 1: 'Brief & Narrativa', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
-  const videoLabel = videoQuick && videoPro ? 'Video Quick + Pro' : videoPro ? 'Video Pro' : 'Video Quick';
   const stageList = sortedStages.map(n => {
-    const label = n === 3 ? videoLabel : stageLabels[n];
-    return `  <b>${n}.</b> ${label}`;
+    if (n === 3) {
+      const lines = [`  <b>${n}.</b> Video`];
+      if (videoQuick) lines.push('      ▶️ Quick');
+      if (videoPro) lines.push('      ▶️ Pro');
+      return lines.join('\n');
+    }
+    return `  <b>${n}.</b> ${stageLabels[n]}`;
   }).join('\n');
+
+  const imgLabels = { brand: 'marca', screenshot: 'screenshots do site', api: 'IA (API)', free: 'banco gratis', folder: 'pasta customizada' };
+  const imgInfo = imageSource !== 'brand' ? `\nImagens: <b>${imgLabels[imageSource] || imageSource}</b>` : '';
+  const urlInfo = screenshotUrls.length > 0 ? `\nURLs: ${screenshotUrls.join(', ')}` : '';
 
   await ctx.reply(
     `<b>Reprocessar: ${campaignFolder}</b>\n` +
-    `Projeto: <code>${projectDir}</code>\n\n` +
+    `Projeto: <code>${projectDir}</code>${imgInfo}${urlInfo}\n\n` +
     `Etapas:\n${stageList}\n\n` +
     `Responda <b>sim</b> para iniciar.`,
     { parse_mode: 'HTML' }
@@ -1125,9 +1441,39 @@ bot.on('message:text', async (ctx) => {
     const decisionPath = path.resolve(PROJECT_ROOT, outputDir, 'imgs', 'error_decision.json');
 
     let action = null;
+    let newSource = null;
     if (/^(avan[çc]|avanc|continuar|sem imagem)/.test(lower)) action = 'advance';
     else if (/^(tentar|retry|repetir|novamente)/.test(lower))  action = 'retry';
     else if (/^(cancel|cancelar|nao|não|para)/.test(lower))    action = 'cancel';
+    else if (/^(outra|trocar|mudar|fonte|source)/.test(lower) || /^(api|free|gratis|brand|marca|folder|pasta)/.test(lower)) {
+      // Parse new image source from the message
+      if (/api/.test(lower)) newSource = 'api';
+      else if (/free|gratis|stock/.test(lower)) newSource = 'free';
+      else if (/brand|marca/.test(lower)) newSource = 'brand';
+      else if (/folder|pasta/.test(lower)) {
+        newSource = 'folder';
+        // Try to extract folder path from message
+        const folderMatch = text.match(/(?:folder|pasta)\s+(\S+)/i);
+        if (folderMatch) {
+          // Store folder path in decision for worker to pick up
+          action = 'change_source';
+          fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
+          fs.writeFileSync(decisionPath, JSON.stringify({ action, image_source: 'folder', image_folder: folderMatch[1], ts: Date.now() }));
+          session.clearPendingImageError(chatId);
+          await ctx.reply(`🔄 Trocando para pasta: <code>${folderMatch[1]}</code>`, { parse_mode: 'HTML' });
+          return;
+        }
+      }
+      if (newSource && !action) {
+        action = 'change_source';
+        fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
+        fs.writeFileSync(decisionPath, JSON.stringify({ action, image_source: newSource, ts: Date.now() }));
+        session.clearPendingImageError(chatId);
+        const sourceLabels = { api: 'IA (API)', free: 'banco grátis', brand: 'assets da marca', folder: 'pasta' };
+        await ctx.reply(`🔄 Trocando fonte de imagens para: <b>${sourceLabels[newSource]}</b>`, { parse_mode: 'HTML' });
+        return;
+      }
+    }
 
     if (action) {
       fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
@@ -1143,7 +1489,7 @@ bot.on('message:text', async (ctx) => {
     }
     // unknown reply — show options again
     await ctx.reply(
-      'Responda:\n• <b>avançar</b> — continuar sem imagens\n• <b>tentar novamente</b>\n• <b>cancelar</b>',
+      'Responda:\n• <b>avançar</b> — continuar sem imagens (CSS)\n• <b>tentar novamente</b> — repetir a geração\n• <b>outra fonte</b> — trocar: api, free, brand, pasta xxx\n• <b>cancelar</b>',
       { parse_mode: 'HTML' }
     );
     return;
@@ -1215,16 +1561,20 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       const { payload, stages, campaignFolder } = s.pendingRerun;
       session.clearPendingRerun(chatId);
 
+      const videoMode = payload.video_pro && payload.video_quick ? 'Quick + Pro'
+        : payload.video_pro ? 'Pro' : 'Quick';
       session.setRunningTask(chatId, {
         taskName: campaignFolder,
         taskDate: payload.task_date,
         outputDir: payload.output_dir,
         startedAt: new Date().toISOString(),
         rerun: true,
+        rerunStages: stages,
+        videoMode,
       });
 
       const stageLabels = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
-      const label = stages.map(n => stageLabels[n]).join(' + ');
+      const label = stages.map(n => n === 3 ? `Video ${videoMode}` : stageLabels[n]).join(' + ');
       await ctx.reply(`Reprocessando <b>${campaignFolder}</b> — ${label}...`, { parse_mode: 'HTML' });
 
       // Run each requested stage sequentially
@@ -1351,6 +1701,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
         startedAt: new Date().toISOString(),
       });
 
+      session.clearHistory(chatId); // Clean slate for new campaign
       await ctx.reply(`Iniciando pipeline <b>${payload.task_name}</b>...\n\nUse /status para acompanhar.`, { parse_mode: 'HTML' });
       runPipelineV3(ctx, chatId, payload, outputDir);
       return;
@@ -1362,13 +1713,20 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       return;
     }
 
-    // User is refining the brief — re-parse with updated text
-    if (lower.length > 10) {
+    // User is refining the brief — combine original brief with adjustment
+    if (lower.length > 5) {
+      const originalBrief = s.pendingCampaign.campaign_brief || '';
+      const combinedText = `${originalBrief}. Ajuste: ${text}`;
       await ctx.reply('Atualizando o briefing...');
-      parseCampaignFromText(text, s.projectDir, (payload) => {
+      parseCampaignFromText(combinedText, s.projectDir, (payload) => {
         if (payload) {
-          session.setPendingCampaign(chatId, payload);
-          showCampaignConfirmation(ctx, chatId, payload);
+          // Preserve original settings, override only what changed
+          const merged = { ...s.pendingCampaign, ...payload };
+          merged.campaign_brief = payload.campaign_brief || combinedText;
+          session.setPendingCampaign(chatId, merged);
+          showCampaignConfirmation(ctx, chatId, merged);
+        } else {
+          ctx.reply('Nao entendi o ajuste. Responda <b>sim</b> para confirmar ou descreva o que quer mudar.', { parse_mode: 'HTML' });
         }
       });
       return;
@@ -1418,7 +1776,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
         image_count: 5,
         image_formats: ['carousel_1080x1080', 'story_1080x1920'],
         video_count: 1,
-        image_source: 'api',
+        image_source: 'brand',
         image_model: process.env.KIE_DEFAULT_MODEL || (process.env.IMAGE_PROVIDER === 'pollinations' ? 'flux' : 'z-image'),
         use_brand_overlay: true,
         campaign_brief: briefData.campaign_angle || '',
@@ -1484,6 +1842,7 @@ function buildPayload(taskName, opts, projectDir, today) {
     image_formats: ['carousel_1080x1080', 'story_1080x1920'],
     video_count: parseInt(opts.videos || '1', 10),
     image_source: opts['img-source'] || 'brand',
+    screenshot_urls: opts['screenshot-urls'] ? opts['screenshot-urls'].split(',').map(u => u.trim()) : [],
     image_model: opts['img-model'] || process.env.KIE_DEFAULT_MODEL || (process.env.IMAGE_PROVIDER === 'pollinations' ? 'flux' : 'z-image'),
     use_brand_overlay: opts['brand-overlay'] !== 'false',
     campaign_brief: opts.brief || '',
@@ -1506,6 +1865,7 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     free: `banco gratis (${freeProvider})`, gratis: `banco gratis (${freeProvider})`,
     api: `${activeProvider === 'pollinations' ? 'Pollinations' : 'KIE'} API (geracao IA)`,
     folder: 'pasta customizada', pasta: 'pasta customizada',
+    screenshot: 'screenshots de sites + marca', captura: 'screenshots de sites + marca',
   };
   const modelLabels = {
     // KIE
@@ -1625,7 +1985,7 @@ Rules:
 - task_name: derive from the campaign theme, short and snake_case
 - image_count: default 5 for carousel; use what user says
 - video_count: how many videos requested (default 1)
-- image_source: "brand" (or "marca") if user mentions brand images, project images, fotos da marca; "free" (or "gratis") if user mentions free stock photos, banco de imagens, pexels, unsplash, pixabay; "api" if user mentions AI generation, gerar imagens, criar imagens com IA; "folder" (or "pasta") if user specifies a folder path. Default "brand".
+- image_source: "brand" (or "marca") if user mentions brand images, project images, fotos da marca; "free" (or "gratis") if user mentions free stock photos, banco de imagens, pexels, unsplash, pixabay; "api" if user mentions AI generation, gerar imagens, criar imagens com IA; "folder" (or "pasta") if user specifies a folder path; "screenshot" (or "captura") if user mentions screenshot, captura de site, print do site, capturar pagina. When screenshot, also populate "screenshot_urls" with any URLs mentioned. Default "brand".
 - image_model: only relevant when image_source is "api". Default is ALWAYS "${process.env.KIE_DEFAULT_MODEL || 'z-image'}" (from .env). Only change if the user explicitly requests a different model. Options: "z-image", "z-image-turbo", "flux-kontext-pro", "flux-kontext-max", "gpt-image-1".
 - approval_modes: each stage can be "humano" (user must approve), "agente" (AI reviewer decides), or "auto" (advance automatically). Default "humano" for all. Set to "auto" if user says "sem aprovações", "automático", "full auto". Set to "agente" if user says "aprovação por agente", "agente revisa".
 - notifications: false only if user explicitly says "sem notificações", "silencioso", "não notificar".
@@ -1924,8 +2284,9 @@ function runPipelineV3(ctx, chatId, payload, outputDir) {
         bot.api.sendMessage(chatId,
           `⚠️ <b>Erro na geração de imagens</b>\n\n<code>${errorMsg}</code>\n\n` +
           `O que deseja fazer?\n` +
-          `• <b>avançar</b> — continuar sem imagens (layout CSS)\n` +
+          `• <b>avançar</b> — continuar sem imagens (CSS)\n` +
           `• <b>tentar novamente</b> — repetir a geração\n` +
+          `• <b>outra fonte</b> — trocar: api, free, brand, pasta xxx\n` +
           `• <b>cancelar</b> — cancelar a campanha`,
           { parse_mode: 'HTML' }
         ).catch(() => {});
@@ -2010,11 +2371,18 @@ function runPipelineV3(ctx, chatId, payload, outputDir) {
           }
         }
 
-        // Stage 3: video (video_editor_agent / video_quick / video_pro)
+        // Stage 3: video (video_quick / video_pro)
         if (STAGES.stage3.includes(agentName) || agentName === 'video_quick' || agentName === 'video_pro') {
           stageAgentsDone.stage3.add(agentName);
-          const active3 = cv.payload.skip_video ? [] : ['done'];
-          const videoDone = cv.payload.skip_video || stageAgentsDone.stage3.size > 0;
+          let videoDone = false;
+          if (cv.payload.skip_video) {
+            videoDone = true;
+          } else if (cv.payload.video_mode === 'both') {
+            // Both must complete before advancing
+            videoDone = stageAgentsDone.stage3.has('video_quick') && stageAgentsDone.stage3.has('video_pro');
+          } else {
+            videoDone = stageAgentsDone.stage3.size > 0;
+          }
           if (videoDone) {
             session.updateCampaignV3Stage(chatId, 3, { status: 'done' });
             sendStageApprovalRequest(botCtx, chatId, 3).catch(e =>
@@ -2723,7 +3091,11 @@ async function sendVideoApprovalRequest(ctx, chatId, outputDir) {
   }
 
   session.setPendingVideoApproval(chatId, { outputDir, absOutputDir });
-  await ctx.reply(msg, { parse_mode: 'HTML' });
+  if (ctx && typeof ctx.reply === 'function') {
+    await ctx.reply(msg, { parse_mode: 'HTML' });
+  } else if (ctx && ctx.api) {
+    await ctx.api.sendMessage(chatId, msg, { parse_mode: 'HTML' });
+  }
 }
 
 function writeVideoApproval(outputDir, approved, feedback = null) {
