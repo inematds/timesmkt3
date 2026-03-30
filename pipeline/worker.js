@@ -1805,6 +1805,36 @@ RULES:
     log(output_dir, 'video_pro', 'Phase 1.6: Photography Director (Opus)...');
     process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} photography_director\n`);
 
+    // Build prioritized image list for Photography Director
+    const absAdsDir2 = path.resolve(PROJECT_ROOT, output_dir, 'ads');
+    const absImgsDir2 = path.resolve(PROJECT_ROOT, output_dir, 'imgs');
+    const absAssetsDir = path.resolve(PROJECT_ROOT, project_dir, 'assets');
+    const imgExts = ['.jpg', '.jpeg', '.png', '.webp'];
+    const listImages = (dir, label) => {
+      if (!fs.existsSync(dir)) return [];
+      return fs.readdirSync(dir)
+        .filter(f => imgExts.includes(path.extname(f).toLowerCase()))
+        .map(f => `  - ${path.relative(PROJECT_ROOT, path.join(dir, f))} [${label}]`);
+    };
+    const campaignImages = [
+      ...listImages(absAdsDir2, 'CAMPANHA/ads — PRIORIDADE 1'),
+      ...listImages(absImgsDir2, 'CAMPANHA/imgs — PRIORIDADE 1'),
+    ];
+    const brandImages = listImages(absAssetsDir, 'MARCA/assets — PRIORIDADE 2');
+    const imageListForPhoto = `
+PRIORITY 1 — Campaign images (USE THESE FIRST):
+${campaignImages.length > 0 ? campaignImages.join('\n') : '  (nenhuma imagem da campanha disponível)'}
+
+PRIORITY 2 — Brand assets (use only if campaign images are insufficient):
+${brandImages.length > 0 ? brandImages.join('\n') : '  (nenhum asset da marca)'}
+
+CRITICAL RULES:
+- ALWAYS prioritize campaign images (ads/, imgs/) over brand assets
+- Classify EACH image as "clean" (no embedded text) or "has_text" (has text/logo)
+- NEVER put text_overlay on images classified as "has_text"
+- Images with _post, _stories, oficial_, logo_, instagram, facebook in name → likely has_text
+- If using a brand asset instead of campaign image, explain WHY in "image_reason"`;
+
     const photoDirPrompt = `You are the Photography Director (Diretor de Fotografia). Follow the skill defined in skills/photography-director/SKILL.md exactly.
 
 You think like a CINEMATOGRAPHER. You define the complete visual language BEFORE the editor creates the scene plan.
@@ -1823,13 +1853,19 @@ STEP 1 — Read ALL these files:
 STEP 2 — Audio timing:
 ${narrationNote}
 
-STEP 3 — Available images:
-${imageSourceSection}
+STEP 3 — Available images (READ THE PRIORITY RULES):
+${imageListForPhoto}
 
 STEP 4 — Create the photography plan following SKILL.md exactly.
 Save to: ${output_dir}/video/photography_plan.json
 
 The plan must define: style_preset, formats (based on platforms), color_palette, typography, sections with mood/framing/motion, and individual shots covering 100% of the narration timing.
+
+For EACH shot, you MUST specify:
+- Which specific image file to use (full path)
+- Whether the image has embedded text (image_has_text: true/false)
+- If image_has_text is true, set text_overlay to null (no text on this shot)
+- The typography (font, size, weight, position) — the Scene Plan MUST follow these exactly
 
 IMPORTANT: Output ONLY the photography_plan.json file. Do NOT create scene plans or render anything.`;
 
@@ -1875,6 +1911,14 @@ Read the full photography_plan.json for all shots.`;
 
 You think like a PROFESSIONAL VIDEO EDITOR. You create 30-50 rapid cuts — NOT a 5-scene slideshow.
 The Photography Director has already defined the visual language. Your job is to create the EDIT TIMELINE following those decisions.
+
+STRICT RULES — DO NOT OVERRIDE THE PHOTOGRAPHY PLAN:
+- Use EXACTLY the images specified by the Photography Director for each shot
+- Use EXACTLY the fonts, sizes, and positions defined in the photography plan
+- Use EXACTLY the transitions defined between sections (NOT 100% cut)
+- If a shot has "image_has_text": true, do NOT add text_overlay (set it to null/empty)
+- If you need to split a shot into multiple cuts, keep the same image/font/motion
+- You decide TIMING only — the Photography Director decided everything else
 
 Task: Create professional edit plans for ${video_count} videos — "${task_name}" campaign.
 Date: ${task_date}

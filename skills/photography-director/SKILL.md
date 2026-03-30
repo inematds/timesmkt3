@@ -114,7 +114,29 @@ Seguir a escala magazine do `typography-on-image/SKILL.md`:
 | Solução → Prova | crossfade | 0.3s |
 | Prova → CTA | fade_black | 0.5s |
 
-### 8. Image Prompts (quando image_source = api)
+### 8. Seleção e Classificação de Imagens
+
+**Ordem de prioridade (OBRIGATÓRIA):**
+1. **Imagens da campanha** (`<output_dir>/ads/*.png`, `<output_dir>/imgs/*.jpg`) — criadas especificamente para esta campanha. USAR PRIMEIRO.
+2. **Assets da marca** (`<project_dir>/assets/`) — somente se a campanha não tem imagens suficientes ou se nenhuma imagem da campanha serve para o enquadramento.
+3. **Imagens geradas por API** — somente quando `image_source = api`.
+
+**Classificação obrigatória de cada imagem:**
+Para cada imagem disponível, classificar:
+- `clean` — sem texto embutido, pode receber text_overlay
+- `has_text` — já tem texto/logo/UI embutido → usar SEM text_overlay (só a imagem, zero texto em cima)
+- `unsuitable` — não serve para a campanha (desclassificada)
+
+**Regras:**
+- Imagens com `_post`, `_stories`, `oficial_`, `logo_`, `instagram`, `facebook` no nome geralmente têm texto → classificar como `has_text`
+- Imagens com `_semtexto`, `_clean`, `_raw`, `_foto`, `banner_` geralmente são limpas
+- Na dúvida, classificar como `has_text` (mais seguro)
+- NUNCA colocar text_overlay sobre imagem classificada como `has_text`
+- Cada shot no plano deve indicar: `"image_has_text": true/false`
+
+**Justificativa:** Se usar asset da marca em vez de imagem da campanha, o shot deve incluir `"image_reason": "campanha não tem close-up de produto"` explicando por quê.
+
+### 9. Image Prompts (quando image_source = api)
 
 Para cada cena/enquadramento, escrever um prompt de imagem em inglês:
 - Máximo 200 caracteres

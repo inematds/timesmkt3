@@ -1646,23 +1646,36 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
           // Ensure worker is running (use existing if available)
           const worker = ensureWorker();
 
+          // Determine which agents will actually run for this stage
+          let activeAgents = [...agentNames];
+          if (stageNum === 3) {
+            activeAgents = [];
+            if (payload.video_quick !== false) activeAgents.push('video_quick');
+            if (payload.video_pro === true) activeAgents.push('video_pro');
+            if (activeAgents.length === 0) activeAgents.push('video_quick');
+          }
+          if (stageNum === 4) {
+            const targets = payload.platform_targets || [];
+            activeAgents = agentNames.filter(a => targets.includes(a.replace('platform_', '')));
+          }
+
           // Clear old logs for agents being reprocessed so polling doesn't see stale completions
           const logsDir = path.resolve(PROJECT_ROOT, payload.output_dir, 'logs');
           fs.mkdirSync(logsDir, { recursive: true });
-          for (const a of agentNames) {
+          for (const a of activeAgents) {
             const logFile = path.join(logsDir, `${a}.log`);
             if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
           }
 
           await _enqueueStage(payload, agentNames);
 
-          // Wait for all agents to complete by polling log files
-          const expected = agentNames.length;
+          // Wait for all ACTIVE agents to complete by polling log files
+          const expected = activeAgents.length;
           await new Promise((resolve) => {
             const checkInterval = setInterval(() => {
               if (!fs.existsSync(logsDir)) return;
               let done = 0;
-              for (const a of agentNames) {
+              for (const a of activeAgents) {
                 const logFile = path.join(logsDir, `${a}.log`);
                 if (!fs.existsSync(logFile)) continue;
                 const content = fs.readFileSync(logFile, 'utf-8');
@@ -2081,10 +2094,10 @@ Rules:
         payload.image_model = process.env.KIE_DEFAULT_MODEL || 'z-image';
       }
 
-      // Ensure video_quick/pro defaults and derive video_mode
-      payload.video_quick = payload.video_quick !== false;
+      // Ensure video_quick/pro defaults — quick ALWAYS runs
+      payload.video_quick = true;
       payload.video_pro = payload.video_pro === true;
-      payload.video_mode = payload.video_pro ? (payload.video_quick ? 'both' : 'pro') : 'quick';
+      payload.video_mode = payload.video_pro ? 'both' : 'quick';
 
       callback(payload);
     } catch {
