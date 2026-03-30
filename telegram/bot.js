@@ -2333,13 +2333,9 @@ function runPipelineV3(ctx, chatId, payload, outputDir) {
     const text = d.toString();
     console.log('[worker]', text.slice(0, 200));
 
-    // Stage 1 complete — creative brief ready
+    // Stage 1 signal — logged only; advancement handled by signal monitor
     if (text.includes('[STAGE1_DONE]')) {
-      console.log('[v3] STAGE1_DONE received');
-      session.updateCampaignV3Stage(chatId, 1, { status: 'done' });
-      sendStageApprovalRequest(botCtx, chatId, 1).catch(e =>
-        console.error('[v3] stage1 approval error:', e.message)
-      );
+      console.log('[v3] STAGE1_DONE received (monitor will advance)');
     }
 
     // Live image streaming — forward each image as it arrives
@@ -2424,7 +2420,7 @@ function runPipelineV3(ctx, chatId, payload, outputDir) {
       }
     }
 
-    // Track agent completions for stage advancement
+    // Track agent completions (notification only — stage advancement is handled by the signal monitor)
     if (text.includes('Job completed:')) {
       const match = text.match(/Job completed:\s*(\S+)/);
       if (match) {
@@ -2436,71 +2432,6 @@ function runPipelineV3(ctx, chatId, payload, outputDir) {
         if (cv.notifications) {
           bot.api.sendMessage(chatId, `✅ Agente concluído: <code>${agentName}</code>`, { parse_mode: 'HTML' })
             .catch(() => {});
-        }
-
-        // Stage 2: ad_creative_designer
-        if (STAGES.stage2.includes(agentName)) {
-          stageAgentsDone.stage2.add(agentName);
-          const active2 = STAGES.stage2.filter(a =>
-            !(a === 'ad_creative_designer' && cv.payload.skip_image)
-          );
-          if (active2.every(a => stageAgentsDone.stage2.has(a))) {
-            session.updateCampaignV3Stage(chatId, 2, { status: 'done' });
-            sendStageApprovalRequest(botCtx, chatId, 2).catch(e =>
-              console.error('[v3] stage2 approval error:', e.message)
-            );
-          }
-        }
-
-        // Stage 3: video (video_quick / video_pro)
-        if (STAGES.stage3.includes(agentName) || agentName === 'video_quick' || agentName === 'video_pro') {
-          stageAgentsDone.stage3.add(agentName);
-          let videoDone = false;
-          if (cv.payload.skip_video) {
-            videoDone = true;
-          } else if (cv.payload.video_mode === 'both') {
-            // Both must complete before advancing
-            videoDone = stageAgentsDone.stage3.has('video_quick') && stageAgentsDone.stage3.has('video_pro');
-          } else {
-            videoDone = stageAgentsDone.stage3.size > 0;
-          }
-          if (videoDone) {
-            session.updateCampaignV3Stage(chatId, 3, { status: 'done' });
-            sendStageApprovalRequest(botCtx, chatId, 3).catch(e =>
-              console.error('[v3] stage3 approval error:', e.message)
-            );
-          }
-        }
-
-        // Stage 4: platform agents — filter by platform_targets
-        if (STAGES.stage4.includes(agentName) || agentName.startsWith('platform_')) {
-          stageAgentsDone.stage4.add(agentName);
-          // Only count platform agents that match platform_targets
-          const targets = cv.payload.platform_targets || [];
-          const activePlatforms = STAGES.stage4.filter(a => {
-            const flag = a.replace('platform_', '');
-            return targets.includes(flag);
-          });
-          if (activePlatforms.length === 0 || activePlatforms.every(a => stageAgentsDone.stage4.has(a))) {
-            session.updateCampaignV3Stage(chatId, 4, { status: 'done' });
-            sendStageApprovalRequest(botCtx, chatId, 4).catch(e =>
-              console.error('[v3] stage4 approval error:', e.message)
-            );
-          }
-        }
-
-        // Stage 5: distribution complete
-        if (STAGES.stage5.includes(agentName)) {
-          stageAgentsDone.stage5.add(agentName);
-          if (STAGES.stage5.every(a => stageAgentsDone.stage5.has(a))) {
-            if (worker) worker.kill('SIGTERM');
-            session.clearRunningTask(chatId);
-            session.clearCampaignV3(chatId);
-            const folderName = payload.task_name;
-            bot.api.sendMessage(chatId, `Campanha <b>${payload.task_name}</b> pronta!`, { parse_mode: 'HTML' })
-              .then(() => sendCampaignReport(botCtx, absOutputDir, folderName))
-              .catch(() => {});
-          }
         }
       }
     }
