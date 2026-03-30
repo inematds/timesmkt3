@@ -1799,12 +1799,82 @@ RULES:
     narrationNote = 'No narration audio available.';
   }
 
-  // ── PHASE 2: Scene Plan (Opus — complex planning) ──────────────────────────
+  // ── PHASE 1.6: Photography Director (Opus — visual decisions) ───────────────
+  const photoplanPath = path.resolve(PROJECT_ROOT, output_dir, 'video', 'photography_plan.json');
+  if (!fs.existsSync(photoplanPath)) {
+    log(output_dir, 'video_pro', 'Phase 1.6: Photography Director (Opus)...');
+    process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} photography_director\n`);
+
+    const photoDirPrompt = `You are the Photography Director (Diretor de Fotografia). Follow the skill defined in skills/photography-director/SKILL.md exactly.
+
+You think like a CINEMATOGRAPHER. You define the complete visual language BEFORE the editor creates the scene plan.
+
+Task: Create the photography plan for ${video_count} video(s) — "${task_name}" campaign.
+Platforms: ${platform_targets.join(', ')}
+${langInstruction}
+
+STEP 1 — Read ALL these files:
+- ${project_dir}/knowledge/brand_identity.md
+- ${output_dir}/creative/creative_brief.json
+- skills/photography-director/SKILL.md
+- skills/video-art-direction/SKILL.md
+- skills/typography-on-image/SKILL.md
+
+STEP 2 — Audio timing:
+${narrationNote}
+
+STEP 3 — Available images:
+${imageSourceSection}
+
+STEP 4 — Create the photography plan following SKILL.md exactly.
+Save to: ${output_dir}/video/photography_plan.json
+
+The plan must define: style_preset, formats (based on platforms), color_palette, typography, sections with mood/framing/motion, and individual shots covering 100% of the narration timing.
+
+IMPORTANT: Output ONLY the photography_plan.json file. Do NOT create scene plans or render anything.`;
+
+    await runClaude(photoDirPrompt, 'video_pro', output_dir, 600000, { model: 'opus' });
+    log(output_dir, 'video_pro', 'Photography plan created.');
+  } else {
+    log(output_dir, 'video_pro', 'Photography plan already exists, skipping.');
+  }
+
+  // Extend lock after photography director
+  await job.extendLock(job.token, 900000).catch(() => {});
+
+  // Read photography plan for scene plan prompt
+  let photographyNote = '';
+  if (fs.existsSync(photoplanPath)) {
+    try {
+      const photoPlan = JSON.parse(fs.readFileSync(photoplanPath, 'utf-8'));
+      photographyNote = `
+PHOTOGRAPHY PLAN (from Photography Director — FOLLOW THESE DECISIONS):
+Style: ${photoPlan.style_preset || 'not set'}
+Formats: ${(photoPlan.formats || ['9:16']).join(', ')}
+Colors: ${JSON.stringify(photoPlan.color_palette || {})}
+Typography: headline=${photoPlan.typography?.headline_font || 'Montserrat'}, body=${photoPlan.typography?.body_font || 'Inter'}
+
+Sections:
+${(photoPlan.sections || []).map(s => `  ${s.name} (${s.start_s || '?'}s-${s.end_s || '?'}s): mood=${s.mood || '?'}, framing=${s.default_framing || '?'}, motion=${s.default_motion || '?'}, overlay=${s.overlay || 'dark'} ${s.overlay_opacity || 0.45}`).join('\n')}
+
+Shots (${(photoPlan.shots || []).length} defined):
+${(photoPlan.shots || []).slice(0, 10).map(s => `  ${s.timing}: ${s.framing} + ${s.motion} | "${(s.text_overlay || '').slice(0, 30)}" | img: ${(s.image_prompt || '').slice(0, 50)}`).join('\n')}
+${(photoPlan.shots || []).length > 10 ? `  ... (${photoPlan.shots.length} total — read the full file)` : ''}
+
+CRITICAL: You MUST follow the Photography Director's decisions. Do NOT override style, framing, motion, or color choices. Your job is ONLY to create the edit timeline (scene plan) using these visual decisions.
+Read the full photography_plan.json for all shots.`;
+    } catch (e) {
+      log(output_dir, 'video_pro', `Could not parse photography_plan.json: ${e.message}`);
+    }
+  }
+
+  // ── PHASE 2: Scene Plan (Opus — edit timeline) ────────────────────────────
   log(output_dir, 'video_pro', 'Phase 2: Creating scene plan (Opus)...');
 
   const scenePlanPrompt = `You are the Video Editor Agent (Diretor de Edição). Follow the skill defined in skills/video-editor-agent/SKILL.md exactly.
 
-You think like a PROFESSIONAL VIDEO EDITOR. You create 30-50 rapid cuts in 60 seconds — NOT a 5-scene slideshow.
+You think like a PROFESSIONAL VIDEO EDITOR. You create 30-50 rapid cuts — NOT a 5-scene slideshow.
+The Photography Director has already defined the visual language. Your job is to create the EDIT TIMELINE following those decisions.
 
 Task: Create professional edit plans for ${video_count} videos — "${task_name}" campaign.
 Date: ${task_date}
@@ -1815,21 +1885,22 @@ STEP 1 — Read these knowledge files:
 - ${project_dir}/knowledge/brand_identity.md
 - ${project_dir}/knowledge/product_campaign.md
 - ${output_dir}/creative/creative_brief.json
+- ${output_dir}/video/photography_plan.json — CRITICAL: the Photography Director's visual decisions
 - skills/video-editor-agent/SKILL.md
 - skills/typography-on-image/SKILL.md
-- skills/video-art-direction/SKILL.md
 
 STEP 2 — Image assets:
 ${imageSourceSection}
 
 STEP 3 — Video briefs:
 ${videoBriefsText}
+${photographyNote}
 
 STEP 4 — Audio:
 ${narrationNote}
 ${musicInstructions}
 
-STEP 5 — Create the scene plan JSON following the 4-phase process in SKILL.md:
+STEP 5 — Create the scene plan JSON following the Photography Director's visual decisions:
 
 Phase A: Analyze inputs, select narrative framework
 Phase B: Create Edit Decision List with 30-50 cuts (MANDATORY minimum 25 cuts for 60s)
