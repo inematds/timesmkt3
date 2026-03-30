@@ -1631,12 +1631,19 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
           // Ensure worker is running (use existing if available)
           const worker = ensureWorker();
 
+          // Clear old logs for agents being reprocessed so polling doesn't see stale completions
+          const logsDir = path.resolve(PROJECT_ROOT, payload.output_dir, 'logs');
+          fs.mkdirSync(logsDir, { recursive: true });
+          for (const a of agentNames) {
+            const logFile = path.join(logsDir, `${a}.log`);
+            if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
+          }
+
           await _enqueueStage(payload, agentNames);
 
           // Wait for all agents to complete by polling log files
           const expected = agentNames.length;
           await new Promise((resolve) => {
-            const logsDir = path.resolve(PROJECT_ROOT, payload.output_dir, 'logs');
             const checkInterval = setInterval(() => {
               if (!fs.existsSync(logsDir)) return;
               let done = 0;
@@ -3399,7 +3406,8 @@ async function resumeInProgressCampaigns() {
           const logFile = path.join(logsDir, `${a}.log`);
           if (!fs.existsSync(logFile)) { stageDone = false; break; }
           const content = fs.readFileSync(logFile, 'utf-8');
-          if (!content.includes('Completed successfully')) { stageDone = false; break; }
+          const tail = content.split('\n').filter(l => l.trim()).slice(-3).join('\n');
+          if (!tail.includes('Completed successfully')) { stageDone = false; break; }
         }
         if (stageDone) highestDone = stage;
         else { allComplete = false; break; }
@@ -3583,7 +3591,9 @@ bot.start({
                 if (!fs.existsSync(logFile)) { allDone = false; continue; }
                 anyStarted = true;
                 const content = fs.readFileSync(logFile, 'utf-8');
-                if (!content.includes('Completed successfully')) allDone = false;
+                // Check LAST 3 lines for completion (avoids false positives from old runs)
+                const tail = content.split('\n').filter(l => l.trim()).slice(-3).join('\n');
+                if (!tail.includes('Completed successfully')) allDone = false;
               }
 
               if (allDone && anyStarted) {

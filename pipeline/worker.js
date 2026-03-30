@@ -1075,6 +1075,7 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
     }
 
     const videoOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_quick_${idx}.mp4`);
+    backupIfExists(videoOutput);
     log(output_dir, 'video_quick', `Rendering video ${i}/${video_count}...`);
 
     try {
@@ -2088,6 +2089,7 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
     const idx = String(i).padStart(2, '0');
     const proFilename = `${task_name}_pro_${idx}.mp4`;
     const videoOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', proFilename);
+    backupIfExists(videoOutput);
     const absScenePlan = vfFind(idx, '_scene_plan_motion.json');
     const planToRender = path.relative(PROJECT_ROOT, absScenePlan);
 
@@ -2778,6 +2780,17 @@ const HANDLERS = {
 };
 
 // ── Logger ────────────────────────────────────────────────────────────────────
+
+// Backup existing file before overwriting (rerun creates new versions)
+function backupIfExists(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  const dir = path.dirname(filePath);
+  const ext = path.extname(filePath);
+  const base = path.basename(filePath, ext);
+  let v = 1;
+  while (fs.existsSync(path.join(dir, `${base}_v${v}${ext}`))) v++;
+  fs.renameSync(filePath, path.join(dir, `${base}_v${v}${ext}`));
+}
 
 function log(outputDir, agentName, message) {
   const logDir = path.resolve(PROJECT_ROOT, outputDir, 'logs');
