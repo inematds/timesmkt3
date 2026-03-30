@@ -3576,9 +3576,10 @@ bot.start({
 
                 // Stage 5 complete — campaign done
                 if (num === 5) {
+                  const taskName = sess.runningTask?.taskName || campaign;
                   session.clearRunningTask(chatId);
                   session.clearCampaignV3(chatId);
-                  bot.api.sendMessage(chatId, `🎉 Campanha <b>${s.runningTask.taskName}</b> concluída!`, { parse_mode: 'HTML' }).catch(() => {});
+                  bot.api.sendMessage(chatId, `🎉 Campanha <b>${taskName}</b> concluída!`, { parse_mode: 'HTML' }).catch(() => {});
                 }
               }
             }
