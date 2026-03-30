@@ -3425,7 +3425,11 @@ bot.start({
           if (!ctx2?.chatId) continue;
           const chatId = ctx2.chatId;
 
-          // 1. Image generation error — no decision yet
+          // Only process campaigns with active session (runningTask)
+          const sess = session.get(chatId);
+          const hasActiveSession = sess?.runningTask?.outputDir === relDir;
+
+          // 1. Image generation error — no decision yet (works even without session)
           const imgErrorLog = path.join(campDir, 'logs', 'api_image_gen.log');
           const imgDecision = path.join(campDir, 'imgs', 'error_decision.json');
           const imgErrorKey = `img_error:${relDir}`;
@@ -3484,10 +3488,10 @@ bot.start({
             monitoredSignals.delete(imgApprovalKey);
           }
 
-          // 4. Stage completion tracking — detect agent completions from log files
-          const s = session.get(chatId);
-          const cv = s?.campaignV3;
-          if (cv && s.runningTask) {
+          // 4. Stage completion tracking — ONLY for campaigns with active session matching this output
+          if (!hasActiveSession) continue;
+          const cv = sess?.campaignV3;
+          if (cv) {
             const logsDir = path.join(campDir, 'logs');
             if (!fs.existsSync(logsDir)) continue;
 
