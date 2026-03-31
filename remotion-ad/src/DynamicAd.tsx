@@ -167,7 +167,7 @@ export const DynamicAd: React.FC<ScenePlanProps> = (props) => {
             <SceneWithTransition
               transition={transition as TransitionType}
               transitionDuration={transitionDuration}
-              sceneDuration={overlapDuration}
+              sceneDuration={duration}
             >
               <DynamicScene
                 scene={scene}
