@@ -13,6 +13,10 @@
  *   flux-kontext-pro   — Flux Pro
  *   flux-kontext-max   — Flux Max quality
  *   gpt-image-1        — OpenAI GPT-Image-1
+ *   seedream           — high resolution
+ *   flux-2             — next-gen FLUX
+ *   grok-imagine       — xAI Grok
+ *   nano-banana-2      — 1K resolution
  *
  * Aspect ratios:
  *   1:1   — square (Instagram carousel, 1080x1080)
@@ -39,6 +43,11 @@ const MODELS = {
   'flux-kontext-pro': { endpoint: '/api/v1/flux/kontext/generate',    pollEndpoint: '/api/v1/flux/kontext/record-info', type: 'flux' },
   'flux-kontext-max': { endpoint: '/api/v1/flux/kontext/generate',    pollEndpoint: '/api/v1/flux/kontext/record-info', type: 'flux' },
   'gpt-image-1':      { endpoint: '/api/v1/gpt4o-image/generate',     pollEndpoint: '/api/v1/jobs/recordInfo', type: 'gpt' },
+  // New models (2026)
+  'seedream':         { endpoint: '/api/v1/jobs/createTask',          pollEndpoint: '/api/v1/jobs/recordInfo', type: 'market' },
+  'flux-2':           { endpoint: '/api/v1/flux/kontext/generate',    pollEndpoint: '/api/v1/flux/kontext/record-info', type: 'flux' },
+  'grok-imagine':     { endpoint: '/api/v1/jobs/createTask',          pollEndpoint: '/api/v1/jobs/recordInfo', type: 'market' },
+  'nano-banana-2':    { endpoint: '/api/v1/jobs/createTask',          pollEndpoint: '/api/v1/jobs/recordInfo', type: 'market' },
 };
 
 const AVAILABLE_MODELS = [
@@ -47,6 +56,10 @@ const AVAILABLE_MODELS = [
   { id: 'flux-kontext-pro', label: 'Flux Kontext Pro' },
   { id: 'flux-kontext-max', label: 'Flux Kontext Max (qualidade máxima)' },
   { id: 'gpt-image-1',      label: 'GPT-Image-1 (estilo OpenAI)' },
+  { id: 'seedream',         label: 'SeedReam (alta resolução)' },
+  { id: 'flux-2',           label: 'FLUX 2 (nova geração)' },
+  { id: 'grok-imagine',     label: 'Grok Imagine (xAI)' },
+  { id: 'nano-banana-2',    label: 'Nano Banana 2 (1K resolução)' },
 ];
 
 // ── Brand context reader ──────────────────────────────────────────────────────

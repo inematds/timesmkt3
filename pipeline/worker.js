@@ -404,6 +404,8 @@ function runClaude(prompt, agentName, outputDir, timeoutMs = 600000, { model = '
       '-p', prompt,
       '--dangerously-skip-permissions',
       '--model', model,
+      '--bare',                     // skip hooks, LSP, auto-memory — isolated context
+      '--no-session-persistence',   // don't save session to disk
     ];
 
     log(outputDir, agentName, `Invoking Claude CLI...`);
@@ -1567,6 +1569,29 @@ async function handleVideoPro(job) {
       if (_mf.length > 0) { musicFiles = _mf.map(f => path.relative(PROJECT_ROOT, path.join(_md, f))); break; }
     }
   }
+  // If no local music, try Freesound API
+  if (musicFiles.length === 0 && process.env.FREESOUND_API_KEY) {
+    log(output_dir, 'video_pro', 'No local music found — searching Freesound...');
+    try {
+      const { searchMusic, downloadPreview } = require('./search-music-freesound');
+      const briefText = job.data.campaign_brief || task_name;
+      const moodKeywords = briefText.includes('tech') || briefText.includes('ia') ? 'ambient electronic' : 'corporate background';
+      const sound = await searchMusic(moodKeywords, '', 30, 120);
+      if (sound) {
+        const audioDir = path.resolve(PROJECT_ROOT, output_dir, 'audio');
+        const musicPath = await downloadPreview(sound, audioDir);
+        if (musicPath) {
+          musicFiles = [path.relative(PROJECT_ROOT, musicPath)];
+          log(output_dir, 'video_pro', `Freesound music downloaded: ${path.basename(musicPath)} (${sound.duration.toFixed(1)}s)`);
+        }
+      } else {
+        log(output_dir, 'video_pro', 'No suitable music found on Freesound.');
+      }
+    } catch (e) {
+      log(output_dir, 'video_pro', `Freesound search error: ${e.message}`);
+    }
+  }
+
   const musicInstructions = musicFiles.length > 0 ? `
 BACKGROUND MUSIC (available files):
 ${musicFiles.map(f => `  - ${f}`).join('\n')}

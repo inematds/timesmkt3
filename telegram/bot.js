@@ -2127,6 +2127,7 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     // KIE
     'z-image': 'Z-Image', 'z-image-turbo': 'Z-Image Turbo',
     'flux-kontext-pro': 'Flux Pro', 'flux-kontext-max': 'Flux Max', 'gpt-image-1': 'GPT-Image-1',
+    'seedream': 'SeedReam', 'flux-2': 'FLUX 2', 'grok-imagine': 'Grok Imagine', 'nano-banana-2': 'Nano Banana 2',
     // Pollinations
     'flux': 'FLUX Schnell', 'zimage': 'Z-Image Turbo (2x)', 'kontext': 'FLUX Kontext',
     'gptimage': 'GPT Image Mini', 'nanobanana-pro': 'Gemini 3 Pro',
@@ -2770,8 +2771,23 @@ async function sendStageApprovalRequest(ctx, chatId, stage) {
   const mode = cv.approvalModes[`stage${stage}`] || 'humano';
   const outputDir = cv.outputDir;
 
-  // Auto mode — advance without any review
+  // Auto mode — advance without review but still send key deliverables
   if (mode === 'auto') {
+    // Stage 1: send research report even in auto mode
+    if (stage === 1 && cv.notifications !== false) {
+      const reportPath = path.join(PROJECT_ROOT, outputDir, 'interactive_report.html');
+      const briefMdPath = path.join(PROJECT_ROOT, outputDir, 'research_brief.md');
+      if (fs.existsSync(reportPath)) {
+        await bot.api.sendDocument(chatId, new InputFile(reportPath), {
+          caption: '📊 Relatório interativo da pesquisa'
+        }).catch(() => {});
+      }
+      if (fs.existsSync(briefMdPath)) {
+        await bot.api.sendDocument(chatId, new InputFile(briefMdPath), {
+          caption: '📋 Research Brief'
+        }).catch(() => {});
+      }
+    }
     await ctx.reply(`Etapa ${stage} concluída — avançando automaticamente...`).catch(() => {});
     await runStage(ctx, chatId, stage + 1);
     return;
