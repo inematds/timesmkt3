@@ -141,7 +141,9 @@ function buildImagePrompt(brief, brand, format, index, total, sceneType = '', sc
     orientation + '.',
     colorHint,
     'Cinematic lighting, photorealistic.',
+    'Brazilian professionals, diverse, modern environment.',
     'No text, no words, no watermark, no logo.',
+    'No weapons, no violence, no nudity.',
   ];
 
   const prompt = parts.filter(Boolean).join(' ');

@@ -10,6 +10,7 @@ import { Subtitles, SubtitleSegment, SubtitleStyle } from '../components/Subtitl
 import { ParticleEffects, ParticleType } from '../components/ParticleEffects';
 import { SplitScreen, SplitDirection, SplitAnimation } from '../components/SplitScreen';
 import { KineticText, KineticStyle } from '../components/KineticText';
+import { HUDText } from '../components/HUDText';
 import {
   SolidBackground, FloodBackground, GlowRings,
   FlashTransition, Vignette,
@@ -89,9 +90,21 @@ export interface SceneData {
     type?: string;
     spring_config?: SpringConfig;
     easing?: string;
+    speed_ramp_stages?: number[];
   };
   // Film grain overlay (0-1)
   grain?: number;
+  // HUD text mode (replaces standard TextOverlay with tech HUD style)
+  hud_text?: {
+    brackets?: boolean;
+    scanLine?: boolean;
+    dataPoints?: boolean;
+    coordinates?: boolean;
+    accentColor?: string;
+  };
+  // Lens transition for this scene
+  lens_transition?: 'rack-focus' | 'whip-blur' | 'defocus-refocus' | 'chromatic-glitch';
+  lens_transition_frames?: number;
 }
 
 export interface SceneProps {
@@ -344,6 +357,8 @@ export const DynamicScene: React.FC<SceneProps> = ({
 
   // If kinetic_text is set, use KineticText instead of TextOverlay
   const useKinetic = !!scene.kinetic_text;
+  // If hud_text is set, use HUDText for tech HUD style
+  const useHUD = !!scene.hud_text;
 
   // ── CTA scene ─────────────────────────────────────────────────────────────
   if (tipo === 'cta') {
@@ -451,6 +466,7 @@ export const DynamicScene: React.FC<SceneProps> = ({
         colorGrading={scene.color_grading}
         spring_config={scene.motion?.spring_config}
         easing={scene.motion?.easing}
+        speedRampStages={scene.motion?.speed_ramp_stages}
       >
         {/* Flash transition for 'presente' scenes */}
         {tipo.includes('presente') && <FlashTransition />}
@@ -485,9 +501,24 @@ export const DynamicScene: React.FC<SceneProps> = ({
         {/* Text background band */}
         {textBandEl}
 
-        {/* Text — kinetic or standard */}
+        {/* Text — HUD, kinetic, or standard */}
         {/* Magazine style: large text at top by default, like a cover */}
-        {useKinetic ? (
+        {useHUD ? (
+          <HUDText
+            text={text}
+            fontSize={sceneFontSize || (tipo.includes('hook') ? 96 : tipo.includes('cta') ? 80 : 72)}
+            color={sceneTextColor || (overlayType === 'light' ? dark(palette) : light(palette))}
+            fontFamily={sceneFontFamily || undefined}
+            fontWeight={sceneFontWeight || 900}
+            startFrame={textStart}
+            position={(sceneTextPosition === 'bottom' ? 'top' : sceneTextPosition) || 'top'}
+            accentColor={scene.hud_text?.accentColor || '#0099FF'}
+            brackets={scene.hud_text?.brackets !== false}
+            scanLine={scene.hud_text?.scanLine !== false}
+            dataPoints={scene.hud_text?.dataPoints !== false}
+            coordinates={scene.hud_text?.coordinates}
+          />
+        ) : useKinetic ? (
           <KineticText
             text={text}
             style={scene.kinetic_text?.style || 'grow'}

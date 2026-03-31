@@ -168,7 +168,24 @@ function renderVideo(scenePlanPath, outputPath) {
   }
 
   const audioPath = (plan.audio || plan.narration_file) ? path.resolve(PROJECT_ROOT, plan.audio || plan.narration_file) : null;
-  const musicPath = plan.music ? path.resolve(PROJECT_ROOT, plan.music) : null;
+  // Music: try multiple fields and resolve path
+  let musicPath = null;
+  const musicField = plan.music || plan.background_music;
+  if (musicField) {
+    musicPath = path.resolve(PROJECT_ROOT, musicField);
+    if (!fs.existsSync(musicPath)) {
+      // Try just the filename in common dirs
+      const bn = path.basename(musicField);
+      for (const dir of ['assets/music', 'assets/audio', 'assets']) {
+        const cand = path.resolve(PROJECT_ROOT, dir, bn);
+        if (fs.existsSync(cand)) { musicPath = cand; break; }
+      }
+      if (!fs.existsSync(musicPath)) {
+        console.log(`Warning: music file not found: ${musicField}`);
+        musicPath = null;
+      }
+    }
+  }
   const musicVolume = typeof plan.music_volume === 'number' ? plan.music_volume : 0.15;
 
   // Determine scene durations based on audio length

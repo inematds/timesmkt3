@@ -766,6 +766,10 @@ bot.command('status', async (ctx) => {
   const videoMode = s.runningTask?.videoMode || '';
   const lines = [];
 
+  // During rerun, find the highest stage being reprocessed
+  const rerunMaxStage = rerunStages ? Math.max(...rerunStages) : 0;
+  const isRerun = !!s.runningTask?.rerun;
+
   for (const [stageNum, stage] of Object.entries(stageAgents)) {
     const num = Number(stageNum);
     let stagLabel = stage.name;
@@ -785,6 +789,13 @@ bot.command('status', async (ctx) => {
         hasAnyLog = true;
         agentLines.push(`    ${a}: ${st}`);
       }
+    }
+
+    // During rerun, stages AFTER the current rerun range should be hidden (not ✅)
+    // They will be re-executed so old ✅ is misleading
+    if (isRerun && rerunStages && !rerunStages.includes(num) && num > rerunMaxStage) {
+      // Stage after rerun scope — don't show old status
+      continue;
     }
 
     // Determine stage-level icon
@@ -815,17 +826,30 @@ bot.command('status', async (ctx) => {
         const icon = st || '⬜';
         lines.push(`    ${icon} ${a}`);
       }
-      // Show video sub-phases for both quick and pro
+      // Show video sub-phases for both quick and pro — ALWAYS show ALL phases
       if (num === 3) {
+        const quickPhaseList = [
+          'Scene plan', 'Aprovacao', 'Render final', 'Completo'
+        ];
+        const proPhaseList = [
+          'Narracao', 'Timing audio', 'Dir. Fotografia', 'Scene plan',
+          'Validacao tipografica', 'Gerando imagens', 'Aprovacao',
+          'Render final', 'Completo'
+        ];
         const videoLogs = [
-          { file: 'video_quick.log', label: 'Quick' },
-          { file: 'video_pro.log', label: 'Pro' },
+          { file: 'video_quick.log', label: 'Quick', allPhases: quickPhaseList },
+          { file: 'video_pro.log', label: 'Pro', allPhases: proPhaseList },
         ];
         for (const vl of videoLogs) {
+          // Skip if not active mode
+          if (vl.label === 'Quick' && videoMode === 'Pro') continue;
+          if (vl.label === 'Pro' && videoMode === 'Quick') continue;
+
           const vLog = path.join(logsDir, vl.file);
-          if (!fs.existsSync(vLog)) continue;
-          const vContent = fs.readFileSync(vLog, 'utf-8');
-          const phases = [
+          const vContent = fs.existsSync(vLog) ? fs.readFileSync(vLog, 'utf-8') : '';
+
+          // Detect which phases are done/running from log markers
+          const phaseMarkers = [
             { key: 'Generating narration', label: 'Narracao', icon: '▶️' },
             { key: 'Narration already exists', label: 'Narracao', icon: '✅' },
             { key: 'Narration generated', label: 'Narracao', icon: '✅' },
@@ -836,29 +860,62 @@ bot.command('status', async (ctx) => {
             { key: 'Photography plan already exists', label: 'Dir. Fotografia', icon: '✅' },
             { key: 'Creating scene plan', label: 'Scene plan', icon: '▶️' },
             { key: 'Scene plan saved', label: 'Scene plan', icon: '✅' },
-            { key: 'Capturing screenshots', label: 'Screenshots', icon: '▶️' },
-            { key: 'Screenshots captured', label: 'Screenshots', icon: '✅' },
-            { key: 'Rendering draft', label: 'Draft render', icon: '▶️' },
-            { key: 'Draft 01 rendered', label: 'Draft render', icon: '✅' },
+            { key: 'Typography validation', label: 'Validacao tipografica', icon: '▶️' },
+            { key: 'typography fixes applied', label: 'Validacao tipografica', icon: '✅' },
+            { key: 'No typography fixes', label: 'Validacao tipografica', icon: '✅' },
             { key: 'Generating image', label: 'Gerando imagens', icon: '▶️' },
-            { key: '[VIDEO_APPROVAL_NEEDED] Waiting', label: 'Aguardando aprovacao', icon: '🔄' },
+            { key: 'Updated plan with', label: 'Gerando imagens', icon: '✅' },
+            { key: '[VIDEO_APPROVAL_NEEDED] Waiting', label: 'Aprovacao', icon: '🔄' },
             { key: 'Starting video render', label: 'Render final', icon: '▶️' },
             { key: 'render_start', label: 'Render final', icon: '▶️' },
             { key: 'Video 1 rendered', label: 'Render final', icon: '✅' },
             { key: 'Completed successfully', label: 'Completo', icon: '✅' },
           ];
           const phaseStatus = new Map();
-          for (const p of phases) {
+          for (const p of phaseMarkers) {
             if (vContent.includes(p.key)) phaseStatus.set(p.label, p.icon);
           }
           // If completed, remove the approval waiting line
-          if (phaseStatus.get('Completo') === '✅') phaseStatus.delete('Aguardando aprovacao');
-          if (phaseStatus.size > 0) {
+          if (phaseStatus.get('Completo') === '✅') phaseStatus.delete('Aprovacao');
+
+          // Show ALL phases with status (⬜ for not started)
+          const hasAnyPhase = vContent.length > 0;
+          if (hasAnyPhase || stageIcon === '▶️' || stageIcon === '🔄') {
             lines.push(`      <i>${vl.label}:</i>`);
-            for (const [label, icon] of phaseStatus) {
-              lines.push(`      ${icon} ${label}`);
+            for (const phase of vl.allPhases) {
+              const icon = phaseStatus.get(phase) || '⬜';
+              lines.push(`      ${icon} ${phase}`);
             }
           }
+        }
+      }
+
+      // Show stage 2 sub-phases (images)
+      if (num === 2 && (hasAnyLog || stageIcon !== '⬜')) {
+        const imgPhases = [
+          'Gerar prompts', 'Gerar imagens', 'Aprovacao imagens',
+          'Montar criativos', 'Validacao aspect ratio', 'Completo'
+        ];
+        const adLog = path.join(logsDir, 'ad_creative_designer.log');
+        const adContent = fs.existsSync(adLog) ? fs.readFileSync(adLog, 'utf-8') : '';
+        const imgMarkers = [
+          { key: 'prompt', label: 'Gerar prompts', icon: '▶️' },
+          { key: 'Generating image', label: 'Gerar imagens', icon: '▶️' },
+          { key: 'Image generated', label: 'Gerar imagens', icon: '✅' },
+          { key: 'approval', label: 'Aprovacao imagens', icon: '🔄' },
+          { key: 'approved', label: 'Aprovacao imagens', icon: '✅' },
+          { key: 'Rendering HTML', label: 'Montar criativos', icon: '▶️' },
+          { key: 'Screenshot saved', label: 'Montar criativos', icon: '✅' },
+          { key: 'aspect ratio', label: 'Validacao aspect ratio', icon: '✅' },
+          { key: 'Completed successfully', label: 'Completo', icon: '✅' },
+        ];
+        const imgStatus = new Map();
+        for (const m of imgMarkers) {
+          if (adContent.includes(m.key)) imgStatus.set(m.label, m.icon);
+        }
+        for (const phase of imgPhases) {
+          const icon = imgStatus.get(phase) || '⬜';
+          lines.push(`      ${icon} ${phase}`);
         }
       }
     }
@@ -1319,8 +1376,11 @@ bot.command('rerun', async (ctx) => {
       '<code>/rerun c13 video pro screenshot</code>\n' +
       '<code>/rerun c13 video pro inema.club</code>\n' +
       '<code>/rerun c13 imagens api</code>\n' +
-      '<code>/rerun c13 2,3</code>\n\n' +
-      'Fonte de imagens: <i>brand</i> (default), <i>screenshot</i>, <i>api</i>, <i>free</i>, <i>pasta</i>',
+      '<code>/rerun c13 2,3</code>\n' +
+      '<code>/rerun c13 video pro cleanplan</code>\n' +
+      '<code>/rerun c13 video pro cleanall</code>\n\n' +
+      'Fonte de imagens: <i>brand</i> (default), <i>screenshot</i>, <i>api</i>, <i>free</i>, <i>pasta</i>\n' +
+      'Limpeza: <i>cleanplan</i>, <i>cleanimg</i>, <i>cleanaudio</i>, <i>cleanall</i>',
       { parse_mode: 'HTML' }
     );
   }
@@ -1366,6 +1426,7 @@ bot.command('rerun', async (ctx) => {
   let imageSource = 'brand';
   let payload_imageFolder = null;
   const screenshotUrls = [];
+  const cleanFlags = { plan: false, img: false, audio: false };
 
   for (let i = 0; i < allTokens.length; i++) {
     const token = allTokens[i];
@@ -1381,6 +1442,12 @@ bot.command('rerun', async (ctx) => {
     if (token === 'quick') { stageNumbers.add(3); videoQuick = true; continue; }
     if (token === 'pro') { stageNumbers.add(3); videoPro = true; continue; }
     if (token === 'draft') { videoDraft = true; continue; }
+
+    // Cleanup flags
+    if (token === 'cleanplan' || token === 'limparplano') { cleanFlags.plan = true; continue; }
+    if (token === 'cleanimg' || token === 'limparimagens') { cleanFlags.img = true; continue; }
+    if (token === 'cleanaudio' || token === 'limparaudio') { cleanFlags.audio = true; continue; }
+    if (token === 'cleanall' || token === 'limpartudo') { cleanFlags.plan = true; cleanFlags.img = true; cleanFlags.audio = true; continue; }
 
     // Image source detection
     if (token === 'screenshot' || token === 'screenshots' || token === 'captura' || token === 'capturas') {
@@ -1476,6 +1543,11 @@ bot.command('rerun', async (ctx) => {
     `Responda <b>sim</b> para iniciar.`,
     { parse_mode: 'HTML' }
   );
+
+  // Attach clean flags to payload
+  if (cleanFlags.plan || cleanFlags.img || cleanFlags.audio) {
+    payload.cleanFlags = cleanFlags;
+  }
 
   session.setPendingRerun(chatId, { payload, stages: sortedStages, campaignFolder });
 });
@@ -1634,6 +1706,49 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       const label = stages.map(n => n === 3 ? `Video ${videoMode}` : stageLabels[n]).join(' + ');
       await ctx.reply(`Reprocessando <b>${campaignFolder}</b> — ${label}...`, { parse_mode: 'HTML' });
 
+      // Apply cleanup flags
+      const absOutDir = path.resolve(PROJECT_ROOT, payload.output_dir);
+      if (payload.cleanFlags) {
+        if (payload.cleanFlags.plan) {
+          const videoDir = path.join(absOutDir, 'video');
+          if (fs.existsSync(videoDir)) {
+            for (const f of fs.readdirSync(videoDir)) {
+              if (f.endsWith('_scene_plan.json') || f.endsWith('_scene_plan_motion.json') || f === 'photography_plan.json') {
+                fs.unlinkSync(path.join(videoDir, f));
+              }
+            }
+            await ctx.reply('🗑️ Planos de cena limpos.').catch(() => {});
+          }
+        }
+        if (payload.cleanFlags.img) {
+          const imgsDir = path.join(absOutDir, 'imgs');
+          if (fs.existsSync(imgsDir)) {
+            for (const f of fs.readdirSync(imgsDir)) {
+              if (f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.webp')) {
+                fs.unlinkSync(path.join(imgsDir, f));
+              }
+            }
+            // Also clean approval files
+            for (const f of ['approved.json', 'rejected.json', 'approval_needed.json', 'error_decision.json']) {
+              const fp = path.join(imgsDir, f);
+              if (fs.existsSync(fp)) fs.unlinkSync(fp);
+            }
+            await ctx.reply('🗑️ Imagens limpas.').catch(() => {});
+          }
+        }
+        if (payload.cleanFlags.audio) {
+          const audioDir = path.join(absOutDir, 'audio');
+          if (fs.existsSync(audioDir)) {
+            for (const f of fs.readdirSync(audioDir)) {
+              if (f.endsWith('.mp3') || f.endsWith('.wav') || f.endsWith('_timing.json')) {
+                fs.unlinkSync(path.join(audioDir, f));
+              }
+            }
+            await ctx.reply('🗑️ Áudio limpo.').catch(() => {});
+          }
+        }
+      }
+
       // Run each requested stage sequentially
       const runRerunStages = async () => {
         for (const stageNum of stages) {
@@ -1789,6 +1904,67 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
     if (/^humano$/.test(lower)) {
       s.pendingCampaign.approval_modes = { stage1: 'humano', stage2: 'humano', stage3: 'humano', stage4: 'humano', stage5: 'humano' };
       await ctx.reply('✅ Todas as aprovações definidas como <b>humano</b>.', { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^sem\s*quick$/i.test(lower)) {
+      s.pendingCampaign.video_quick = false;
+      s.pendingCampaign.video_mode = s.pendingCampaign.video_pro ? 'pro' : 'quick';
+      await ctx.reply('✅ Video Quick desativado.');
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^pular\s+(pesquisa|research)$/i.test(lower)) {
+      s.pendingCampaign.skip_research = true;
+      await ctx.reply('✅ Pesquisa será pulada.');
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^pular\s+(imagens?|image)$/i.test(lower)) {
+      s.pendingCampaign.skip_image = true;
+      await ctx.reply('✅ Imagens serão puladas.');
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^idioma\s+(.+)$/i.test(lower)) {
+      const lang = lower.match(/^idioma\s+(.+)$/i)[1].trim();
+      s.pendingCampaign.language = lang;
+      await ctx.reply(`✅ Idioma: <b>${lang}</b>`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^narrad(or|ora)\s+(.+)$/i.test(lower)) {
+      const narrator = lower.match(/^narrad(?:or|ora)\s+(.+)$/i)[1].trim();
+      s.pendingCampaign.narrator = narrator;
+      await ctx.reply(`✅ Narrador: <b>${narrator}</b>`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^estilo\s+(.+)$/i.test(lower)) {
+      const style = lower.match(/^estilo\s+(.+)$/i)[1].trim();
+      s.pendingCampaign.style_preset = style;
+      await ctx.reply(`✅ Estilo visual: <b>${style}</b>`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^(provider|provedor)\s+(.+)$/i.test(lower)) {
+      const prov = lower.match(/^(?:provider|provedor)\s+(.+)$/i)[1].trim();
+      process.env.IMAGE_PROVIDER = prov;
+      await ctx.reply(`✅ Provider de imagens: <b>${prov}</b>`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^modelo?\s+(.+)$/i.test(lower)) {
+      const model = lower.match(/^modelo?\s+(.+)$/i)[1].trim();
+      s.pendingCampaign.image_model = model;
+      await ctx.reply(`✅ Modelo de imagem: <b>${model}</b>`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^fonte\s+(brand|api|free|screenshot|pasta)$/i.test(lower)) {
+      const source = lower.match(/^fonte\s+(.+)$/i)[1].trim();
+      s.pendingCampaign.image_source = source;
+      await ctx.reply(`✅ Fonte de imagens: <b>${source}</b>`, { parse_mode: 'HTML' });
       showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
       return;
     }
@@ -1975,25 +2151,38 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     lines.push(`<b>Fluxo:</b> gerar imagens → você aprova → montar criativos e vídeo`);
   }
 
-  const vQuick = payload.video_quick ? '1' : '0';
-  const vPro = payload.video_pro ? '1' : '0';
-  lines.push(
-    `<b>Video Quick:</b> ${vQuick} | <b>Video Pro:</b> ${vPro}`,
-    `<b>Idioma:</b> ${payload.language}`,
-  );
+  // Video section
+  const vQuick = payload.video_quick !== false;
+  const vPro = payload.video_pro === true;
+  lines.push('');
+  lines.push(`<b>Video:</b>`);
+  lines.push(`  ▶️ Quick: ${vQuick ? 'sim' : 'nao'} | ▶️ Pro: ${vPro ? 'sim' : 'nao'}`);
+  if (vPro) {
+    lines.push(`  <i>Narração:</i> ${payload.narrator || 'rachel'}`);
+    lines.push(`  <i>Style:</i> ${payload.style_preset || 'inema_hightech'}`);
+  }
+  lines.push(`<b>Idioma:</b> ${payload.language}`);
 
   if (skipFlags.length > 0) lines.push(`<b>Pular:</b> ${skipFlags.join(', ')}`);
 
-  // Approval modes summary
+  // Pipeline stages overview
+  lines.push('');
+  lines.push('<b>Pipeline (5 etapas):</b>');
+  const stages = [
+    { key: 'stage1', label: 'Brief & Narrativa', skip: payload.skip_research },
+    { key: 'stage2', label: 'Imagens', skip: payload.skip_image },
+    { key: 'stage3', label: 'Video', skip: payload.skip_video },
+    { key: 'stage4', label: 'Plataformas', skip: false },
+    { key: 'stage5', label: 'Distribuicao', skip: false },
+  ];
   const modes = payload.approval_modes || {};
   const modeLabel = { humano: '👤', agente: '🤖', auto: '⚡' };
-  const modeNames = { humano: 'humano', agente: 'agente', auto: 'auto' };
-  const stageNames = { stage1: 'Brief', stage2: 'Imagens', stage3: 'Video', stage4: 'Plataformas', stage5: 'Distribuição' };
-  const modeParts = Object.entries(stageNames).map(([key, label]) => {
-    const m = modes[key] || 'humano';
-    return `${modeLabel[m] || '👤'} ${label}`;
-  });
-  lines.push(`<b>Aprovações:</b> ${modeParts.join(' → ')}`);
+  for (const st of stages) {
+    const m = modes[st.key] || 'humano';
+    const skip = st.skip ? ' <s>PULAR</s>' : '';
+    lines.push(`  ${modeLabel[m] || '👤'} ${st.label}${skip}`);
+  }
+
   lines.push(`<b>Notificações:</b> ${payload.notifications === false ? 'desativadas' : 'ativadas'}`);
 
   // Always use brand context (colors + visual world) — never brand name in image
@@ -2001,9 +2190,18 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     payload = { ...payload, use_brand_overlay: true };
   }
   lines.push(`\nResponda <b>sim</b> para rodar ou ajuste antes:`);
-  lines.push(`• <code>auto</code> — aprovação automática em todas etapas`);
-  lines.push(`• <code>notif off</code> / <code>notif on</code> — notificações`);
+  lines.push(`• <code>auto</code> — aprovação automática`);
+  lines.push(`• <code>humano</code> — aprovação manual (default)`);
+  lines.push(`• <code>notif off</code> / <code>notif on</code>`);
   lines.push(`• <code>pro</code> — adicionar video pro`);
+  lines.push(`• <code>sem quick</code> — desativar video quick`);
+  lines.push(`• <code>pular pesquisa</code> / <code>pular imagens</code>`);
+  lines.push(`• <code>idioma pt-BR</code> / <code>idioma en</code>`);
+  lines.push(`• <code>narrador rachel</code> / <code>narrador bella</code>`);
+  lines.push(`• <code>estilo inema_hightech</code> / <code>estilo 01_hero_film</code>`);
+  lines.push(`• <code>fonte brand</code> / <code>fonte api</code> / <code>fonte free</code>`);
+  lines.push(`• <code>provider kie</code> / <code>provider pollinations</code>`);
+  lines.push(`• <code>modelo z-image</code> / <code>modelo flux</code>`);
   lines.push(`• <code>não</code> — cancelar`);
   session.setPendingCampaign(chatId, payload);
 
@@ -3499,6 +3697,41 @@ bot.start({
           }
           if ((fs.existsSync(imgApproved) || fs.existsSync(imgRejected)) && monitoredSignals.has(imgApprovalKey)) {
             monitoredSignals.delete(imgApprovalKey);
+          }
+
+          // 3.5 Phase-level notifications — notify user when each video phase starts
+          if (hasActiveSession && sess?.campaignV3?.notifications !== false) {
+            const logsDir2 = path.join(campDir, 'logs');
+            const phaseNotifs = [
+              { file: 'video_pro.log', phases: [
+                { key: 'Generating narration', msg: '🎙️ Gerando narração...' },
+                { key: 'Photography Director', msg: '📷 Diretor de Fotografia analisando...' },
+                { key: 'Creating scene plan', msg: '🎬 Criando plano de cenas...' },
+                { key: 'Typography validation', msg: '🔤 Validando tipografia...' },
+                { key: 'Starting video render', msg: '🎥 Renderizando vídeo Pro...' },
+              ]},
+              { file: 'video_quick.log', phases: [
+                { key: 'Starting video render', msg: '🎥 Renderizando vídeo Quick...' },
+                { key: 'render_start', msg: '🎥 Renderizando vídeo Quick...' },
+              ]},
+              { file: 'ad_creative_designer.log', phases: [
+                { key: 'Generating image', msg: '🖼️ Gerando imagens...' },
+                { key: 'Rendering HTML', msg: '🎨 Montando criativos...' },
+              ]},
+            ];
+            for (const pn of phaseNotifs) {
+              const logFile = path.join(logsDir2, pn.file);
+              if (!fs.existsSync(logFile)) continue;
+              const logContent = fs.readFileSync(logFile, 'utf-8');
+              for (const phase of pn.phases) {
+                const phaseKey = `phase:${relDir}:${pn.file}:${phase.key}`;
+                if (monitoredSignals.has(phaseKey)) continue;
+                if (logContent.includes(phase.key)) {
+                  monitoredSignals.add(phaseKey);
+                  bot.api.sendMessage(chatId, phase.msg).catch(() => {});
+                }
+              }
+            }
           }
 
           // 4. Stage completion tracking — ONLY for campaigns with active session matching this output

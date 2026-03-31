@@ -46,6 +46,9 @@ interface CameraMotionProps {
   colorGrading?: ColorGrading;
   spring_config?: SpringConfig;
   easing?: string; // easing function name for non-spring interpolations
+  /** Speed ramp stages: array of [inputFrame%, outputProgress%] pairs.
+   *  Example: [0, 0.8, 0.2, 1.0] means fast to 80%, slow to 20%, fast to 100% */
+  speedRampStages?: number[];
 }
 
 export const CameraMotion: React.FC<CameraMotionProps> = ({
@@ -59,10 +62,29 @@ export const CameraMotion: React.FC<CameraMotionProps> = ({
   colorGrading,
   spring_config,
   easing,
+  speedRampStages,
 }) => {
   const frame = useCurrentFrame();
   const { fps, durationInFrames } = useVideoConfig();
-  const progress = frame / durationInFrames;
+
+  // Speed ramp: remap linear progress through multi-stage curve
+  let progress: number;
+  if (speedRampStages && speedRampStages.length >= 4 && speedRampStages.length % 2 === 0) {
+    // Build input/output arrays from pairs: [in0, out0, in1, out1, ...]
+    const inputRange: number[] = [];
+    const outputRange: number[] = [];
+    for (let idx = 0; idx < speedRampStages.length; idx += 2) {
+      inputRange.push(speedRampStages[idx]);
+      outputRange.push(speedRampStages[idx + 1]);
+    }
+    const linearProgress = frame / durationInFrames;
+    progress = interpolate(linearProgress, inputRange, outputRange, {
+      extrapolateLeft: 'clamp',
+      extrapolateRight: 'clamp',
+    });
+  } else {
+    progress = frame / durationInFrames;
+  }
   const i = intensity;
 
   let scale = 1;

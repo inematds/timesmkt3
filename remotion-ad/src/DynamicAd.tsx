@@ -3,6 +3,9 @@ import { AbsoluteFill, Audio, Sequence, interpolate, useCurrentFrame, staticFile
 import { DynamicScene, SceneData } from './scenes/DynamicScene';
 import { Subtitles, SubtitleSegment } from './components/Subtitles';
 import { ProgressBar, ProgressBarStyle } from './components/ProgressBar';
+import { FilmGrain } from './components/FilmGrain';
+import { OrganicShake } from './components/OrganicShake';
+import { LensTransition, LensTransitionType } from './components/LensTransition';
 
 export interface GlobalColorGrading {
   gamma?: number;
@@ -37,11 +40,25 @@ export interface ScenePlanProps {
   progress_bar_color?: string;
   // Global color grading — applied to ALL scenes uniformly
   color_grading?: GlobalColorGrading;
+  // Film grain — applied across ALL scenes for "same camera" unity
+  film_grain?: {
+    intensity?: number;
+    monochromatic?: boolean;
+    lightLeak?: boolean;
+    lightLeakColor?: string;
+    lightLeakOpacity?: number;
+  };
+  // Organic camera shake — subtle hand-held feel
+  organic_shake?: {
+    amplitude?: number;
+    frequency?: number;
+    rotation?: boolean;
+  };
 }
 
 // ── Transition wrapper ──────────────────────────────────────────────────────
 
-type TransitionType = 'crossfade' | 'fade_black' | 'slide_left' | 'slide_right' | 'wipe' | 'none';
+type TransitionType = 'crossfade' | 'fade_black' | 'slide_left' | 'slide_right' | 'wipe' | 'rack-focus' | 'whip-blur' | 'defocus-refocus' | 'chromatic-glitch' | 'none';
 
 const SceneWithTransition: React.FC<{
   children: React.ReactNode;
@@ -101,6 +118,18 @@ const SceneWithTransition: React.FC<{
     );
   }
 
+  // Lens transitions (rack-focus, whip-blur, defocus-refocus, chromatic-glitch)
+  if (['rack-focus', 'whip-blur', 'defocus-refocus', 'chromatic-glitch'].includes(transition)) {
+    return (
+      <LensTransition
+        type={transition as LensTransitionType}
+        durationFrames={transitionDuration || 6}
+      >
+        {children}
+      </LensTransition>
+    );
+  }
+
   return <AbsoluteFill>{children}</AbsoluteFill>;
 };
 
@@ -121,6 +150,8 @@ export const DynamicAd: React.FC<ScenePlanProps> = (props) => {
     progress_bar: progressBarStyle,
     progress_bar_color: progressBarColor,
     color_grading: globalColorGrading,
+    film_grain: filmGrainConfig,
+    organic_shake: organicShakeConfig,
   } = props;
 
   const palette: Record<string, string> = {
@@ -156,6 +187,21 @@ export const DynamicAd: React.FC<ScenePlanProps> = (props) => {
   }
   const gradingFilter = gradingFilterParts.length > 0 ? gradingFilterParts.join(' ') : undefined;
 
+  const innerContent = (children: React.ReactNode) => {
+    if (organicShakeConfig) {
+      return (
+        <OrganicShake
+          amplitude={organicShakeConfig.amplitude || 2}
+          frequency={organicShakeConfig.frequency || 1}
+          rotation={organicShakeConfig.rotation !== false}
+        >
+          {children}
+        </OrganicShake>
+      );
+    }
+    return <>{children}</>;
+  };
+
   return (
     <AbsoluteFill style={{ backgroundColor: bgColor }}>
       {/* Global color grading wrapper — unifies look across all scenes */}
@@ -180,8 +226,8 @@ export const DynamicAd: React.FC<ScenePlanProps> = (props) => {
           />
         )}
 
-        {/* Visual scenes with transitions */}
-        {scenes.map((scene, index) => {
+        {/* Visual scenes with transitions — wrapped in OrganicShake if configured */}
+        {innerContent(scenes.map((scene, index) => {
           const startFrame = scene.frame_inicio || 0;
           const duration = scene.duracao_frames || 90;
           const isLast = index === scenes.length - 1;
@@ -214,7 +260,7 @@ export const DynamicAd: React.FC<ScenePlanProps> = (props) => {
               </SceneWithTransition>
             </Sequence>
           );
-        })}
+        }))}
 
         {/* Global subtitles (synced to narration, rendered above all scenes) */}
         {globalSubtitles && globalSubtitles.length > 0 && (
@@ -236,6 +282,17 @@ export const DynamicAd: React.FC<ScenePlanProps> = (props) => {
               color={progressBarColor || '#FFFFFF'}
             />
           </AbsoluteFill>
+        )}
+
+        {/* Film grain — "same camera, same day" unity layer */}
+        {filmGrainConfig && (
+          <FilmGrain
+            intensity={filmGrainConfig.intensity || 0.03}
+            monochromatic={filmGrainConfig.monochromatic !== false}
+            lightLeak={filmGrainConfig.lightLeak || false}
+            lightLeakColor={filmGrainConfig.lightLeakColor}
+            lightLeakOpacity={filmGrainConfig.lightLeakOpacity}
+          />
         )}
       </div>
     </AbsoluteFill>

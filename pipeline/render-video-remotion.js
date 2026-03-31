@@ -88,6 +88,15 @@ const TRANSITION_MAP = {
   'slide_left': 'slide_left',
   'slide_right': 'slide_right',
   'wipe': 'wipe',
+  'rack-focus': 'rack-focus',
+  'rack_focus': 'rack-focus',
+  'whip-blur': 'whip-blur',
+  'whip_blur': 'whip-blur',
+  'defocus-refocus': 'defocus-refocus',
+  'defocus_refocus': 'defocus-refocus',
+  'chromatic-glitch': 'chromatic-glitch',
+  'chromatic_glitch': 'chromatic-glitch',
+  'glitch': 'chromatic-glitch',
   'none': 'none',
   'cut': 'none',
 };
@@ -189,12 +198,18 @@ function adaptScenePlan(plan) {
       descricao_visual: s.image_prompt || '',
       background_image: backgroundImage,
       camera_effect: cameraEffect,
-      // Motion spring config + easing passthrough
+      // Motion spring config + easing + speed ramp passthrough
       motion: {
         type: motionType,
         spring_config: s.motion?.spring_config || null,
         easing: s.motion?.easing || null,
+        speed_ramp_stages: s.motion?.speed_ramp_stages || s.speed_ramp_stages || null,
       },
+      // HUD text mode for tech/futuristic style
+      hud_text: s.hud_text || null,
+      // Lens transition override
+      lens_transition: s.lens_transition || null,
+      lens_transition_frames: s.lens_transition_frames || null,
       text_overlay: s.text_overlay ? {
         texto: s.text_overlay,
         animacao: textAnim,
@@ -226,6 +241,8 @@ function adaptScenePlan(plan) {
       subtitles: s.subtitles || null,
       subtitle_style: s.subtitle_style || null,
       cta_style: s.cta_style || 'solid',
+      // Sound design tokens (future: map to actual SFX files)
+      sound_event: s.sound_event || null,
       // Glow pulse for CTA scenes
       ...(s.type === 'cta' && plan.glow_pulse ? { glow_pulse: plan.glow_pulse } : {}),
     });
@@ -248,10 +265,28 @@ function adaptScenePlan(plan) {
     ? copyToPublic(path.resolve(PROJECT_ROOT, narrationFile), 'audio')
     : null;
 
-  const musicFile = plan.music;
-  const musicPublic = musicFile
-    ? copyToPublic(path.resolve(PROJECT_ROOT, musicFile), 'audio')
-    : null;
+  // Music: try multiple fields and resolve path
+  let musicFile = plan.music || plan.background_music || null;
+  let musicPublic = null;
+  if (musicFile) {
+    // Try as-is (relative to PROJECT_ROOT)
+    let absMusic = path.resolve(PROJECT_ROOT, musicFile);
+    if (!fs.existsSync(absMusic)) {
+      // Try just the filename in common music dirs
+      const basename = path.basename(musicFile);
+      const searchDirs = ['assets/music', 'assets/audio', 'assets'];
+      for (const dir of searchDirs) {
+        const candidate = path.resolve(PROJECT_ROOT, dir, basename);
+        if (fs.existsSync(candidate)) { absMusic = candidate; break; }
+      }
+    }
+    musicPublic = fs.existsSync(absMusic)
+      ? copyToPublic(absMusic, 'audio')
+      : null;
+    if (!musicPublic) {
+      console.log(`Warning: music file not found: ${musicFile}`);
+    }
+  }
 
   return {
     titulo: plan.titulo || 'Video',
@@ -273,7 +308,22 @@ function adaptScenePlan(plan) {
     color_grading: plan.color_grading || null,
     // Digital overlay for tech/futuristic themes
     digital_overlay: plan.digital_overlay || null,
+    // Film grain — "same camera, same day" unity layer
+    film_grain: plan.film_grain || null,
+    // Organic camera shake — subtle hand-held feel
+    organic_shake: plan.organic_shake || null,
+    // Sound design tokens (logged for future SFX integration)
+    sound_design: plan.sound_design || null,
   };
+
+  // Log sound design events for future SFX integration
+  if (plan.sound_design) {
+    console.log(`Sound design tokens: ${JSON.stringify(plan.sound_design)}`);
+  }
+  const soundEvents = scenes.filter(s => s.sound_event).map(s => `Scene ${s.scene_id}: ${s.sound_event}`);
+  if (soundEvents.length > 0) {
+    console.log(`Sound events: ${soundEvents.join(', ')}`);
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────

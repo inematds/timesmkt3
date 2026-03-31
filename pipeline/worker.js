@@ -916,11 +916,12 @@ async function handleVideoQuick(job) {
   const absVideoDir = path.resolve(PROJECT_ROOT, output_dir, 'video');
   fs.mkdirSync(absVideoDir, { recursive: true });
 
-  // Skip if already completed (rerun optimization)
+  // Skip if already completed (rerun optimization) — check with glob since filenames have timestamps
   if (job.data.skip_completed) {
-    const finalVideo = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_quick_01.mp4`);
+    const videoDir = path.resolve(PROJECT_ROOT, output_dir, 'video');
+    const hasQuick = fs.existsSync(videoDir) && fs.readdirSync(videoDir).some(f => f.startsWith(`${task_name}_quick_`) && f.endsWith('.mp4'));
     const legacyVideo = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_video_01.mp4`);
-    if (fs.existsSync(finalVideo) || fs.existsSync(legacyVideo)) {
+    if (hasQuick || fs.existsSync(legacyVideo)) {
       log(output_dir, 'video_quick', `Skipping — video already exists`);
       return { status: 'skipped', reason: 'already completed' };
     }
@@ -1076,7 +1077,8 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       continue;
     }
 
-    const videoOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_quick_${idx}.mp4`);
+    const ts = videoTimestamp();
+    const videoOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_quick_${idx}_${ts}.mp4`);
     backupIfExists(videoOutput);
     log(output_dir, 'video_quick', `Rendering video ${i}/${video_count}...`);
 
@@ -1527,11 +1529,11 @@ async function handleVideoPro(job) {
   };
   fs.mkdirSync(absVideoDir, { recursive: true });
 
-  // Skip if already completed (rerun optimization)
+  // Skip if already completed (rerun optimization) — check with glob since filenames have timestamps
   if (job.data.skip_completed) {
-    const proVideo = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_pro_01.mp4`);
-    if (fs.existsSync(proVideo)) {
-      log(output_dir, 'video_pro', `Skipping — final video already exists: ${proVideo}`);
+    const hasPro = fs.existsSync(absVideoDir) && fs.readdirSync(absVideoDir).some(f => f.startsWith(`${task_name}_pro_`) && f.endsWith('.mp4'));
+    if (hasPro) {
+      log(output_dir, 'video_pro', `Skipping — final video already exists`);
       return { status: 'skipped', reason: 'already completed' };
     }
   }
@@ -1871,6 +1873,14 @@ For EACH shot, you MUST specify:
 - If image_has_text is true, set text_overlay to null (no text on this shot)
 - The typography (font, size, weight, position) — the Scene Plan MUST follow these exactly
 
+CONTENT FILTER (MANDATORY):
+- REJECT images containing: weapons, violence, nudity, drugs, controversial symbols
+- Context: Brazilian professionals 25-45 years old
+- Images must reflect Brazilian diversity
+- When using image_source=api, include in prompts: "Brazilian professionals, diverse, modern, technology"
+- Avoid clearly American/European settings without Brazilian context
+- Classify unsuitable images as "unsuitable" — never use them
+
 IMPORTANT: Output ONLY the photography_plan.json file. Do NOT create scene plans or render anything.`;
 
     await runClaude(photoDirPrompt, 'video_pro', output_dir, 600000, { model: 'opus' });
@@ -1983,6 +1993,17 @@ TYPOGRAPHY — MAGAZINE COVER STYLE:
 - text_layout.line_height: 1.0 for tight headlines, 1.15 for body
 - text_layout.color: "#FFFFFF" on dark overlays, "#0D0D0D" on light — NEVER gray
 - Every scene with text MUST have text_layout with ALL fields (font_size, font_weight, font_family, position, color, line_height)
+
+GLOBAL VIDEO SETTINGS — include these top-level fields in the scene plan JSON:
+- "color_grading": { "gamma": 1.05, "saturate": 1.1, "contrast": 1.15, "hueRotate": 10 } — unified color across ALL scenes ("same camera, same day")
+- "film_grain": { "intensity": 0.03, "monochromatic": true, "lightLeak": true, "lightLeakOpacity": 0.1 } — cinematic grain + light leaks
+- "organic_shake": { "amplitude": 2, "frequency": 1 } — subtle hand-held feel (set amplitude 1-2 for premium, 3-5 for UGC)
+- Adjust values based on style_preset from Photography Director. For tech/futuristic: higher contrast, bluer hue. For warm/lifestyle: lower contrast, warmer grain.
+
+ADVANCED SCENE FIELDS (per scene):
+- "hud_text": { "brackets": true, "scanLine": true, "dataPoints": true, "accentColor": "#0099FF" } — for tech/futuristic scenes (hook, data, CTA)
+- "motion.speed_ramp_stages": [0, 0.8, 0.2, 1.0] — speed ramp (input%, output% pairs)
+- "lens_transition": "chromatic-glitch" — types: rack-focus, whip-blur, defocus-refocus, chromatic-glitch
 
 Save each plan to: ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
 
@@ -2278,7 +2299,8 @@ After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
   for (let i = 1; i <= video_count; i++) {
     const idx = String(i).padStart(2, '0');
-    const proFilename = `${task_name}_pro_${idx}.mp4`;
+    const ts = videoTimestamp();
+    const proFilename = `${task_name}_pro_${idx}_${ts}.mp4`;
     const videoOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', proFilename);
     backupIfExists(videoOutput);
     const absScenePlan = vfFind(idx, '_scene_plan_motion.json');
@@ -2973,6 +2995,17 @@ const HANDLERS = {
 // ── Logger ────────────────────────────────────────────────────────────────────
 
 // Backup existing file before overwriting (rerun creates new versions)
+/** Generate timestamp string for video filenames: YYYYMMDD_HHmmss */
+function videoTimestamp() {
+  const d = new Date();
+  return d.getFullYear().toString() +
+    String(d.getMonth() + 1).padStart(2, '0') +
+    String(d.getDate()).padStart(2, '0') + '_' +
+    String(d.getHours()).padStart(2, '0') +
+    String(d.getMinutes()).padStart(2, '0') +
+    String(d.getSeconds()).padStart(2, '0');
+}
+
 function backupIfExists(filePath) {
   if (!fs.existsSync(filePath)) return;
   const dir = path.dirname(filePath);
