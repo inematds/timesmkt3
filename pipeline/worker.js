@@ -15,7 +15,7 @@ const { spawn, execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const kieProvider = require('./generate-image-kie');
@@ -965,9 +965,12 @@ async function handleVideoQuick(job) {
   const audioInstructions = hasElevenLabs ? `
 NARRATION (optional — ElevenLabs available):
 - Read narrative.json → video_narration field
-- If narration text exists, generate audio: node pipeline/generate-audio.js ${output_dir}/audio/${task_name}_quick_narration.mp3 "<narration_text>" rachel
+- Write a SHORT narration script — MAXIMUM 15-20 SECONDS of speech (~40-50 words for pt-BR)
+- This is a QUICK video (10-20s total) — the narration must be brief, punchy, and fit within the video duration
+- Do NOT reuse the pro narration script (it's 60s) — write a NEW shorter script
+- Generate audio: node pipeline/generate-audio.js ${output_dir}/audio/${task_name}_quick_narration.mp3 "<short_script>" rachel
 - Set "narration_file" in the scene plan to the generated path
-- Recommended voices: rachel (warm), bella (clear), antoni (professional)` : `
+- The video_length MUST match the narration duration (10-20s)` : `
 NARRATION: ElevenLabs not configured. Generate silent video — text overlays only.`;
 
   const musicInstructions = musicFiles.length > 0 ? `
@@ -1025,7 +1028,8 @@ STEP 3 — Create scene plan for EACH video. Save to ${output_dir}/video/${task_
 
 RULES:
 - Use ONLY images from ads/ listed above — never generate or download new images
-- 4-6 scenes, 2-4 seconds each, totaling 10-20 seconds
+- 4-6 scenes, 2-4 seconds each, totaling 10-20 seconds MAX
+- video_length MUST be 10-20 seconds — NEVER longer
 - CRITICAL: These ad images ALREADY HAVE TEXT rendered in them (headlines, CTAs, etc.)
 - Do NOT add text_overlay — set text_overlay to "" (empty) for ALL scenes
 - The images ARE the content — they already contain the visual message
@@ -1723,7 +1727,8 @@ Read these files to understand the campaign:
 - ${output_dir}/creative/creative_brief.json
 ${langInstruction}${briefInstruction}
 
-For each of the ${video_count} video(s), write a narration script (50-60 seconds of natural speech for 60s videos).
+For each of the ${video_count} video(s), write a narration script.
+Target duration: ${job.data.video_duration || 60} seconds (${Math.round((job.data.video_duration || 60) * 2.5)} words for pt-BR at ~2.5 words/sec).
 Then generate the audio using: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|antoni]
 Save narration to: ${output_dir}/audio/${task_name}_video_0N_narration.mp3
 Recommended voices: rachel (warm/emotional), bella (clear/friendly), antoni (professional)

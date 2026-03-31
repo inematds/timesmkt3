@@ -8,7 +8,7 @@
  */
 
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 const { Bot, InputFile } = require('grammy');
 const fs = require('fs');
@@ -1947,6 +1947,13 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
       return;
     }
+    if (/^dura[çc][aã]o\s+(\d+)/i.test(lower)) {
+      const dur = parseInt(lower.match(/^dura[çc][aã]o\s+(\d+)/i)[1]);
+      s.pendingCampaign.video_duration = dur;
+      await ctx.reply(`✅ Duração do vídeo Pro: <b>${dur}s</b>`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
     if (/^(provider|provedor)\s+(.+)$/i.test(lower)) {
       const prov = lower.match(/^(?:provider|provedor)\s+(.+)$/i)[1].trim();
       process.env.IMAGE_PROVIDER = prov;
@@ -2160,6 +2167,7 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
   lines.push(`  ▶️ Quick: ${vQuick ? 'sim' : 'nao'} | ▶️ Pro: ${vPro ? 'sim' : 'nao'}`);
   if (vPro) {
     lines.push(`  <i>Narração:</i> ${payload.narrator || 'rachel'}`);
+    lines.push(`  <i>Duração:</i> ${payload.video_duration || 60}s`);
     lines.push(`  <i>Style:</i> ${payload.style_preset || 'inema_hightech'}`);
   }
   lines.push(`<b>Idioma:</b> ${payload.language}`);
@@ -2200,6 +2208,7 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
   lines.push(`• <code>idioma pt-BR</code> / <code>idioma en</code>`);
   lines.push(`• <code>narrador rachel</code> / <code>narrador bella</code>`);
   lines.push(`• <code>estilo inema_hightech</code> / <code>estilo 01_hero_film</code>`);
+  lines.push(`• <code>duração 30</code> / <code>duração 60</code> — duração do pro (s)`);
   lines.push(`• <code>fonte brand</code> / <code>fonte api</code> / <code>fonte free</code>`);
   lines.push(`• <code>provider kie</code> / <code>provider pollinations</code>`);
   lines.push(`• <code>modelo z-image</code> / <code>modelo flux</code>`);
@@ -3834,15 +3843,28 @@ bot.start({
                     }
                   }
                   if (num === 3) {
-                    // Stage 3: send rendered videos
+                    // Stage 3: send rendered videos as downloadable files
                     const videoDir = path.join(campDir, 'video');
                     if (fs.existsSync(videoDir)) {
                       for (const f of fs.readdirSync(videoDir)) {
                         if (f.endsWith('.mp4') && !f.includes('draft')) {
-                          bot.api.sendVideo(chatId, new InputFile(path.join(videoDir, f)), {
-                            caption: `🎬 ${f}`,
-                            supports_streaming: true,
-                          }).catch(() => {});
+                          const videoPath = path.join(videoDir, f);
+                          const sizeMB = fs.statSync(videoPath).size / (1024 * 1024);
+                          if (sizeMB > 50) {
+                            // Too large for Telegram — send path info
+                            bot.api.sendMessage(chatId, `🎬 <b>${f}</b> (${sizeMB.toFixed(1)}MB — muito grande para Telegram)\nUse <code>/enviar ${path.basename(path.dirname(campDir))} videos</code>`, { parse_mode: 'HTML' }).catch(() => {});
+                          } else {
+                            // Send as video (streamable) with fallback to document
+                            bot.api.sendVideo(chatId, new InputFile(videoPath), {
+                              caption: `🎬 ${f} (${sizeMB.toFixed(1)}MB)`,
+                              supports_streaming: true,
+                            }).catch(() => {
+                              // Fallback: send as document (always works, downloadable)
+                              bot.api.sendDocument(chatId, new InputFile(videoPath), {
+                                caption: `🎬 ${f} (${sizeMB.toFixed(1)}MB)`,
+                              }).catch(() => {});
+                            });
+                          }
                         }
                       }
                     }
