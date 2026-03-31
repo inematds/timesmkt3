@@ -10,7 +10,7 @@ interface HUDTextProps {
   fontWeight?: number;
   position?: 'top' | 'center';
   startFrame?: number;
-  /** Show animated brackets around text */
+  /** @deprecated Brackets removed — always false */
   brackets?: boolean;
   /** Show scan line before text reveal */
   scanLine?: boolean;
@@ -33,7 +33,7 @@ export const HUDText: React.FC<HUDTextProps> = ({
   fontWeight = 900,
   position = 'top',
   startFrame = 10,
-  brackets = true,
+  brackets = false,  // disabled — user feedback: brackets look bad
   scanLine = true,
   dataPoints = true,
   coordinates = false,
@@ -68,7 +68,7 @@ export const HUDText: React.FC<HUDTextProps> = ({
     ? { top: '15%', left: '50%', transform: 'translateX(-50%)' }
     : { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' };
 
-  const displayText = brackets ? `[ ${text} ]` : text;
+  const displayText = text;
 
   return (
     <AbsoluteFill style={{ pointerEvents: 'none' }}>
@@ -95,35 +95,7 @@ export const HUDText: React.FC<HUDTextProps> = ({
         textAlign: 'center',
         maxWidth: '85%',
       }}>
-        {/* Bracket glow border box */}
-        {brackets && (
-          <div style={{
-            position: 'absolute',
-            inset: -16,
-            border: `1px solid ${accentColor}40`,
-            opacity: bracketSpring,
-            boxShadow: `inset 0 0 30px ${accentColor}10, 0 0 15px ${accentColor}20`,
-          }}>
-            {/* Corner accents */}
-            {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((corner) => {
-              const isTop = corner.includes('top');
-              const isLeft = corner.includes('left');
-              return (
-                <div key={corner} style={{
-                  position: 'absolute',
-                  [isTop ? 'top' : 'bottom']: -1,
-                  [isLeft ? 'left' : 'right']: -1,
-                  width: 16,
-                  height: 16,
-                  borderTop: isTop ? `2px solid ${accentColor}` : 'none',
-                  borderBottom: !isTop ? `2px solid ${accentColor}` : 'none',
-                  borderLeft: isLeft ? `2px solid ${accentColor}` : 'none',
-                  borderRight: !isLeft ? `2px solid ${accentColor}` : 'none',
-                }} />
-              );
-            })}
-          </div>
-        )}
+        {/* Bracket border removed — user feedback */}
 
         <div style={{
           fontFamily,

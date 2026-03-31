@@ -101,7 +101,10 @@ function generateASS(scenes, sceneDurations, vidW, vidH) {
   for (let i = 0; i < scenes.length; i++) {
     const scene      = scenes[i];
     const dur        = sceneDurations[i];
-    const text       = (scene.text_overlay || '').trim();
+    // Skip text overlay if image already has embedded text
+    const imgHasText = scene.image_has_text || scene.has_text ||
+      (scene.image && /(_post|_stories|carousel_|oficial_|logo_|_ad\.|banner|calendar)/.test(scene.image));
+    const text       = imgHasText ? '' : (scene.text_overlay || '').trim();
     const tl         = scene.text_layout || {};
     const fontSize   = tl.font_size || 80;
     const position   = tl.position  || 'bottom';
@@ -239,16 +242,25 @@ function renderVideo(scenePlanPath, outputPath) {
       const bgType       = textLayout.background        || 'gradient';
       const bgOpacity    = textLayout.background_opacity ?? 0.60;
 
-      // ── image_type ────────────────────────────────────────────────────────────
+      // ── image_type & has_text detection ──────────────────────────────────────
       const imageType = scene.image_type || 'raw';
       const isBanner  = imageType === 'banner';
+      const imageHasText = scene.image_has_text || scene.has_text ||
+        (imagePath && /(_post|_stories|carousel_|oficial_|logo_|instagram|facebook|_ad\.|banner|calendar)/.test(imagePath)) ||
+        isBanner;
+
+      // If image has text: NO text overlay and NO zoom/pan (just static display)
+      const effectiveTextOverlay = imageHasText ? '' : textOverlay;
 
       const fps         = 30;
       const totalFrames = Math.round(duration * fps);
 
       // ── Ken Burns zoompan filter ──────────────────────────────────────────────
+      // Images with embedded text: zoom=1.0 (static) to avoid cropping text
       let kbFilter = '';
-      if (motionType === 'zoom_in') {
+      if (imageHasText) {
+        kbFilter = `zoompan=z='1.0':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
+      } else if (motionType === 'zoom_in') {
         kbFilter = `zoompan=z='${zoomStart}+(${zoomEnd}-${zoomStart})*on/${totalFrames}':` +
           `x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=${totalFrames}:s=${vidW}x${vidH}:fps=${fps}`;
       } else if (motionType === 'zoom_out') {
@@ -274,7 +286,8 @@ function renderVideo(scenePlanPath, outputPath) {
       let vfParts = [];
 
       if (imgSrc && fs.existsSync(imgSrc)) {
-        if (isBanner || imageType === 'clip') {
+        if (isBanner || imageType === 'clip' || imageHasText) {
+          // Images with text: scale to fit without cropping (pad with black if needed)
           vfParts.push(
             `scale=${vidW}:${vidH}:force_original_aspect_ratio=decrease,` +
             `pad=${vidW}:${vidH}:(ow-iw)/2:(oh-ih)/2:color=black`
@@ -290,8 +303,9 @@ function renderVideo(scenePlanPath, outputPath) {
       vfParts.push(fadeFilter);
 
       // Background band behind where the text will appear (estimated height)
-      if (textOverlay && bgType !== 'none') {
-        const estLines  = Math.ceil(textOverlay.length / 18) + (textOverlay.includes('\n') ? 1 : 0);
+      // Skip if image has embedded text (effectiveTextOverlay is empty)
+      if (effectiveTextOverlay && bgType !== 'none') {
+        const estLines  = Math.ceil(effectiveTextOverlay.length / 18) + (effectiveTextOverlay.includes('\n') ? 1 : 0);
         const bandH     = Math.round(fontSize * 1.4 * estLines + fontSize * 0.8);
         if (bgType === 'dark_box') {
           const boxW = Math.round(vidW * 0.85);
