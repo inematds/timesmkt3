@@ -302,7 +302,7 @@ async function generateApiImages(outputDir, projectDir, model = DEFAULT_MODEL, c
     const filename = `${taskPrefix}_generated_${String(pi + 1).padStart(2, '0')}_${fmt}.jpg`;
     const sceneType = scenePurposes[pi] || defaultSceneOrder[pi % defaultSceneOrder.length];
     const sceneDesc = sceneDescriptions[pi] || '';
-    const prompt = buildImagePrompt(brief, brand, fmt, pi + 1, count, sceneType, sceneDesc);
+    const prompt = buildImagePrompt(brief, brand, fmt, pi + 1, count, sceneType, sceneDesc, model);
     allPrompts.push({ index: pi + 1, filename, format: fmt, ratio, sceneType, prompt });
     // Save individual prompt file
     const promptTxtPath = path.join(absImgsDir, filename.replace(/\.[^.]+$/, '_prompt.txt'));
@@ -1880,6 +1880,7 @@ STEP 1 — Read ALL these files:
 - skills/video-engineering/SKILL.md — engineering manual
 - skills/video-art-direction/SKILL.md
 - skills/typography-on-image/SKILL.md
+- skills/image-generation/model-profiles.json — prompt guidelines per image model (when image_source=api)
 
 STEP 2 — Audio timing:
 ${narrationNote}

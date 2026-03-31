@@ -1,0 +1,229 @@
+{
+  "_doc": "Perfil de prompt por modelo de geração de imagem. O buildImagePrompt lê o perfil do modelo ativo e ajusta o prompt de acordo.",
+
+  "defaults": {
+    "max_length": 500,
+    "language": "en",
+    "negative_prompt_support": false,
+    "style_prefix": "",
+    "style_suffix": "No text, no words, no watermark, no logo.",
+    "safety_suffix": "No weapons, no violence, no nudity.",
+    "context_suffix": "Brazilian professionals, diverse, modern environment.",
+    "orientation_in_prompt": true,
+    "color_hint": true,
+    "mood_keywords": true
+  },
+
+  "models": {
+    "z-image": {
+      "provider": "kie",
+      "label": "Z-Image",
+      "max_length": 490,
+      "strengths": "Melhor balanço qualidade/velocidade. Bom com fotografia, pessoas, ambientes.",
+      "prompt_tips": [
+        "Prompts curtos e diretos funcionam melhor (< 200 chars ideal)",
+        "Especificar iluminação: 'cinematic lighting', 'golden hour', 'studio lighting'",
+        "Evitar instruções negativas — não entende 'no X' bem, prefira descrever o que QUER",
+        "Bom com: retratos, ambientes profissionais, produto em contexto",
+        "Fraco com: texto em imagem, mãos detalhadas, layouts complexos"
+      ],
+      "style_prefix": "",
+      "style_suffix": "Cinematic lighting, photorealistic. No text, no watermark.",
+      "example_prompt": "Professional woman working at modern desk with laptop, warm studio lighting, shallow depth of field. Square 1:1. Colors: #0099FF, #00FF88."
+    },
+
+    "z-image-turbo": {
+      "provider": "kie",
+      "label": "Z-Image Turbo",
+      "max_length": 490,
+      "strengths": "Mais rápido que z-image, qualidade ligeiramente menor. Bom para drafts e iterações.",
+      "prompt_tips": [
+        "Mesmas regras do z-image, mas tolera prompts mais simples",
+        "Ideal para gerar muitas variações rapidamente",
+        "Pode perder detalhes em cenas muito complexas"
+      ],
+      "style_prefix": "",
+      "style_suffix": "Cinematic lighting, photorealistic. No text, no watermark."
+    },
+
+    "flux-kontext-pro": {
+      "provider": "kie",
+      "label": "Flux Kontext Pro",
+      "max_length": 1000,
+      "strengths": "Excelente para edição em contexto, composição precisa, aderência ao prompt.",
+      "prompt_tips": [
+        "Suporta prompts mais longos e detalhados (até 1000 chars)",
+        "Excelente em seguir instruções complexas de composição",
+        "Especificar posição dos elementos: 'on the left', 'in the foreground'",
+        "Bom com: composições complexas, múltiplos elementos, estilos artísticos",
+        "Suporta referência de estilo: 'in the style of editorial photography'"
+      ],
+      "style_prefix": "Editorial photography style. ",
+      "style_suffix": "No text overlay, no watermark, no logo.",
+      "example_prompt": "Editorial photography style. Brazilian professional man in his 30s presenting at a modern tech conference, dramatic side lighting, audience in soft bokeh background. Confident posture, dark suit. Vertical 9:16. Colors: deep blue #0099FF accent."
+    },
+
+    "flux-kontext-max": {
+      "provider": "kie",
+      "label": "Flux Kontext Max",
+      "max_length": 1000,
+      "strengths": "Qualidade máxima. Lento mas com melhor fidelidade e detalhamento.",
+      "prompt_tips": [
+        "Usar para peças finais, não para drafts",
+        "Detalhar texturas: 'detailed skin texture', 'fabric weave visible'",
+        "Especificar profundidade de campo: 'shallow DOF, f/1.4', 'deep focus'",
+        "Melhor modelo para close-ups de produto com textura rica"
+      ],
+      "style_prefix": "Ultra high quality, 8K detail. ",
+      "style_suffix": "No text, no watermark. Photorealistic, sharp focus."
+    },
+
+    "gpt-image-1": {
+      "provider": "kie",
+      "label": "GPT-Image-1",
+      "max_length": 4000,
+      "strengths": "Compreensão semântica superior. Entende instruções complexas em linguagem natural.",
+      "prompt_tips": [
+        "Aceita prompts longos e descritivos em linguagem natural",
+        "Excelente com instruções detalhadas: 'A woman who looks relieved after solving a problem'",
+        "Pode receber contexto narrativo: 'This is the third image in a sequence showing transformation'",
+        "Entende emoções e atmosferas abstratas melhor que outros modelos",
+        "Bom com: narrativas visuais, emoções complexas, cenas conceituais",
+        "Fraco com: fidelidade de marca (cores exatas), consistência entre imagens"
+      ],
+      "style_prefix": "",
+      "style_suffix": "No text or words in the image. No watermarks.",
+      "orientation_in_prompt": false,
+      "example_prompt": "A confident Brazilian woman in her 30s sitting at a co-working space, looking at her laptop screen with a subtle smile of accomplishment. The lighting is warm and natural, coming from a large window. The environment suggests modern technology and collaboration. The mood is empowering and optimistic."
+    },
+
+    "seedream": {
+      "provider": "kie",
+      "label": "SeedReam",
+      "max_length": 500,
+      "strengths": "Alta resolução, bom com paisagens e ambientes amplos.",
+      "prompt_tips": [
+        "Funciona melhor com descrições de ambiente e espaço",
+        "Especificar escala: 'wide shot', 'establishing shot', 'panoramic view'",
+        "Bom com: arquitetura, interiores, paisagens urbanas",
+        "Menos detalhado em rostos — preferir planos médios/amplos"
+      ],
+      "style_prefix": "High resolution, detailed environment. ",
+      "style_suffix": "No text, no watermark. Sharp architectural details."
+    },
+
+    "flux-2": {
+      "provider": "kie",
+      "label": "FLUX 2",
+      "max_length": 1000,
+      "strengths": "Nova geração do FLUX. Melhor composição e aderência ao prompt que flux-1.",
+      "prompt_tips": [
+        "Segue instruções de composição com mais precisão que modelos anteriores",
+        "Suporta estilos artísticos: 'oil painting style', 'watercolor', 'digital art'",
+        "Bom com referências de câmera: '35mm lens', 'wide angle', 'telephoto compression'",
+        "Especificar hora do dia: 'golden hour', 'blue hour', 'midday harsh sun'"
+      ],
+      "style_prefix": "",
+      "style_suffix": "No text, no watermark, no logo. Professional photography."
+    },
+
+    "grok-imagine": {
+      "provider": "kie",
+      "label": "Grok Imagine",
+      "max_length": 500,
+      "strengths": "Modelo xAI. Bom com prompts criativos e conceituais.",
+      "prompt_tips": [
+        "Aceita conceitos abstratos e metáforas visuais",
+        "Bom com: arte conceitual, ilustrações estilizadas",
+        "Pode gerar estilos mais ousados e criativos",
+        "Menos previsível que z-image — bom para variedade, ruim para consistência"
+      ],
+      "style_prefix": "Creative, bold visual concept. ",
+      "style_suffix": "No text, no watermark."
+    },
+
+    "nano-banana-2": {
+      "provider": "kie",
+      "label": "Nano Banana 2",
+      "max_length": 500,
+      "strengths": "Resolução 1K. Rápido e econômico. Baseado em Gemini.",
+      "prompt_tips": [
+        "Prompts simples e objetivos funcionam melhor",
+        "Bom para gerar muitas imagens de preview/draft",
+        "Qualidade de resolução inferior — usar para iteração, não para final",
+        "Evitar cenas com muitos detalhes pequenos"
+      ],
+      "style_prefix": "",
+      "style_suffix": "Clean, simple composition. No text, no watermark."
+    },
+
+    "flux": {
+      "provider": "pollinations",
+      "label": "FLUX Schnell",
+      "max_length": 500,
+      "strengths": "Rápido (3-8s), gratuito. Bom para iteração rápida.",
+      "prompt_tips": [
+        "Prompts curtos funcionam melhor (< 150 chars)",
+        "Especificar estilo fotográfico é importante: 'photograph', 'illustration', 'render'",
+        "Menos controle sobre iluminação que KIE — ser explícito",
+        "Pode gerar com marca d'água sem token — usar POLLINATIONS_TOKEN"
+      ],
+      "style_prefix": "Professional photograph. ",
+      "style_suffix": "No text, no watermark."
+    },
+
+    "zimage": {
+      "provider": "pollinations",
+      "label": "Z-Image Turbo (Pollinations)",
+      "max_length": 500,
+      "strengths": "Z-Image via Pollinations com upscaling 2x. Mais detalhado.",
+      "prompt_tips": [
+        "Mesmas dicas do z-image KIE",
+        "Upscaling pode criar artefatos em fundos gradientes — evitar fundos simples"
+      ],
+      "style_prefix": "",
+      "style_suffix": "Cinematic lighting. No text, no watermark."
+    },
+
+    "kontext": {
+      "provider": "pollinations",
+      "label": "FLUX Kontext (Pollinations)",
+      "max_length": 800,
+      "strengths": "Edição em contexto via Pollinations.",
+      "prompt_tips": [
+        "Mesmas dicas do flux-kontext-pro KIE",
+        "Latência maior que via KIE direto"
+      ],
+      "style_prefix": "",
+      "style_suffix": "No text, no watermark."
+    },
+
+    "gptimage": {
+      "provider": "pollinations",
+      "label": "GPT Image Mini (Pollinations)",
+      "max_length": 2000,
+      "strengths": "GPT-Image via Pollinations. Compreensão semântica boa.",
+      "prompt_tips": [
+        "Versão mini — menos detalhada que gpt-image-1 via KIE",
+        "Aceita prompts longos em linguagem natural",
+        "Bom para conceitos, menos para fotografia detalhada"
+      ],
+      "style_prefix": "",
+      "style_suffix": "No text in the image."
+    },
+
+    "nanobanana-pro": {
+      "provider": "pollinations",
+      "label": "Gemini 3 Pro (Pollinations)",
+      "max_length": 1000,
+      "strengths": "Alta resolução (4K). Baseado em Gemini 3 Pro.",
+      "prompt_tips": [
+        "Suporta prompts detalhados",
+        "Bom com cenas realistas e ambientes",
+        "Latência pode ser alta (10-20s)"
+      ],
+      "style_prefix": "Ultra detailed, 4K quality. ",
+      "style_suffix": "No text, no watermark. Professional photography."
+    }
+  }
+}

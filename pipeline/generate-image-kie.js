@@ -110,20 +110,33 @@ function readBrandContext(projectDir) {
   return { brandName, tagline, colors: uniqueColors, styleKeywords, personality, visualContext };
 }
 
+// ── Model profiles ───────────────────────────────────────────────────────────
+
+let _modelProfiles = null;
+function getModelProfile(modelId) {
+  if (!_modelProfiles) {
+    try {
+      const profilePath = path.resolve(__dirname, '..', 'skills', 'image-generation', 'model-profiles.json');
+      const data = JSON.parse(fs.readFileSync(profilePath, 'utf-8'));
+      _modelProfiles = { defaults: data.defaults, models: data.models };
+    } catch {
+      _modelProfiles = { defaults: {}, models: {} };
+    }
+  }
+  return { ..._modelProfiles.defaults, ...(_modelProfiles.models[modelId] || {}) };
+}
+
 // ── Prompt builder ────────────────────────────────────────────────────────────
 
 /**
  * Builds a rich, brand-aware image generation prompt.
- *
- * @param {string} brief           - campaign brief
- * @param {object|null} brand      - brand context from readBrandContext()
- * @param {string} format          - e.g. 'carousel_1080x1080', 'story_1080x1920'
- * @param {number} index           - 1-based scene index
- * @param {number} total           - total number of images
- * @param {string} sceneType       - 'hook'|'tension'|'solution'|'social_proof'|'cta'
- * @param {string} sceneDescription - optional per-scene visual description (overrides brand.visualContext[0])
+ * Reads model-specific profile from skills/image-generation/model-profiles.json
+ * to adjust prompt style, length, and structure per model.
  */
-function buildImagePrompt(brief, brand, format, index, total, sceneType = '', sceneDescription = '') {
+function buildImagePrompt(brief, brand, format, index, total, sceneType = '', sceneDescription = '', modelId = DEFAULT_MODEL) {
+  const profile = getModelProfile(modelId);
+  const maxLen = profile.max_length || 490;
+
   const isStory = format.includes('1920') || format.includes('9:16');
   const orientation = isStory ? 'vertical 9:16' : 'square 1:1';
 
@@ -139,29 +152,25 @@ function buildImagePrompt(brief, brand, format, index, total, sceneType = '', sc
   const mood = moodMap[sceneType] ||
     (sceneFirst ? moodMap.hook : sceneLast ? moodMap.cta : moodMap.solution);
 
-  // Use scene-specific description when provided (synchronized with narration/script)
-  // Falls back to brand's first visualContext line, then generic
   const visualScene = sceneDescription || brand?.visualContext?.[0] || 'professional cinematic scene';
 
-  // First 2 brand colors only
-  const colorHint = brand?.colors?.length
+  const colorHint = (profile.color_hint !== false && brand?.colors?.length)
     ? `Colors: ${brand.colors.slice(0, 2).join(', ')}.`
     : '';
 
   const parts = [
+    profile.style_prefix || '',
     visualScene + '.',
-    mood + '.',
-    orientation + '.',
+    (profile.mood_keywords !== false) ? mood + '.' : '',
+    (profile.orientation_in_prompt !== false) ? orientation + '.' : '',
     colorHint,
-    'Cinematic lighting, photorealistic.',
-    'Brazilian professionals, diverse, modern environment.',
-    'No text, no words, no watermark, no logo.',
-    'No weapons, no violence, no nudity.',
+    profile.style_suffix || 'No text, no watermark.',
+    profile.safety_suffix || 'No weapons, no violence, no nudity.',
+    profile.context_suffix || 'Brazilian professionals, diverse, modern environment.',
   ];
 
-  const prompt = parts.filter(Boolean).join(' ');
-  // KIE z-image limit: 500 chars
-  return prompt.length > 490 ? prompt.slice(0, 487) + '...' : prompt;
+  const prompt = parts.filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+  return prompt.length > maxLen ? prompt.slice(0, maxLen - 3) + '...' : prompt;
 }
 
 /**
