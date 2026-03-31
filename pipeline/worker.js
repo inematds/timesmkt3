@@ -1013,9 +1013,9 @@ STEP 3 — Create scene plan for EACH video. Save to ${output_dir}/video/${task_
       "duration": 3,
       "image": "/absolute/path/to/carousel_01.png",
       "image_type": "raw",
-      "text_overlay": "short impactful text from narrative",
+      "text_overlay": "",
       "text_color": "#FFFFFF",
-      "text_position": "center",
+      "text_position": "top",
       "motion": { "type": "push-in", "intensity": "moderate" }
     }
   ]
@@ -1024,8 +1024,10 @@ STEP 3 — Create scene plan for EACH video. Save to ${output_dir}/video/${task_
 RULES:
 - Use ONLY images from ads/ listed above — never generate or download new images
 - 4-6 scenes, 2-4 seconds each, totaling 10-20 seconds
-- Text overlays from narrative.json → headlines and key_phrases
-- Last scene MUST be CTA with approved CTA text from creative_brief.json
+- CRITICAL: These ad images ALREADY HAVE TEXT rendered in them (headlines, CTAs, etc.)
+- Do NOT add text_overlay — set text_overlay to "" (empty) for ALL scenes
+- The images ARE the content — they already contain the visual message
+- Last scene MUST be the CTA image from the ads
 - Each scene uses a DIFFERENT image
 - Motion: alternate between push-in, ken-burns-in, drift, breathe (never same 2x in a row)
 - Format: 9:16 (1080x1920) for Reels/Shorts/Stories
