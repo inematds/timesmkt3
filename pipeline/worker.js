@@ -2609,6 +2609,45 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
           scene.overlay_opacity = 0.45;
           typoFixes++;
         }
+
+        // Fix 7: Aspect ratio mismatch — replace 16:9 images in 9:16 video
+        if (plan.format === '9:16' || plan.height > plan.width) {
+          const imgPath2 = scene.image || '';
+          if (imgPath2 && fs.existsSync(imgPath2)) {
+            try {
+              const dims = getImageDimensions(imgPath2);
+              if (dims && dims.width && dims.height) {
+                const ratio = dims.width / dims.height;
+                // 16:9 landscape (ratio > 1.5) is terrible in 9:16 video — replace
+                if (ratio > 1.5) {
+                  const absImgsDirFix = path.resolve(PROJECT_ROOT, output_dir, 'imgs');
+                  const absAssetsDirFix = path.resolve(PROJECT_ROOT, project_dir, 'assets');
+                  const imgExts3 = ['.jpg', '.jpeg', '.png', '.webp'];
+                  // Find a portrait or square replacement
+                  const findPortrait = (dir) => {
+                    if (!fs.existsSync(dir)) return null;
+                    const imgs = fs.readdirSync(dir)
+                      .filter(f => imgExts3.includes(path.extname(f).toLowerCase()))
+                      .map(f => ({ name: f, path: path.join(dir, f) }))
+                      .filter(f => {
+                        const d = getImageDimensions(f.path);
+                        return d && d.height >= d.width; // portrait or square
+                      });
+                    return imgs.length > 0 ? imgs[s % imgs.length].path : null;
+                  };
+                  const replacement = findPortrait(absImgsDirFix) || findPortrait(absAssetsDirFix);
+                  if (replacement) {
+                    log(output_dir, 'video_pro', `Auto-fix: replaced landscape image "${path.basename(imgPath2)}" (${dims.width}x${dims.height}) → "${path.basename(replacement)}" in scene ${scene.id}`);
+                    scene.image = replacement;
+                    typoFixes++;
+                  } else {
+                    log(output_dir, 'video_pro', `WARN: scene ${scene.id} uses landscape image "${path.basename(imgPath2)}" in 9:16 video — no portrait replacement found`);
+                  }
+                }
+              }
+            } catch {}
+          }
+        }
       }
 
       if (typoFixes > 0) {

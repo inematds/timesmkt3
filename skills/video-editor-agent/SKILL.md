@@ -99,6 +99,7 @@ Antes de qualquer decisão criativa, leia **todos** estes arquivos:
 11. **Video Pro: PROIBIDO usar imagens de carrossel, banners ou artes gráficas do ads/ como source.** O vídeo pro é cinematográfico — usar APENAS imagens fotográficas (assets de marca, imagens geradas via API, pexels). Exceção única: quando o payload contém `carousel_in_video: true` explicitamente. No Video Quick, carrossel é permitido.
 12. **Imagens com texto (banners, carrosseis — quando permitido): PROIBIDO zoom, crop ou qualquer motion que corte a imagem.** Usar `image_type: "banner"` e motion `static` ou `breathe` com intensidade minima. Estas imagens ja tem layout proprio e qualquer corte destrói a composicao.
 13. **NUNCA colocar text_overlay sobre imagens que ja contem texto** (banners, carrosseis, artes). O texto da imagem + overlay = poluicao visual. Para estas cenas: `text_overlay: ""`
+14. **Aspect ratio das imagens DEVE corresponder ao formato do vídeo.** Em vídeo 9:16: usar APENAS imagens portrait (9:16) ou quadradas que aceitem crop vertical. NUNCA usar imagens 16:9 (landscape) — ficam cortadas e ilegíveis. Imagens 1:1 (carousel) só se não houver alternativa portrait, e com motion `breathe` apenas. Prioridade: imagens 9:16 nativas > 1:1 aceitável > 16:9 PROIBIDO.
 
 ---
 
