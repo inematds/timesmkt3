@@ -45,6 +45,9 @@ const { sendPhoto, sendVideo, sendDocument, sendCampaignOutputs } = require('./m
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 
+// Module-level so /rerun can clear signals for re-processed stages
+const monitoredSignals = new Set();
+
 const { enqueueStage: _enqueueStage, STAGES } = require('../pipeline/orchestrator');
 
 const bot = new Bot(config.botToken);
@@ -1701,6 +1704,13 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
         rerunStages: stages,
         videoMode,
       });
+
+      // Clear monitoredSignals for re-processed stages so monitor re-detects completion
+      for (const stageNum of stages) {
+        const sigKey = `stage_done:${payload.output_dir}:${stageNum}`;
+        monitoredSignals.delete(sigKey);
+        console.log(`[rerun] Cleared monitor signal: ${sigKey}`);
+      }
 
       const stageLabels = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
       const label = stages.map(n => n === 3 ? `Video ${videoMode}` : stageLabels[n]).join(' + ');
@@ -3738,8 +3748,7 @@ bot.start({
     // Scan for pending approvals left over from before restart
     await scanPendingApprovals(null, null);
 
-    // Signal tracker — shared between resume and monitor
-    const monitoredSignals = new Set();
+    // Signal tracker — uses module-level monitoredSignals (cleared by /rerun)
 
     // Resume in-progress campaigns and pre-populate monitoredSignals
     await resumeInProgressCampaigns(monitoredSignals);
