@@ -1980,6 +1980,20 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
       return;
     }
+    if (/^foto\s+(simples|premium)$/i.test(lower)) {
+      const q = lower.match(/^foto\s+(simples|premium)$/i)[1].toLowerCase();
+      s.pendingCampaign.photo_quality = q;
+      await ctx.reply(`✅ Fotografia: <b>${q}</b> (${q === 'premium' ? 'Opus — mais criativo, ~5min' : 'Sonnet — rápido, ~1min'})`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^videoplan\s+(simples|premium)$/i.test(lower)) {
+      const q = lower.match(/^videoplan\s+(simples|premium)$/i)[1].toLowerCase();
+      s.pendingCampaign.scene_quality = q;
+      await ctx.reply(`✅ Video Plan: <b>${q}</b> (${q === 'premium' ? 'Opus — mais detalhado, ~5min' : 'Sonnet — rápido, ~1min'})`, { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
     if (/^fonte\s+(brand|api|free|screenshot|pasta)$/i.test(lower)) {
       const source = lower.match(/^fonte\s+(.+)$/i)[1].trim();
       s.pendingCampaign.image_source = source;
@@ -2182,6 +2196,9 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
     lines.push(`  <i>Narração:</i> ${payload.narrator || 'rachel'}`);
     lines.push(`  <i>Duração:</i> ${payload.video_duration || 60}s`);
     lines.push(`  <i>Style:</i> ${payload.style_preset || 'inema_hightech'}`);
+    const photoQ = payload.photo_quality || 'simples';
+    const sceneQ = payload.scene_quality || 'simples';
+    lines.push(`  <i>Foto:</i> ${photoQ} | <i>Video Plan:</i> ${sceneQ}`);
   }
   lines.push(`<b>Idioma:</b> ${payload.language}`);
 
@@ -2220,12 +2237,14 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
   lines.push(`• <code>fundo blur</code> / <code>fundo escuro</code> — fundo do quick`);
   lines.push(`• <code>pular pesquisa</code> / <code>pular imagens</code>`);
   lines.push(`• <code>idioma pt-BR</code> / <code>idioma en</code>`);
-  lines.push(`• <code>narrador rachel</code> / <code>narrador bella</code>`);
+  lines.push(`• <code>narrador rachel</code> / <code>bella</code> / <code>domi</code> / <code>antoni</code> / <code>josh</code> / <code>arnold</code>`);
   lines.push(`• <code>estilo inema_hightech</code> / <code>estilo 01_hero_film</code>`);
   lines.push(`• <code>duração 30</code> / <code>duração 60</code> — duração do pro (s)`);
   lines.push(`• <code>fonte brand</code> / <code>fonte api</code> / <code>fonte free</code>`);
   lines.push(`• <code>provider kie</code> / <code>provider pollinations</code>`);
   lines.push(`• <code>modelo z-image</code> / <code>modelo flux</code>`);
+  lines.push(`• <code>foto simples</code> / <code>foto premium</code> — dir. fotografia`);
+  lines.push(`• <code>videoplan simples</code> / <code>videoplan premium</code> — scene plan`);
   lines.push(`• <code>não</code> — cancelar`);
   session.setPendingCampaign(chatId, payload);
 
@@ -3307,7 +3326,7 @@ function formatStoryboardMessage(outputDir) {
   for (const file of planFiles) {
     try {
       const plan = JSON.parse(fs.readFileSync(path.join(videoDir, file), 'utf-8'));
-      const voiceLabel = { rachel: 'Rachel (emocional)', bella: 'Bella (amigável)', antoni: 'Antoni (profissional)' };
+      const voiceLabel = { rachel: 'Rachel (emocional)', bella: 'Bella (amigável)', domi: 'Domi (confiante)', antoni: 'Antoni (profissional)', josh: 'Josh (profundo)', arnold: 'Arnold (energético)' };
       const sceneCount = (plan.scenes || []).length;
       const totalDur = (plan.scenes || []).reduce((s, c) => s + (c.duration || 0), 0).toFixed(0);
       const pacing = plan.pacing || '';
@@ -3953,23 +3972,32 @@ bot.start({
                   }
                 }
 
-                // Auto-advance: enqueue next stage if approval mode is auto
+                // Advance to next stage based on approval mode
                 const approvalMode = cv.payload?.approval_modes?.[`stage${num}`] || 'auto';
-                if (approvalMode === 'auto' && num < 5) {
-                  const nextStage = num + 1;
-                  const nextStageKey = `stage${nextStage}`;
-                  const nextAgents = STAGES[nextStageKey];
-                  if (nextAgents) {
-                    console.log(`[monitor] Auto-advancing to stage ${nextStage}`);
-                    session.setCampaignV3Stage(chatId, nextStage);
-                    _enqueueStage(cv.payload, nextAgents)
-                      .then(() => {
-                        const stageNames = { 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuição' };
-                        if (cv.notifications !== false) {
-                          bot.api.sendMessage(chatId, `▶️ Etapa ${nextStage} iniciando — ${stageNames[nextStage]}`, { parse_mode: 'HTML' }).catch(() => {});
-                        }
-                      })
-                      .catch(e => console.error(`[monitor] Failed to enqueue stage ${nextStage}:`, e.message));
+                if (num < 5) {
+                  if (approvalMode === 'auto') {
+                    const nextStage = num + 1;
+                    const nextStageKey = `stage${nextStage}`;
+                    const nextAgents = STAGES[nextStageKey];
+                    if (nextAgents) {
+                      console.log(`[monitor] Auto-advancing to stage ${nextStage}`);
+                      session.setCampaignV3Stage(chatId, nextStage);
+                      _enqueueStage(cv.payload, nextAgents)
+                        .then(() => {
+                          const stageNames = { 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuição' };
+                          if (cv.notifications !== false) {
+                            bot.api.sendMessage(chatId, `▶️ Etapa ${nextStage} iniciando — ${stageNames[nextStage]}`, { parse_mode: 'HTML' }).catch(() => {});
+                          }
+                        })
+                        .catch(e => console.error(`[monitor] Failed to enqueue stage ${nextStage}:`, e.message));
+                    }
+                  } else if (approvalMode === 'humano') {
+                    // Human approval — send approval request
+                    console.log(`[monitor] Stage ${num} needs human approval — sending request`);
+                    const fakeCtx = { reply: (text, opts) => bot.api.sendMessage(chatId, text, opts) };
+                    sendStageApprovalRequest(fakeCtx, chatId, num + 1).catch(e => {
+                      console.error(`[monitor] Failed to send approval request for stage ${num}:`, e.message);
+                    });
                   }
                 }
 
