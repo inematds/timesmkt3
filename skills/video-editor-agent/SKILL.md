@@ -187,11 +187,11 @@ Com N imagens de marca e 30-50 cortes, cada imagem será reutilizada ~3-5x. Para
 
 | Posição | safe_margin | font_size | Usar quando |
 |---------|------------|-----------|-------------|
-| top | 120px | 72-96px | Quando imagem NÃO tem rosto no topo |
-| center | 0 | 80-96px | **PADRÃO — evita cobrir rostos (topo) e UI das redes (bottom)** |
+| top | 120px | 72-96px | **PADRÃO** — usar quando imagem NÃO tem rosto no topo |
+| center | 0 | 80-96px | Quando imagem tem rosto no topo (face_position: "top") |
 | bottom | — | — | **PROIBIDO em 9:16** — UI das redes cobre esta área |
 
-**Regra de posição:** `center` é o default obrigatório — evita cobrir rostos no topo e não conflita com UI mobile no bottom. Nunca `bottom`.
+**Regra de posição:** `top` é o default. Mudar para `center` **somente** quando a imagem tem um rosto na parte superior — o texto não pode cobrir rostos. O Photography Director define `face_position` por shot. Nunca `bottom`.
 
 **Tipografia padrão (estilo magazine/editorial):**
 

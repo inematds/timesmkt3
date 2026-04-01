@@ -49,7 +49,7 @@ Cria videos curtos (10-20s) usando as imagens ja produzidas pelo Ad Creative Des
       "narration": "frase exata da narracao neste momento",
       "text_overlay": "PALAVRA-CHAVE",
       "text_color": "#FFFFFF",
-      "text_position": "center",
+      "text_position": "top",
       "overlay_opacity": 0.5,
       "font_family": "Lora",
       "font_size": 88,
@@ -67,7 +67,7 @@ O texto do Quick segue estilo **capa de revista** — grande, bold, ocupando o t
 
 | Campo | Regra |
 |---|---|
-| text_position | **"center" default** — evita rostos no topo e UI no bottom. NUNCA "bottom" |
+| text_position | **"top" default** — usar "center" quando imagem tem rosto no topo. NUNCA "bottom" |
 | font_size | 80-108px — grande o suficiente para dominar o topo |
 | font_weight | 900 (black) — peso visual maximo |
 | font_family | **"Lora" ou "DM Serif Display"** (default editorial). "Bebas Neue" so para hook |

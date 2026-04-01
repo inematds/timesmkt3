@@ -1065,7 +1065,7 @@ RULES:
 - Every scene MUST have "narration" field with the exact transcript being spoken (or "" for silent)
 
 TYPOGRAPHY — MAGAZINE HEADLINE AT TOP (CRITICAL):
-- text_position: "center" default (avoids faces at top, UI at bottom). NEVER "bottom"
+- text_position: "top" default. Use "center" only when image has face at top. NEVER "bottom"
 - text_overlay = the KEY WORD or SHORT PHRASE from what the narrator is saying at that moment
 - The text must FILL the upper portion of the screen — big, bold, magazine cover style
 - font_size: 96-120px — LARGE, dominating the top third of the screen. NEVER below 88px
@@ -2028,7 +2028,12 @@ ${imageListForPhoto}
 4. Classify each image: "clean" (no text) or "has_text" (has text/logo) or "unsuitable"
 5. image_has_text:true → text_overlay:null. NEVER text on images with embedded text
 6. Never same framing 3x in row. Never same motion 2x in row
-7. Text position: ONLY "top" or "center". NEVER "bottom"
+7. FACE DETECTION — for each shot, analyze the image and set "face_position": "top" | "center" | "bottom" | "none". Then set text_position to AVOID the face:
+   - face_position: "top" → text_position: "center" (text below the face)
+   - face_position: "center" → text_position: "top" (text above the face)
+   - face_position: "bottom" → text_position: "top"
+   - face_position: "none" → text_position: "top" (default)
+   - NEVER "bottom" for text — mobile UI covers bottom area
 8. First shot ≤1.5s. Last shot ≥3s. Cover 100% of narration timing
 9. Typography: Oswald 96-140px for hooks, Montserrat 72-96px for body, Playfair 64-80px for editorial
 10. Energy curve: Hook(5)→Problem(3)→Solution(4-5)→Proof(4)→CTA(3)
@@ -2100,9 +2105,11 @@ Read the full photography_plan.json for all shots.`;
           dur: s.duration,
           image: s.image || s.image_file,
           has_text: s.image_has_text || false,
+          face_position: s.face_position || 'none',
           framing: s.framing,
           motion: s.motion,
           text: s.text_overlay,
+          text_position: s.text_position,
           section: s.section,
         })),
       };
@@ -2205,7 +2212,7 @@ CAROUSEL/BANNER BAN (CRITICAL):
 - Only exception: payload contains "carousel_in_video": true explicitly
 
 TYPOGRAPHY — MAGAZINE EDITORIAL STYLE:
-- text_layout.position: "center" is the DEFAULT for all scenes (avoids covering faces at top and mobile UI at bottom). NEVER "bottom"
+- text_layout.position: "top" is the DEFAULT. Use "center" ONLY when face_position is "top" (to avoid covering the face). NEVER "bottom"
 - text_layout.font_size: hook 120-140px, headlines 96-120px, body 80-96px. NEVER below 80px
 - text_layout.font_weight: 900 for headlines, 700 for body
 - text_layout.font_family: "Lora" or "DM Serif Display" (DEFAULT — editorial serif), "Oswald" or "Bebas Neue" ONLY for hooks (max 2-3 scenes), "Montserrat" for data/numbers
@@ -2278,7 +2285,7 @@ RULES:
 - text_overlay must reinforce what narrator says at that moment — NOT generic/unrelated text
 - image_has_text:true → text_overlay:"", motion:"breathe"
 - image_has_text:false → text_overlay with max 6 words
-- position "center" is DEFAULT (avoids faces at top, UI at bottom). NEVER "bottom"
+- position "top" is DEFAULT. Use "center" only when image has face at top. NEVER "bottom"
 - font_family: "Lora"/"DM Serif Display" default. "Oswald"/"Bebas Neue" only for hooks (max 2-3)
 - Never same motion 2x in row. font_size ≥60px
 - Last 3s = silent closing shot with URL/logo (narration: "")
