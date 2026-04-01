@@ -3404,6 +3404,55 @@ bot.command('aprovar', async (ctx) => {
   await scanPendingApprovals(ctx.chat.id.toString(), ctx);
 });
 
+// ── /arquivar — archive campaign so it doesn't show on startup ───────────────
+
+bot.command('arquivar', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  const raw = ctx.match?.trim();
+  if (!raw) {
+    return ctx.reply('Use: <code>/arquivar c34</code>', { parse_mode: 'HTML' });
+  }
+
+  const campaignFolder = findCampaign(s.projectDir, raw) || (() => {
+    const r = findCampaignAcrossProjects(raw);
+    return r ? r.campaignFolder : null;
+  })();
+
+  if (!campaignFolder) {
+    return ctx.reply(`Campanha "${raw}" não encontrada.`);
+  }
+
+  const projectDir = findCampaignAcrossProjects(raw)?.projectDir || s.projectDir;
+  const campDir = path.resolve(PROJECT_ROOT, projectDir, 'outputs', campaignFolder);
+  fs.writeFileSync(path.join(campDir, 'archived.json'), JSON.stringify({ archived: true, ts: new Date().toISOString() }));
+  await ctx.reply(`📦 <b>${campaignFolder}</b> arquivada — não aparecerá mais no startup.`, { parse_mode: 'HTML' });
+});
+
+bot.command('desarquivar', async (ctx) => {
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  const raw = ctx.match?.trim();
+  if (!raw) {
+    return ctx.reply('Use: <code>/desarquivar c34</code>', { parse_mode: 'HTML' });
+  }
+
+  const campaignFolder = findCampaign(s.projectDir, raw) || (() => {
+    const r = findCampaignAcrossProjects(raw);
+    return r ? r.campaignFolder : null;
+  })();
+
+  if (!campaignFolder) {
+    return ctx.reply(`Campanha "${raw}" não encontrada.`);
+  }
+
+  const projectDir = findCampaignAcrossProjects(raw)?.projectDir || s.projectDir;
+  const campDir = path.resolve(PROJECT_ROOT, projectDir, 'outputs', campaignFolder);
+  const archivePath = path.join(campDir, 'archived.json');
+  if (fs.existsSync(archivePath)) fs.unlinkSync(archivePath);
+  await ctx.reply(`📂 <b>${campaignFolder}</b> desarquivada.`, { parse_mode: 'HTML' });
+});
+
 // ── /modos — configure approval modes for active campaign ────────────────────
 
 bot.command('modos', async (ctx) => {
@@ -3559,6 +3608,9 @@ async function resumeInProgressCampaigns(monitoredSignals) {
       const payloadPath = path.join(campDir, 'campaign_payload.json');
       const ctxFile = readChatContext(campDir);
       if (!ctxFile?.chatId || !fs.existsSync(payloadPath)) continue;
+
+      // Skip archived campaigns
+      if (fs.existsSync(path.join(campDir, 'archived.json'))) continue;
 
       let payload;
       try { payload = JSON.parse(fs.readFileSync(payloadPath, 'utf-8')); } catch { continue; }
