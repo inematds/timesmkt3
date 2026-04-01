@@ -102,6 +102,7 @@ Antes de qualquer decisão criativa, leia **todos** estes arquivos:
 14. **Aspect ratio e crop de imagens:**
     - **Imagens fotográficas (sem texto):** podem ser usadas em qualquer ratio — crop e zoom são permitidos. Uma foto 16:9 pode ser cortada para 9:16 focando no sujeito principal. O motion (zoom, pan, ken-burns) ajuda a enquadrar.
     - **Imagens com texto/banner/logo (has_text):** NUNCA cortar. Usar `object-fit: contain` ou `breathe` com intensidade mínima. Qualquer crop destrói a composição e legibilidade do texto.
+15. **Múltiplos vídeos na mesma campanha:** Quando existem Quick + Pro ou múltiplos vídeos, cada um DEVE ter: hook de abertura diferente, tratamento visual diferente, arco narrativo diferente. Reusar assets é OK mas framing, motion e text_overlay devem ser distintos entre vídeos.
 
 ---
 

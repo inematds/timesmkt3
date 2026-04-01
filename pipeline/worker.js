@@ -887,7 +887,14 @@ Design quality bar:
 - Each slide uses a DIFFERENT brand image — never repeat the same photo
 - Brand color palette from brand_identity.md applied consistently
 - Every slide looks like it belongs to the same campaign (visual cohesion)
-- Campaign theme + emotional feeling present in every single image`;
+- Campaign theme + emotional feeling present in every single image
+
+MULTI-PIECE DIVERSITY (CRITICAL — when generating multiple carousels or stories):
+- Each carousel set MUST have a distinct visual theme, color treatment, and hero image
+- No two carousels may use the same primary image or the same headline
+- Carousel 1 = hook/emotional angle, Carousel 2 = benefit/proof angle, Carousel 3 = social proof/CTA angle
+- Stories must each convey a different message — never duplicate a carousel's content
+- If 2+ carousels exist, verify NO image filename appears in more than one carousel`;
 
   await runClaude(prompt, 'ad_creative_designer', output_dir, 900000); // 15 min for multiple images
 

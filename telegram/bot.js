@@ -1538,18 +1538,24 @@ bot.command('rerun', async (ctx) => {
     return `  <b>${n}.</b> ${stageLabels[n]}`;
   }).join('\n');
 
-  const imgLabels = { brand: 'marca', screenshot: 'screenshots do site', api: 'IA (API)', free: 'banco gratis', folder: 'pasta customizada' };
-  const imgInfo = imageSource !== 'brand' ? `\nImagens: <b>${imgLabels[imageSource] || imageSource}</b>` : '';
-  const urlInfo = screenshotUrls.length > 0 ? `\nURLs: ${screenshotUrls.join(', ')}` : '';
-  const videoInfo = (videoQuick || videoPro) ? `\nVideo Quick: <b>${videoQuick ? '1' : '0'}</b> | Video Pro: <b>${videoPro ? '1' : '0'}</b>` : '';
+  // Show full config table before running (same format as briefing)
+  const stageLabelsMap = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
+  const stageLabel = stages.map(n => n === 3 ? `Video ${payload.video_pro && payload.video_quick ? 'Quick + Pro' : payload.video_pro ? 'Pro' : 'Quick'}` : stageLabelsMap[n]).join(' + ');
 
-  await ctx.reply(
-    `<b>Reprocessar: ${campaignFolder}</b>\n` +
-    `Projeto: <code>${projectDir}</code>${imgInfo}${videoInfo}${urlInfo}\n\n` +
-    `Etapas:\n${stageList}\n\n` +
-    `Responda <b>sim</b> para iniciar.`,
-    { parse_mode: 'HTML' }
-  );
+  const configLines = buildConfigTable(payload, `Reprocessar: ${campaignFolder}`);
+  configLines.push(`\n<b>Etapas:</b> ${stageLabel}`);
+  if (payload.cleanFlags) {
+    const cleans = [];
+    if (payload.cleanFlags.plan) cleans.push('planos');
+    if (payload.cleanFlags.img) cleans.push('imagens');
+    if (payload.cleanFlags.audio) cleans.push('áudio');
+    if (cleans.length) configLines.push(`<b>Limpar:</b> ${cleans.join(', ')}`);
+  }
+  configLines.push(`\n<i>• = alterado do default</i>`);
+  configLines.push(`Responda <b>sim</b> para iniciar ou ajuste antes.`);
+  configLines.push(`<code>não</code> — cancelar`);
+
+  await ctx.reply(configLines.join('\n'), { parse_mode: 'HTML' });
 
   // Attach clean flags to payload
   if (cleanFlags.plan || cleanFlags.img || cleanFlags.audio) {
@@ -1709,11 +1715,26 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
         videoMode,
       });
 
-      // Clear monitoredSignals for re-processed stages so monitor re-detects completion
+      // Set campaignV3 so monitor can track phases and send notifications
+      session.setCampaignV3(chatId, {
+        payload,
+        outputDir: payload.output_dir,
+        approvalModes: payload.approval_modes || {},
+        notifications: payload.notifications !== false,
+      });
+      session.setCampaignV3Stage(chatId, Math.min(...stages) - 1);
+
+      // Clear monitoredSignals for re-processed stages + phases so monitor re-detects
       for (const stageNum of stages) {
         const sigKey = `stage_done:${payload.output_dir}:${stageNum}`;
         monitoredSignals.delete(sigKey);
         console.log(`[rerun] Cleared monitor signal: ${sigKey}`);
+      }
+      // Clear all phase signals for this campaign so they fire again
+      for (const sig of [...monitoredSignals]) {
+        if (sig.startsWith(`phase:${payload.output_dir}:`)) {
+          monitoredSignals.delete(sig);
+        }
       }
 
       const stageLabels = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
@@ -1823,12 +1844,14 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
         }
 
         session.clearRunningTask(chatId);
+        session.clearCampaignV3(chatId);
         await bot.api.sendMessage(chatId, `Reprocessamento de <b>${campaignFolder}</b> concluido!`, { parse_mode: 'HTML' }).catch(() => {});
       };
 
       runRerunStages().catch(e => {
         console.error('[rerun error]', e.message);
         session.clearRunningTask(chatId);
+        session.clearCampaignV3(chatId);
         bot.api.sendMessage(chatId, `Erro no reprocessamento: ${e.message}`).catch(() => {});
       });
 
@@ -1983,6 +2006,11 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
     if (/^(provider|provedor)\s+(.+)$/i.test(lower)) {
       const prov = lower.match(/^(?:provider|provedor)\s+(.+)$/i)[1].trim();
       process.env.IMAGE_PROVIDER = prov;
+      s.pendingCampaign.image_provider = prov;
+      // Update model to provider default if not explicitly set
+      if (!s.pendingCampaign._modelExplicit) {
+        s.pendingCampaign.image_model = prov === 'pollinations' ? 'flux' : 'z-image';
+      }
       await ctx.reply(`✅ Provider de imagens: <b>${prov}</b>`, { parse_mode: 'HTML' });
       showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
       return;
@@ -1990,6 +2018,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
     if (/^modelo?\s+(.+)$/i.test(lower)) {
       const model = lower.match(/^modelo?\s+(.+)$/i)[1].trim();
       s.pendingCampaign.image_model = model;
+      s.pendingCampaign._modelExplicit = true;
       await ctx.reply(`✅ Modelo de imagem: <b>${model}</b>`, { parse_mode: 'HTML' });
       showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
       return;
@@ -2155,113 +2184,94 @@ function buildPayload(taskName, opts, projectDir, today) {
 
 // ── Campaign confirmation display ────────────────────────────────────────────
 
-async function showCampaignConfirmation(ctx, chatId, payload) {
-  const skipFlags = [];
-  if (payload.skip_research) skipFlags.push('pesquisa');
-  if (payload.skip_image)    skipFlags.push('imagens');
-  if (payload.skip_video)    skipFlags.push('video');
-
-  const activeProvider = process.env.IMAGE_PROVIDER || 'kie';
-  const freeProvider = process.env.FREE_IMAGE_PROVIDER || 'pexels';
-  const imgSource = {
-    brand: 'imagens do projeto', marca: 'imagens do projeto',
-    free: `banco gratis (${freeProvider})`, gratis: `banco gratis (${freeProvider})`,
-    api: `${activeProvider === 'pollinations' ? 'Pollinations' : 'KIE'} API (geracao IA)`,
-    folder: 'pasta customizada', pasta: 'pasta customizada',
-    screenshot: 'screenshots de sites + marca', captura: 'screenshots de sites + marca',
-  };
+// Shared config table builder — used by briefing and rerun
+function buildConfigTable(payload, title) {
+  const providerLabel = (payload.image_provider || process.env.IMAGE_PROVIDER || 'kie').toUpperCase();
   const modelLabels = {
-    // KIE
     'z-image': 'Z-Image', 'z-image-turbo': 'Z-Image Turbo',
     'flux-kontext-pro': 'Flux Pro', 'flux-kontext-max': 'Flux Max', 'gpt-image-1': 'GPT-Image-1',
     'seedream': 'SeedReam', 'flux-2': 'FLUX 2', 'grok-imagine': 'Grok Imagine', 'nano-banana-2': 'Nano Banana 2',
-    // Pollinations
-    'flux': 'FLUX Schnell', 'zimage': 'Z-Image Turbo (2x)', 'kontext': 'FLUX Kontext',
+    'flux': 'FLUX Schnell', 'zimage': 'Z-Image Turbo', 'kontext': 'FLUX Kontext',
     'gptimage': 'GPT Image Mini', 'nanobanana-pro': 'Gemini 3 Pro',
   };
+  const modelLabel = modelLabels[payload.image_model] || payload.image_model || 'z-image';
 
-  const isApi = payload.image_source === 'api';
-  const defaultModelLabel = activeProvider === 'pollinations' ? 'FLUX Schnell' : 'Z-Image';
-  const modelLabel = modelLabels[payload.image_model] || payload.image_model || defaultModelLabel;
-  const brandOverlay = payload.use_brand_overlay !== false;
+  const DEFAULTS = {
+    image_source: 'brand', image_model: 'z-image', image_provider: 'KIE',
+    narrator: 'rachel', video_duration: 60, style_preset: 'inema_hightech',
+    photo_quality: 'simples', scene_quality: 'simples',
+    video_quick: true, video_pro: false, language: 'pt-BR',
+    image_bg_mode: 'dark', notifications: true, approval: 'humano',
+  };
 
-  const lines = [
-    `<b>Campanha pronta para rodar — confirme:</b>\n`,
-    `<b>Nome:</b> <code>${payload.task_name}</code>`,
-    `<b>Projeto:</b> <code>${payload.project_dir}</code>`,
-    `<b>Data:</b> ${payload.task_date}`,
-    `<b>Plataformas:</b> ${payload.platform_targets.join(', ')}`,
-    `<b>Imagens:</b> ${payload.image_count} (${imgSource[payload.image_source] || payload.image_source}${isApi ? ` — ${modelLabel}` : ''})`,
-  ];
+  // Mark changed values with a bullet
+  const mark = (current, def) => current !== def ? '• ' : '  ';
+  const val = (current, def) => current !== def ? `<b>${current}</b>` : current;
 
-  if (isApi) {
-    lines.push(`<b>Marca nas imagens:</b> ${brandOverlay ? 'sim (cores e estilo da marca)' : 'não (estilo neutro)'}`);
-    lines.push(`<b>Fluxo:</b> gerar imagens → você aprova → montar criativos e vídeo`);
-  }
-
-  // Video section
   const vQuick = payload.video_quick !== false;
   const vPro = payload.video_pro === true;
-  lines.push('');
-  lines.push(`<b>Video:</b>`);
   const bgLabel = payload.image_bg_mode === 'blur' ? 'blur' : 'escuro';
-  lines.push(`  ▶️ Quick: ${vQuick ? 'sim' : 'nao'} (fundo ${bgLabel}) | ▶️ Pro: ${vPro ? 'sim' : 'nao'}`);
-  if (vPro) {
-    lines.push(`  <i>Narração:</i> ${payload.narrator || 'rachel'}`);
-    lines.push(`  <i>Duração:</i> ${payload.video_duration || 60}s`);
-    lines.push(`  <i>Style:</i> ${payload.style_preset || 'inema_hightech'}`);
-    const photoQ = payload.photo_quality || 'simples';
-    const sceneQ = payload.scene_quality || 'simples';
-    lines.push(`  <i>Foto:</i> ${photoQ} | <i>Video Plan:</i> ${sceneQ}`);
-  }
-  lines.push(`<b>Idioma:</b> ${payload.language}`);
+  const approvalAll = Object.values(payload.approval_modes || {});
+  const approvalLabel = approvalAll.length > 0 && approvalAll.every(v => v === approvalAll[0]) ? approvalAll[0] : 'misto';
 
-  if (skipFlags.length > 0) lines.push(`<b>Pular:</b> ${skipFlags.join(', ')}`);
-
-  // Pipeline stages overview
-  lines.push('');
-  lines.push('<b>Pipeline (5 etapas):</b>');
-  const stages = [
-    { key: 'stage1', label: 'Brief & Narrativa', skip: payload.skip_research },
-    { key: 'stage2', label: 'Imagens', skip: payload.skip_image },
-    { key: 'stage3', label: 'Video', skip: payload.skip_video },
-    { key: 'stage4', label: 'Plataformas', skip: false },
-    { key: 'stage5', label: 'Distribuicao', skip: false },
+  const rows = [
+    { setting: 'Fonte imgs', current: payload.image_source, def: DEFAULTS.image_source, opts: 'brand / api / free / screenshot' },
+    { setting: 'Provider', current: providerLabel, def: DEFAULTS.image_provider, opts: 'kie / pollinations' },
+    { setting: 'Modelo', current: modelLabel, def: DEFAULTS.image_model, opts: 'z-image / flux / flux-2 / seedream' },
+    { setting: 'Quick', current: vQuick ? 'sim' : 'nao', def: 'sim', opts: 'sim / sem quick' },
+    { setting: 'Pro', current: vPro ? 'sim' : 'nao', def: 'nao', opts: 'pro' },
+    { setting: 'Narrador', current: payload.narrator || 'rachel', def: DEFAULTS.narrator, opts: 'rachel / bella / domi / antoni / josh / arnold' },
+    { setting: 'Duração', current: `${payload.video_duration || 60}s`, def: '60s', opts: '30 / 60' },
+    { setting: 'Estilo', current: payload.style_preset || 'inema_hightech', def: DEFAULTS.style_preset, opts: 'inema_hightech / 01_hero_film / ...' },
+    { setting: 'Dir.Foto', current: payload.photo_quality || 'simples', def: DEFAULTS.photo_quality, opts: 'simples / premium' },
+    { setting: 'Scene plan', current: payload.scene_quality || 'simples', def: DEFAULTS.scene_quality, opts: 'simples / premium' },
+    { setting: 'Fundo quick', current: bgLabel, def: 'escuro', opts: 'escuro / blur' },
+    { setting: 'Idioma', current: payload.language || 'pt-BR', def: DEFAULTS.language, opts: 'pt-BR / en' },
+    { setting: 'Aprovação', current: approvalLabel, def: DEFAULTS.approval, opts: 'humano / auto' },
+    { setting: 'Notif', current: payload.notifications === false ? 'off' : 'on', def: 'on', opts: 'on / off' },
   ];
-  const modes = payload.approval_modes || {};
-  const modeLabel = { humano: '👤', agente: '🤖', auto: '⚡' };
-  for (const st of stages) {
-    const m = modes[st.key] || 'humano';
-    const skip = st.skip ? ' <s>PULAR</s>' : '';
-    lines.push(`  ${modeLabel[m] || '👤'} ${st.label}${skip}`);
+
+  const lines = [
+    `<b>${title}</b>\n`,
+    `<b>Nome:</b> <code>${payload.task_name}</code>`,
+    `<b>Projeto:</b> <code>${payload.project_dir}</code>`,
+    `<b>Plataformas:</b> ${(payload.platform_targets || []).join(', ')}`,
+    '',
+    `<code>Config       Atual         Opções</code>`,
+    `<code>──────────── ───────────── ─────────────</code>`,
+  ];
+
+  for (const r of rows) {
+    const changed = String(r.current) !== String(r.def);
+    const indicator = changed ? '•' : ' ';
+    const setting = r.setting.padEnd(12);
+    const cur = String(r.current).padEnd(13);
+    lines.push(`<code>${indicator} ${setting} ${cur}</code> <i>${r.opts}</i>`);
   }
 
-  lines.push(`<b>Notificações:</b> ${payload.notifications === false ? 'desativadas' : 'ativadas'}`);
+  const skipFlags = [];
+  if (payload.skip_research) skipFlags.push('pesquisa');
+  if (payload.skip_image) skipFlags.push('imagens');
+  if (payload.skip_video) skipFlags.push('video');
+  if (skipFlags.length > 0) lines.push(`\n<b>Pular:</b> ${skipFlags.join(', ')}`);
 
-  // Always use brand context (colors + visual world) — never brand name in image
-  if (isApi && payload.use_brand_overlay === undefined) {
+  return lines;
+}
+
+async function showCampaignConfirmation(ctx, chatId, payload) {
+  // Always use brand context (colors + visual world)
+  if (payload.image_source === 'api' && payload.use_brand_overlay === undefined) {
     payload = { ...payload, use_brand_overlay: true };
   }
-  lines.push(`\nResponda <b>sim</b> para rodar ou ajuste antes:`);
-  lines.push(`• <code>auto</code> — aprovação automática`);
-  lines.push(`• <code>humano</code> — aprovação manual (default)`);
-  lines.push(`• <code>notif off</code> / <code>notif on</code>`);
-  lines.push(`• <code>pro</code> — adicionar video pro`);
-  lines.push(`• <code>sem quick</code> — desativar video quick`);
-  lines.push(`• <code>fundo blur</code> / <code>fundo escuro</code> — fundo do quick`);
-  lines.push(`• <code>pular pesquisa</code> / <code>pular imagens</code>`);
-  lines.push(`• <code>idioma pt-BR</code> / <code>idioma en</code>`);
-  lines.push(`• <code>narrador rachel</code> / <code>bella</code> / <code>domi</code> / <code>antoni</code> / <code>josh</code> / <code>arnold</code>`);
-  lines.push(`• <code>estilo inema_hightech</code> / <code>estilo 01_hero_film</code>`);
-  lines.push(`• <code>duração 30</code> / <code>duração 60</code> — duração do pro (s)`);
-  lines.push(`• <code>fonte brand</code> / <code>fonte api</code> / <code>fonte free</code>`);
-  lines.push(`• <code>provider kie</code> / <code>provider pollinations</code>`);
-  lines.push(`• <code>modelo z-image</code> / <code>modelo flux</code>`);
-  lines.push(`• <code>foto simples</code> / <code>foto premium</code> — dir. fotografia`);
-  lines.push(`• <code>videoplan simples</code> / <code>videoplan premium</code> — scene plan`);
-  lines.push(`• <code>não</code> — cancelar`);
-  session.setPendingCampaign(chatId, payload);
 
+  const lines = buildConfigTable(payload, 'Campanha pronta — confirme:');
+
+  lines.push(`\n<i>• = alterado do default</i>`);
+  lines.push(`\nResponda <b>sim</b> para rodar ou ajuste antes.`);
+  lines.push(`Digite o comando pra alterar (ex: <code>pro</code>, <code>narrador bella</code>, <code>modelo flux</code>)`);
+  lines.push(`<code>não</code> — cancelar`);
+
+  session.setPendingCampaign(chatId, payload);
   await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
 
   if (payload.campaign_brief) {
