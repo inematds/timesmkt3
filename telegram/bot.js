@@ -3715,31 +3715,30 @@ async function resumeInProgressCampaigns(monitoredSignals) {
         }
       }
 
-      // Session is persisted on disk — check if it already has this campaign
+      // Session is persisted on disk — skip if already has a running task
       const sess = session.get(chatId);
-      const hasSession = sess?.runningTask?.outputDir === outputDir;
-
-      if (!hasSession) {
-        // Session lost (first boot or .sessions.json deleted) — restore from payload
-        const projectDir = `prj/${prj}`;
-        session.setProject(chatId, projectDir);
-        session.setRunningTask(chatId, {
-          taskName: campaign,
-          taskDate: payload.task_date,
-          outputDir,
-          startedAt: payload.started_at || new Date().toISOString(),
-        });
-        session.setCampaignV3(chatId, {
-          outputDir,
-          payload,
-          approvalModes: payload.approval_modes || {},
-          notifications: payload.notifications !== false,
-        });
-        session.setCampaignV3Stage(chatId, highestDone);
-        console.log(`[resume] Restored session for ${campaign} — stage ${highestDone}`);
-      } else {
-        console.log(`[resume] Session already exists for ${campaign} — stage ${highestDone}`);
+      if (sess?.runningTask) {
+        console.log(`[resume] Session already has runningTask (${sess.runningTask.taskName}) — skipping ${campaign}`);
+        continue;
       }
+
+      // No session — restore from payload (only happens on first boot or after .sessions.json deleted)
+      const projectDir = `prj/${prj}`;
+      session.setProject(chatId, projectDir);
+      session.setRunningTask(chatId, {
+        taskName: campaign,
+        taskDate: payload.task_date,
+        outputDir,
+        startedAt: payload.started_at || new Date().toISOString(),
+      });
+      session.setCampaignV3(chatId, {
+        outputDir,
+        payload,
+        approvalModes: payload.approval_modes || {},
+        notifications: payload.notifications !== false,
+      });
+      session.setCampaignV3Stage(chatId, highestDone);
+      console.log(`[resume] Restored session for ${campaign} — stage ${highestDone}`);
     }
   }
 }
