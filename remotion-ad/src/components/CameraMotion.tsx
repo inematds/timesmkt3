@@ -224,9 +224,9 @@ export const CameraMotion: React.FC<CameraMotionProps> = ({
         <Img
           src={imgSrc}
           style={imageHasText ? {
-            // Images with text: fill width, maintain aspect ratio, dark bg fills top/bottom
+            // Images with text: fit within frame (never crop), dark bg fills gaps
             width: '100%',
-            height: 'auto',
+            height: '100%',
             objectFit: 'contain',
             objectPosition: 'center center',
           } : {
