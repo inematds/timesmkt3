@@ -54,12 +54,7 @@ export const HUDText: React.FC<HUDTextProps> = ({
     config: { mass: 0.5, stiffness: 200, damping: 10 },
   });
 
-  // Phase 3: Brackets animate in (slightly after text)
-  const bracketSpring = spring({
-    frame: Math.max(0, relFrame - 4),
-    fps,
-    config: { mass: 0.3, stiffness: 300, damping: 12 },
-  });
+  // (bracket animation removed — kept scan line + data points only)
 
   // Data points flicker
   const dataFlicker = Math.sin(frame * 0.3) > -0.3 ? 1 : 0.3;

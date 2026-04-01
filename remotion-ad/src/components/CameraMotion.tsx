@@ -205,12 +205,15 @@ export const CameraMotion: React.FC<CameraMotionProps> = ({
   }
   const filterStr = filterParts.filter(Boolean).join(' ') || 'none';
 
+  const imgSrc = src.startsWith('/') || src.startsWith('http') ? src : staticFile(src);
+
   return (
-    <AbsoluteFill style={{ overflow: 'hidden' }}>
-      {/* Background image with camera motion — NEVER stretch, always crop */}
+    <AbsoluteFill style={{ overflow: 'hidden', backgroundColor: imageHasText ? '#111111' : 'transparent' }}>
+      {/* Background image with camera motion */}
       <div style={{
         position: 'absolute',
-        inset: '-10%', // overshoot to avoid edges during movement
+        // Images with text: no overshoot (would crop text). Others: overshoot for motion.
+        inset: imageHasText ? '0' : '-10%',
         transform: `scale(${scale}) translate(${translateX}px, ${translateY}px) rotate(${rotate}deg)`,
         filter: filterStr,
         display: 'flex',
@@ -219,8 +222,15 @@ export const CameraMotion: React.FC<CameraMotionProps> = ({
         overflow: 'hidden',
       }}>
         <Img
-          src={src.startsWith('/') || src.startsWith('http') ? src : staticFile(src)}
-          style={{
+          src={imgSrc}
+          style={imageHasText ? {
+            // Images with text: fill width, maintain aspect ratio, dark bg fills top/bottom
+            width: '100%',
+            height: 'auto',
+            objectFit: 'contain',
+            objectPosition: 'center center',
+          } : {
+            // Normal images: fill and crop for cinematic motion
             minWidth: '100%',
             minHeight: '100%',
             width: 'auto',
