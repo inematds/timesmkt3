@@ -1426,7 +1426,11 @@ bot.command('rerun', async (ctx) => {
   let videoQuick = false;
   let videoPro = false;
   let videoDraft = false;
-  let imageSource = 'brand';
+  // Default: inherit from original payload, fallback to brand
+  const origPayloadPath = path.join(absOutputDir, 'campaign_payload.json');
+  let origPayload = {};
+  try { origPayload = JSON.parse(fs.readFileSync(origPayloadPath, 'utf-8')); } catch {}
+  let imageSource = origPayload.image_source || 'brand';
   let payload_imageFolder = null;
   const screenshotUrls = [];
   const cleanFlags = { plan: false, img: false, audio: false };
@@ -3711,13 +3715,38 @@ async function resumeInProgressCampaigns(monitoredSignals) {
         }
       }
 
-      // Notify user only — do NOT auto-resume to avoid enqueue loops
-      bot.api.sendMessage(chatId,
-        `ℹ️ Campanha <b>${campaign}</b> encontrada (etapa ${highestDone}/5 completa).\n` +
-        `Use <code>/continue ${campaign}</code> para retomar.\n` +
-        `Ou inicie uma nova campanha normalmente.`,
-        { parse_mode: 'HTML' }
-      ).catch(() => {});
+      // Restore session so monitor can track this campaign after restart
+      const projectDir = `prj/${prj}`;
+      session.setProject(chatId, projectDir);
+      session.setRunningTask(chatId, {
+        taskName: campaign,
+        taskDate: payload.task_date,
+        outputDir,
+        startedAt: payload.started_at || new Date().toISOString(),
+      });
+      session.setCampaignV3(chatId, {
+        outputDir,
+        payload,
+        approvalModes: payload.approval_modes || {},
+        notifications: payload.notifications !== false,
+      });
+      session.setCampaignV3Stage(chatId, highestDone);
+      console.log(`[resume] Restored session for ${campaign} — stage ${highestDone}, outputDir ${outputDir}`);
+
+      // Send approval for next stage (humano mode) or notify (auto mode)
+      const nextStage = highestDone + 1;
+      const approvalMode = payload.approval_modes?.[`stage${highestDone}`] || 'auto';
+      if (approvalMode === 'humano') {
+        const fakeCtx = { reply: (text, opts) => bot.api.sendMessage(chatId, text, opts) };
+        sendStageApprovalRequest(fakeCtx, chatId, nextStage).catch(e => {
+          console.error(`[resume] Failed to send approval for stage ${highestDone}:`, e.message);
+        });
+      } else {
+        bot.api.sendMessage(chatId,
+          `ℹ️ Campanha <b>${campaign}</b> retomada (etapa ${highestDone}/5 completa).`,
+          { parse_mode: 'HTML' }
+        ).catch(() => {});
+      }
     }
   }
 }
