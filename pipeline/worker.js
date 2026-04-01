@@ -2215,7 +2215,7 @@ TYPOGRAPHY — MAGAZINE EDITORIAL STYLE:
 
 GLOBAL VIDEO SETTINGS — include these top-level fields in the scene plan JSON:
 - "color_grading": { "gamma": 1.05, "saturate": 1.1, "contrast": 1.15, "hueRotate": 10 } — unified color across ALL scenes ("same camera, same day")
-- "film_grain": { "intensity": 0.03, "monochromatic": true, "lightLeak": false } — cinematic grain + light leaks
+- "film_grain": { "intensity": 0, "monochromatic": true, "lightLeak": false } — cinematic grain + light leaks
 - "organic_shake": { "amplitude": 2, "frequency": 1 } — subtle hand-held feel (set amplitude 1-2 for premium, 3-5 for UGC)
 - Adjust values based on style_preset from Photography Director. For tech/futuristic: higher contrast, bluer hue. For warm/lifestyle: lower contrast, warmer grain.
 
@@ -2257,7 +2257,7 @@ Generate a JSON file with this structure:
   "voice": "${job.data.narrator || 'rachel'}",
   "narration_file": "path or null", "music": "path or null", "music_volume": 0.15,
   "color_grading": { "gamma": 1.05, "saturate": 1.1, "contrast": 1.15, "hueRotate": 10 },
-  "film_grain": { "intensity": 0.03, "monochromatic": true, "lightLeak": false },
+  "film_grain": { "intensity": 0, "monochromatic": true, "lightLeak": false },
   "organic_shake": { "amplitude": 2, "frequency": 1 },
   "scenes": [
     { "id": "hook_01", "type": "hook", "duration": 1.5,
