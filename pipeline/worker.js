@@ -1789,6 +1789,19 @@ After generating all narrations, print: [NARRATION_DONE]`;
       log(output_dir, 'video_pro', `ffprobe failed for ${narPath}: ${e.message.slice(0, 100)}`);
     }
 
+    // Try to load existing timing file first (survives reruns)
+    const timingPath = path.resolve(PROJECT_ROOT, output_dir, 'audio', `${task_name}_video_${idx}_timing.json`);
+    if (fs.existsSync(timingPath) && audioDuration > 0) {
+      try {
+        const saved = JSON.parse(fs.readFileSync(timingPath, 'utf-8'));
+        if (saved.segments && saved.segments.length > 0) {
+          narrationTimings.push({ video: idx, audioDuration, totalWords: saved.totalWords, segments: saved.segments });
+          log(output_dir, 'video_pro', `Audio timing loaded from file: ${saved.segments.length} segments, ${saved.totalWords} words in ${audioDuration.toFixed(1)}s`);
+          continue;
+        }
+      } catch {}
+    }
+
     // Read the narration script from the log (Phase 1 output)
     let narrationScript = '';
     try {
@@ -1819,9 +1832,12 @@ After generating all narrations, print: [NARRATION_DONE]`;
       narrationTimings.push({ video: idx, audioDuration, totalWords, segments });
 
       // Save timing file for reference
-      const timingPath = path.resolve(PROJECT_ROOT, output_dir, 'audio', `${task_name}_video_${idx}_timing.json`);
       fs.writeFileSync(timingPath, JSON.stringify({ audioDuration, totalWords, segments }, null, 2));
       log(output_dir, 'video_pro', `Audio timing: ${segments.length} segments, ${totalWords} words in ${audioDuration.toFixed(1)}s`);
+    } else if (audioDuration > 0) {
+      // Fallback: no script found, but we have audio duration — push minimal timing so videoDur adjusts
+      narrationTimings.push({ video: idx, audioDuration, totalWords: 0, segments: [] });
+      log(output_dir, 'video_pro', `Audio timing (duration only, no script): ${audioDuration.toFixed(1)}s`);
     }
   }
 
