@@ -246,7 +246,7 @@ function renderVideo(scenePlanPath, outputPath) {
       const imageType = scene.image_type || 'raw';
       const isBanner  = imageType === 'banner';
       const imageHasText = scene.image_has_text || scene.has_text ||
-        (imagePath && /(_post|_stories|carousel_|oficial_|logo_|instagram|facebook|_ad\.|banner|calendar)/.test(imagePath)) ||
+        (imgSrc && /(_post|_stories|carousel_|oficial_|logo_|instagram|facebook|_ad\.|banner|calendar)/.test(imgSrc)) ||
         isBanner;
 
       // If image has text: NO text overlay and NO zoom/pan (just static display)
