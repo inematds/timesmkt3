@@ -1962,41 +1962,73 @@ Read the full photography_plan.json for all shots.`;
   // ── PHASE 2: Scene Plan (Sonnet — edit timeline) ──────────────────────────
   log(output_dir, 'video_pro', 'Phase 2: Creating scene plan (Sonnet)...');
 
-  // Read photography plan to inject directly (avoids Claude CLI reading from disk)
+  // Read photography plan and compact it (inject directly to avoid CLI reading from disk)
   let photoPlanContent = '';
   const photoPlanPath2 = path.resolve(PROJECT_ROOT, output_dir, 'video', 'photography_plan.json');
   if (fs.existsSync(photoPlanPath2)) {
-    try { photoPlanContent = fs.readFileSync(photoPlanPath2, 'utf-8'); } catch {}
+    try {
+      const fullPlan = JSON.parse(fs.readFileSync(photoPlanPath2, 'utf-8'));
+      // Compact: keep only essential fields to reduce prompt size (14KB → 4KB)
+      const compact = {
+        style_preset: fullPlan.style_preset,
+        color_palette: fullPlan.color_palette,
+        video_length: fullPlan.video_length || job.data.video_duration || 60,
+        typography: fullPlan.typography,
+        shots: (fullPlan.shots || []).map(s => ({
+          timing: s.timing,
+          image: s.image || s.image_file,
+          has_text: s.image_has_text || false,
+          framing: s.framing,
+          motion: s.motion,
+          text: s.text_overlay,
+          section: s.section,
+        })),
+      };
+      photoPlanContent = JSON.stringify(compact, null, 2);
+    } catch {
+      photoPlanContent = fs.readFileSync(photoPlanPath2, 'utf-8');
+    }
   }
 
-  const scenePlanPrompt = `You are a Video Editor. Create an edit timeline (scene plan JSON) for a ${job.data.video_duration || 60}s video.
+  const videoDur = job.data.video_duration || 60;
+  const scenePlanPrompt = `Create a scene plan JSON for a ${videoDur}s video ad.
 
-TASK: "${task_name}" — ${video_count} video(s). ${platform_targets.join(', ')}. ${langInstruction}
-${briefInstruction}
+Campaign: "${task_name}". Format: 9:16 (1080x1920). ${langInstruction}
 
-PHOTOGRAPHY PLAN (follow EXACTLY — do not override visual decisions):
+PHOTOGRAPHY PLAN (follow exactly):
 ${photoPlanContent || photographyNote}
 
-NARRATION:
-${narrationNote}
-
-IMAGES:
-${imageSourceSection}
+AUDIO: ${narrationNote}
 ${musicInstructions}
 
-RULES:
-- 25-40 cuts for 60s video. First cut ≤ 1.5s, last cut ≥ 3s
-- Never same motion.type 2x in a row. Never same text position 3x in a row
-- Cuts < 0.8s: no text. Cuts with text ≥ 1.2s. Max 6 words per overlay
-- text_overlay COMPLEMENTS narration (keyword, not full sentence)
-- position: ONLY "top" or "center", NEVER "bottom"
-- font_size: hook 96-140px, body 60-80px. font_weight: 900 headlines, 700 body
-- image_has_text: true → NO text_overlay, motion type "breathe" only
-- Sum of durations = video_length (±2s tolerance)
-- color_grading, film_grain, organic_shake as top-level fields
+Generate a JSON file with this structure:
+{
+  "titulo": "...", "video_length": ${videoDur}, "format": "9:16",
+  "width": 1080, "height": 1920,
+  "narration_file": "path or null", "music": "path or null", "music_volume": 0.15,
+  "color_grading": { "gamma": 1.05, "saturate": 1.1, "contrast": 1.15, "hueRotate": 10 },
+  "film_grain": { "intensity": 0.03, "monochromatic": true, "lightLeak": true },
+  "organic_shake": { "amplitude": 2, "frequency": 1 },
+  "scenes": [
+    { "id": "hook_01", "type": "hook", "duration": 1.5,
+      "image": "/absolute/path.png", "image_has_text": true,
+      "text_overlay": "", "motion": { "type": "breathe" },
+      "text_layout": { "font_size": 96, "font_weight": 900, "font_family": "Oswald", "position": "top", "color": "#FFFFFF", "line_height": 1.0 },
+      "overlay": "dark", "overlay_opacity": 0.45,
+      "transition": "crossfade"
+    }
+  ]
+}
 
-OUTPUT: Save to ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
-Then print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
+RULES:
+- 25-40 cuts. First ≤1.5s, last ≥3s. Sum ≈ ${videoDur}s
+- image_has_text:true → text_overlay:"", motion:"breathe"
+- image_has_text:false → text_overlay with max 6 words, position top/center only
+- Never same motion 2x in row. font_size ≥60px. Never position "bottom"
+- text_overlay complements narration, never repeats it
+
+Save to: ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
+Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
   await runClaude(scenePlanPrompt, 'video_pro', output_dir, 600000, { model: 'sonnet' });
 
