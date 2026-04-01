@@ -1008,6 +1008,7 @@ STEP 3 — Create scene plan for EACH video. Save to ${output_dir}/video/${task_
   "format": "9:16",
   "width": 1080,
   "height": 1920,
+  "voice": "${job.data.narrator || 'rachel'}",
   "narration_file": "path or null",
   "narration_volume": 1,
   "music": "path or null",
@@ -1019,9 +1020,15 @@ STEP 3 — Create scene plan for EACH video. Save to ${output_dir}/video/${task_
       "duration": 3,
       "image": "/absolute/path/to/carousel_01.png",
       "image_type": "raw",
-      "text_overlay": "",
+      "narration": "exact transcript segment spoken during this scene",
+      "text_overlay": "KEYWORD FROM NARRATION",
       "text_color": "#FFFFFF",
       "text_position": "top",
+      "overlay_opacity": 0.5,
+      "font_family": "Playfair Display",
+      "font_size": 88,
+      "font_weight": "900",
+      "text_shadow": "0 4px 12px rgba(0,0,0,0.8)",
       "motion": { "type": "push-in", "intensity": "moderate" }
     }
   ]
@@ -1031,21 +1038,25 @@ RULES:
 - Use ONLY images from ads/ listed above — never generate or download new images
 - 4-6 scenes, 2-4 seconds each, totaling 10-20 seconds MAX
 - video_length MUST be 10-20 seconds — NEVER longer
-- CRITICAL: These ad images ALREADY HAVE TEXT rendered in them (headlines, CTAs, etc.)
-- Do NOT add text_overlay — set text_overlay to "" (empty) for ALL scenes
-- The images ARE the content — they already contain the visual message
+- These carousel/ad images may have text in the center/body area
 - Last scene MUST be the CTA image from the ads
 - Each scene uses a DIFFERENT image
 - Motion: alternate between push-in, ken-burns-in, drift, breathe (never same 2x in a row)
 - Format: 9:16 (1080x1920) for Reels/Shorts/Stories
+- Every scene MUST have "narration" field with the exact transcript being spoken (or "" for silent)
 
-TYPOGRAPHY RULES (from typography-on-image/SKILL.md):
-- ANALYZE each image before placing text — avoid overlapping text on busy areas or existing text in the image
-- text_position: ONLY "top" or "center" — NEVER "bottom" (mobile UI covers it)
-- Font size minimum: 60px for headlines, 36px for subtitles (1080p)
-- Always use text shadow or overlay for contrast: overlay_opacity 0.4-0.6 on medium images
-- Max 6 words per text_overlay
-- If image has text/graphics already, use stronger overlay (0.5+) or position text in empty area
+TYPOGRAPHY — MAGAZINE HEADLINE AT TOP (CRITICAL):
+- text_position: ALWAYS "top" — NEVER "bottom" or "center"
+- text_overlay = the KEY WORD or SHORT PHRASE from what the narrator is saying at that moment
+- The text must FILL the upper portion of the screen — big, bold, magazine cover style
+- font_size: 80-108px — large enough to dominate the top third of the screen
+- font_weight: 900 (black) — maximum visual weight
+- font_family: "Playfair Display" or "DM Serif Display" (DEFAULT — editorial serif magazine style). "Bebas Neue" only for hook scene
+- text_color: "#FFFFFF" with strong text_shadow: "0 4px 12px rgba(0,0,0,0.8)"
+- overlay_opacity: 0.45-0.55 (dark overlay behind text for legibility)
+- Max 4-5 words per text_overlay — shorter is better, one impactful phrase
+- text_overlay must SYNC with narration — extract the key word/phrase the narrator is saying at that moment
+- Do NOT write generic text — each overlay reflects the specific narration segment of that scene
 
 After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
@@ -1176,11 +1187,11 @@ BACKGROUND MUSIC: No music files found in ${project_dir}/assets/music/.
   const audioInstructions = hasElevenLabs ? `
 AUDIO NARRATION (ElevenLabs available):
 - Write a narration script for each video (20-30 seconds of natural speech)
-- Generate narration audio using: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|antoni]
+- Generate narration audio using: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|domi|antoni|josh|arnold]
 - Save audio as: ${output_dir}/audio/${task_name}_video_01_narration.mp3, ${task_name}_video_02_narration.mp3, etc.
 - Include the narration text in the scene plan under "narration_script"
 - Include the audio path in the scene plan under "audio": "${output_dir}/audio/${task_name}_video_0N_narration.mp3"
-- Recommended voices: rachel (warm/emotional), bella (clear/friendly), antoni (professional)
+- Recommended voices: rachel (warm/emotional), bella (clear/friendly), domi (confident), antoni (professional), josh (deep/warm), arnold (bold/energetic)
 ${musicInstructions}` : `
 AUDIO: ElevenLabs not configured. Generate silent videos. Narration scripts only in scene plan.
 ${musicInstructions}`;
@@ -1312,7 +1323,7 @@ STEP 4 — For EACH video, create a scene plan JSON and save to ${output_dir}/vi
   "music": "${project_dir}/assets/music/background.mp3",
   "music_volume": 0.15,
   "narration_script": "full narration text (20-30 seconds of natural speech)...",
-  "voice": "rachel",
+  "voice": "${job.data.narrator || 'rachel'}",
   "scenes": [
     {
       "id": "hook",
@@ -1618,9 +1629,9 @@ BACKGROUND MUSIC: No music files found. Set "music": null in the scene plan.
   const audioInstructions = hasElevenLabs ? `
 AUDIO NARRATION (ElevenLabs available):
 - Write a narration script (50-60 seconds of natural speech for 60s videos)
-- Generate narration: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|antoni]
+- Generate narration: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|domi|antoni|josh|arnold]
 - Save as: ${output_dir}/audio/${task_name}_video_0N_narration.mp3
-- Recommended voices: rachel (warm/emotional), bella (clear/friendly), antoni (professional)
+- Recommended voices: rachel (warm/emotional), bella (clear/friendly), domi (confident), antoni (professional), josh (deep/warm), arnold (bold/energetic)
 ${musicInstructions}` : `
 AUDIO: ElevenLabs not configured. Generate silent videos. Narration scripts only.
 ${musicInstructions}`;
@@ -1826,33 +1837,43 @@ ${narrationFiles.map(f => `  - ${f}`).join('\n')}
 
 CRITICAL — EXACT AUDIO TIMING (from ffprobe analysis):
 Total audio duration: ${t.audioDuration.toFixed(1)}s
-Total video_length MUST equal ${Math.ceil(t.audioDuration)}s (match the audio, NOT 60s)
+video_length MUST be ${Math.ceil(t.audioDuration) + 3}s (audio + 3s breathing room at end — NEVER shorter than audio)
 
 Sentence-by-sentence timing (your scene cuts MUST align with these):
 ${timingTable}
 
 RULES:
-- The sum of all scene durations MUST equal ${Math.ceil(t.audioDuration)}s (the audio length)
-- Each scene's "narration" field must correspond to the sentence playing at that time
+- The sum of all scene durations MUST equal ${Math.ceil(t.audioDuration) + 3}s (audio + 3s)
+- The last 3s should be a silent closing shot (CTA visual, logo, or URL)
+- Each scene MUST have a "narration" field with the EXACT transcript segment spoken during that scene
 - Scene transitions must happen at sentence boundaries (±0.3s tolerance)
-- text_overlay must reinforce the sentence being spoken at that moment
-- Do NOT pad or stretch beyond the audio duration`;
+- text_overlay must reinforce the sentence being spoken at that moment — NOT generic text
+- Scenes during silent portions (intro flash, closing): narration = ""
+- Do NOT invent text_overlay that contradicts or ignores what the narrator is saying`;
   } else if (narrationFiles.length > 0) {
     narrationNote = `Narration audio already generated:\n${narrationFiles.map(f => `  - ${f}`).join('\n')}\nDo NOT regenerate narration. Use it as timing reference.`;
   } else {
     narrationNote = 'No narration audio available.';
   }
 
-  // ── PHASE 1.6: Photography Director (Opus — visual decisions) ───────────────
+  // ── PHASE 1.6: Photography Director ─────────────────────────────────────────
+  // photo_quality: 'premium' = Opus + lê arquivos (mais criativo, ~5-8min)
+  //                'simples' = Sonnet + arquivos injetados (rápido, ~1-2min)
+  const photoQuality = job.data.photo_quality || 'simples';
   const photoplanPath = path.resolve(PROJECT_ROOT, output_dir, 'video', 'photography_plan.json');
   if (!fs.existsSync(photoplanPath)) {
-    log(output_dir, 'video_pro', 'Phase 1.6: Photography Director (Opus)...');
+    const photoModel = photoQuality === 'premium' ? 'opus' : 'sonnet';
+    const photoLabel = photoQuality === 'premium' ? 'Premium/Opus' : 'Simples/Sonnet';
+    log(output_dir, 'video_pro', `Phase 1.6: Photography Director (${photoLabel})...`);
     process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} photography_director\n`);
 
     // Build prioritized image list for Photography Director
-    const absAdsDir2 = path.resolve(PROJECT_ROOT, output_dir, 'ads');
+    // Video Pro does NOT use ads/ (carousel images) — those are for static ads.
+    // Only uses: imgs/ (API-generated raw images) and assets/ (brand).
+    // Exception: user can pass pro_image_dir to include a specific directory.
     const absImgsDir2 = path.resolve(PROJECT_ROOT, output_dir, 'imgs');
     const absAssetsDir = path.resolve(PROJECT_ROOT, project_dir, 'assets');
+    const proImageDir = job.data.pro_image_dir ? path.resolve(PROJECT_ROOT, job.data.pro_image_dir) : null;
     const imgExts = ['.jpg', '.jpeg', '.png', '.webp'];
     const listImages = (dir, label) => {
       if (!fs.existsSync(dir)) return [];
@@ -1861,8 +1882,8 @@ RULES:
         .map(f => `  - ${path.relative(PROJECT_ROOT, path.join(dir, f))} [${label}]`);
     };
     const campaignImages = [
-      ...listImages(absAdsDir2, 'CAMPANHA/ads — PRIORIDADE 1'),
       ...listImages(absImgsDir2, 'CAMPANHA/imgs — PRIORIDADE 1'),
+      ...(proImageDir ? listImages(proImageDir, 'DIRETÓRIO CUSTOMIZADO — PRIORIDADE 1') : []),
     ];
     const brandImages = listImages(absAssetsDir, 'MARCA/assets — PRIORIDADE 2');
     const imageListForPhoto = `
@@ -1872,14 +1893,20 @@ ${campaignImages.length > 0 ? campaignImages.join('\n') : '  (nenhuma imagem da 
 PRIORITY 2 — Brand assets (use only if campaign images are insufficient):
 ${brandImages.length > 0 ? brandImages.join('\n') : '  (nenhum asset da marca)'}
 
+NOTE: ads/ (carousel/static ad images) are NOT included — video pro uses raw images, not pre-composed ads.
+
 CRITICAL RULES:
-- ALWAYS prioritize campaign images (ads/, imgs/) over brand assets
+- ALWAYS prioritize campaign images (imgs/) over brand assets
 - Classify EACH image as "clean" (no embedded text) or "has_text" (has text/logo)
 - NEVER put text_overlay on images classified as "has_text"
 - Images with _post, _stories, oficial_, logo_, instagram, facebook in name → likely has_text
 - If using a brand asset instead of campaign image, explain WHY in "image_reason"`;
 
-    const photoDirPrompt = `You are the Photography Director (Diretor de Fotografia). Follow the skill defined in skills/photography-director/SKILL.md exactly.
+    let photoDirPrompt;
+
+    if (photoQuality === 'premium') {
+      // ── PREMIUM: Opus lê todos os arquivos via tool calls (mais criativo) ──
+      photoDirPrompt = `You are the Photography Director (Diretor de Fotografia). Follow the skill defined in skills/photography-director/SKILL.md exactly.
 
 You think like a CINEMATOGRAPHER. You define the complete visual language BEFORE the editor creates the scene plan.
 
@@ -1924,8 +1951,60 @@ CONTENT FILTER (MANDATORY):
 
 IMPORTANT: Output ONLY the photography_plan.json file. Do NOT create scene plans or render anything.`;
 
-    await runClaude(photoDirPrompt, 'video_pro', output_dir, 600000, { model: 'opus' });
-    log(output_dir, 'video_pro', 'Photography plan created.');
+    } else {
+      // ── SIMPLES: Sonnet com arquivos essenciais injetados no prompt ─────────
+      const readFileCompact = (filePath) => {
+        const abs = path.resolve(PROJECT_ROOT, filePath);
+        if (!fs.existsSync(abs)) return '(arquivo não encontrado)';
+        return fs.readFileSync(abs, 'utf-8').slice(0, 4000);
+      };
+      const brandIdentity = readFileCompact(`${project_dir}/knowledge/brand_identity.md`);
+      const creativeBrief = readFileCompact(`${output_dir}/creative/creative_brief.json`);
+      // style-dictionary: compact to essential fields
+      let styleDict = '';
+      try {
+        const sd = JSON.parse(fs.readFileSync(path.resolve(PROJECT_ROOT, 'skills/video-engineering/style-dictionary.json'), 'utf-8'));
+        const compact = Object.fromEntries(Object.entries(sd).map(([k, v]) => [k, { color: v.color, motion: v.motion, typography: v.typography }]));
+        styleDict = JSON.stringify(compact, null, 1);
+      } catch { styleDict = readFileCompact('skills/video-engineering/style-dictionary.json'); }
+
+      photoDirPrompt = `You are the Photography Director. Create the photography plan for ${video_count} video(s) — "${task_name}" campaign.
+Platforms: ${platform_targets.join(', ')}. ${langInstruction}
+
+═══ BRAND IDENTITY ═══
+${brandIdentity}
+
+═══ CREATIVE BRIEF ═══
+${creativeBrief}
+
+═══ STYLE DICTIONARY (color/motion/typography per preset) ═══
+${styleDict}
+
+═══ AUDIO TIMING ═══
+${narrationNote}
+
+═══ AVAILABLE IMAGES ═══
+${imageListForPhoto}
+
+═══ PHOTOGRAPHY PLAN RULES ═══
+1. Choose 1 of 12 style presets: neon_futurista, warm_lifestyle, corporate_clean, bold_pop, minimal_zen, dark_cinematic, pastel_soft, retro_vintage, nature_organic, urban_street, luxury_gold, editorial_documentary
+2. Define formats based on platforms (9:16 for Reels/TikTok/Shorts, 1:1 for Feed, 16:9 for YouTube)
+3. For each shot define: framing (extreme-close-up/close-up/medium-shot/wide-shot/detail-shot/overhead), motion (push-in/pull-out/pan-right/drift/ken-burns-in/zoom-in/breathe/parallax-zoom), mood, image file, text_overlay (max 6 words)
+4. Classify each image: "clean" (no text) or "has_text" (has text/logo) or "unsuitable"
+5. image_has_text:true → text_overlay:null. NEVER text on images with embedded text
+6. Never same framing 3x in row. Never same motion 2x in row
+7. Text position: ONLY "top" or "center". NEVER "bottom"
+8. First shot ≤1.5s. Last shot ≥3s. Cover 100% of narration timing
+9. Typography: Oswald 96-140px for hooks, Montserrat 72-96px for body, Playfair 64-80px for editorial
+10. Energy curve: Hook(5)→Problem(3)→Solution(4-5)→Proof(4)→CTA(3)
+
+Save to: ${output_dir}/video/photography_plan.json
+Output ONLY the JSON file. Do NOT create scene plans or render anything.`;
+    }
+
+    const photoTimeout = photoQuality === 'premium' ? 600000 : 300000;
+    await runClaude(photoDirPrompt, 'video_pro', output_dir, photoTimeout, { model: photoModel });
+    log(output_dir, 'video_pro', `Photography plan created (${photoLabel}).`);
   } else {
     log(output_dir, 'video_pro', 'Photography plan already exists, skipping.');
   }
@@ -1959,10 +2038,15 @@ Read the full photography_plan.json for all shots.`;
     }
   }
 
-  // ── PHASE 2: Scene Plan (Sonnet — edit timeline) ──────────────────────────
-  log(output_dir, 'video_pro', 'Phase 2: Creating scene plan (Sonnet)...');
+  // ── PHASE 2: Scene Plan ─────────────────────────────────────────────────────
+  // scene_quality: 'premium' = Opus + prompt extenso + lê arquivos (~5-8min)
+  //                'simples' = Sonnet + photography plan injetado (~1-2min)
+  const sceneQuality = job.data.scene_quality || 'simples';
+  const sceneModel = sceneQuality === 'premium' ? 'opus' : 'sonnet';
+  const sceneLabel = sceneQuality === 'premium' ? 'Premium/Opus' : 'Simples/Sonnet';
+  log(output_dir, 'video_pro', `Phase 2: Creating scene plan (${sceneLabel})...`);
 
-  // Read photography plan and compact it (inject directly to avoid CLI reading from disk)
+  // Read photography plan and compact it (used by both modes)
   let photoPlanContent = '';
   const photoPlanPath2 = path.resolve(PROJECT_ROOT, output_dir, 'video', 'photography_plan.json');
   if (fs.existsSync(photoPlanPath2)) {
@@ -1976,6 +2060,9 @@ Read the full photography_plan.json for all shots.`;
         typography: fullPlan.typography,
         shots: (fullPlan.shots || []).map(s => ({
           timing: s.timing,
+          start_s: s.start_time,
+          end_s: s.end_time,
+          dur: s.duration,
           image: s.image || s.image_file,
           has_text: s.image_has_text || false,
           framing: s.framing,
@@ -1990,13 +2077,140 @@ Read the full photography_plan.json for all shots.`;
     }
   }
 
-  const videoDur = job.data.video_duration || 60;
-  const scenePlanPrompt = `Create a scene plan JSON for a ${videoDur}s video ad.
+  // Video duration = audio duration + 3s (breathing room at end), or payload override
+  let videoDur = job.data.video_duration || 60;
+  if (narrationTimings.length > 0 && narrationTimings[0].audioDuration) {
+    const audioDur = narrationTimings[0].audioDuration;
+    const audioBasedDur = Math.ceil(audioDur) + 3;
+    if (audioBasedDur > videoDur) {
+      log(output_dir, 'video_pro', `Adjusting video_length: ${videoDur}s → ${audioBasedDur}s (audio ${audioDur.toFixed(1)}s + 3s)`);
+      videoDur = audioBasedDur;
+    }
+  }
+  let scenePlanPrompt;
+
+  if (sceneQuality === 'premium') {
+    // ── PREMIUM: Opus lê arquivos + prompt extenso com todas as regras ────
+    scenePlanPrompt = `You are the Video Editor Agent (Diretor de Edição). Follow the skill defined in skills/video-editor-agent/SKILL.md exactly.
+
+You think like a PROFESSIONAL VIDEO EDITOR. You create 30-50 rapid cuts — NOT a 5-scene slideshow.
+The Photography Director has already defined the visual language. Your job is to create the EDIT TIMELINE following those decisions.
+
+STRICT RULES — DO NOT OVERRIDE THE PHOTOGRAPHY PLAN:
+- Use EXACTLY the images specified by the Photography Director for each shot
+- Use EXACTLY the fonts, sizes, and positions defined in the photography plan
+- Use EXACTLY the transitions defined between sections (NOT 100% cut)
+- If a shot has "image_has_text": true, do NOT add text_overlay (set it to null/empty)
+- If you need to split a shot into multiple cuts, keep the same image/font/motion
+- You decide TIMING only — the Photography Director decided everything else
+
+TIMESTAMP ANCHORING (CRITICAL):
+- Each shot in the photography plan has start_time → end_time. You MUST respect these windows.
+- When splitting a shot into multiple cuts, all cuts MUST fit within the shot's time window.
+- text_overlay for each cut must match what the NARRATOR is saying during that time.
+- Every scene MUST include a "narration" field with the EXACT transcript segment spoken during that scene (or "" for silent scenes).
+- The last 3s of the video should be a silent closing shot (narration: "", text_overlay: URL/logo).
+- Sum of all scene durations MUST equal video_length (${videoDur}s).
+
+Task: Create professional edit plans for ${video_count} videos — "${task_name}" campaign.
+Date: ${task_date}
+Platforms: ${platform_targets.join(', ')}
+${langInstruction}${briefInstruction}
+
+STEP 1 — Read these knowledge files:
+- ${project_dir}/knowledge/brand_identity.md
+- ${project_dir}/knowledge/product_campaign.md
+- ${output_dir}/creative/creative_brief.json
+- ${output_dir}/video/photography_plan.json — CRITICAL: the Photography Director's visual decisions
+- skills/video-editor-agent/SKILL.md
+- skills/typography-on-image/SKILL.md
+
+STEP 2 — Image assets:
+${imageSourceSection}
+
+STEP 3 — Video briefs:
+${videoBriefsText}
+${photographyNote}
+
+STEP 4 — Audio:
+${narrationNote}
+${musicInstructions}
+
+STEP 5 — Create the scene plan JSON following the Photography Director's visual decisions:
+
+Phase A: Analyze inputs, select narrative framework
+Phase B: Create Edit Decision List with 30-50 cuts (MANDATORY minimum 25 cuts for 60s)
+Phase C: Assign images to cuts (reuse creatively — same image, different treatment)
+Phase D: Assign motion, text animation, transitions per cut
+
+CRITICAL RULES (enforced — plan will be rejected if violated):
+- MINIMUM 25 cuts for a 60s video (target 30-50)
+- NEVER same motion.type on 2 consecutive cuts
+- NEVER same text_layout.position on 3 consecutive cuts
+- First cut duration ≤ 1.5s (hook must be fast)
+- Last cut duration ≥ 3s (CTA needs reading time)
+- Cuts < 0.8s: NO text_overlay (too fast to read)
+- Cuts with text_overlay ≥ 1.2s (minimum reading time)
+- Max 6 words per text_overlay
+- Text overlay COMPLEMENTS narration, never repeats it
+- Sum of all durations must equal video_length (tolerance ±2s)
+
+AUDIO-VISUAL SYNC (CRITICAL):
+- Each scene's "narration" field must contain the EXACT transcript segment spoken during that scene
+- Scene timing MUST match narration pacing — if narrator says 3 words in 1.5s, that scene is 1.5s
+- text_overlay must REINFORCE what narrator is saying (visual keyword, not the full sentence)
+- If narration file exists, estimate word timing (~2.5 words/second for pt-BR) and distribute scenes accordingly
+- Hook scene text appears BEFORE narrator speaks (visual lead)
+- CTA scene text stays visible AFTER narrator finishes (reading time)
+
+CAROUSEL/BANNER BAN (CRITICAL):
+- NEVER use images from ads/ (carousel, banner, static ad images) in video pro
+- Video pro is CINEMATIC — use ONLY raw photographic images (imgs/, assets/, API-generated)
+- If photography_plan references an ads/ image, SKIP it and use a photographic alternative
+- Only exception: payload contains "carousel_in_video": true explicitly
+
+TYPOGRAPHY — MAGAZINE EDITORIAL STYLE:
+- text_layout.position: "top" is the DEFAULT for all scenes. "center" ONLY for hooks and CTA final (max 3 scenes total). NEVER "bottom"
+- text_layout.font_size: hook 96-140px, headlines 80-120px, body 60-80px. NEVER below 60px
+- text_layout.font_weight: 900 for headlines, 700 for body
+- text_layout.font_family: "Playfair Display" or "DM Serif Display" (DEFAULT — editorial serif), "Oswald" or "Bebas Neue" ONLY for hooks (max 2-3 scenes), "Montserrat" for data/numbers
+- text_layout.line_height: 1.0 for tight headlines, 1.15 for body
+- text_layout.color: "#FFFFFF" on dark overlays, "#0D0D0D" on light — NEVER gray
+- Every scene with text MUST have text_layout with ALL fields (font_size, font_weight, font_family, position, color, line_height)
+
+GLOBAL VIDEO SETTINGS — include these top-level fields in the scene plan JSON:
+- "color_grading": { "gamma": 1.05, "saturate": 1.1, "contrast": 1.15, "hueRotate": 10 } — unified color across ALL scenes ("same camera, same day")
+- "film_grain": { "intensity": 0.03, "monochromatic": true, "lightLeak": true, "lightLeakOpacity": 0.1 } — cinematic grain + light leaks
+- "organic_shake": { "amplitude": 2, "frequency": 1 } — subtle hand-held feel (set amplitude 1-2 for premium, 3-5 for UGC)
+- Adjust values based on style_preset from Photography Director. For tech/futuristic: higher contrast, bluer hue. For warm/lifestyle: lower contrast, warmer grain.
+
+ADVANCED SCENE FIELDS (per scene):
+- "hud_text": { "brackets": true, "scanLine": true, "dataPoints": true, "accentColor": "#0099FF" } — for tech/futuristic scenes (hook, data, CTA)
+- "motion.speed_ramp_stages": [0, 0.8, 0.2, 1.0] — speed ramp (input%, output% pairs)
+- "lens_transition": "chromatic-glitch" — types: rack-focus, whip-blur, defocus-refocus, chromatic-glitch
+
+Save each plan to: ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
+
+The JSON schema is defined in SKILL.md — follow it exactly.
+
+IMPORTANT: ONLY generate scene plan JSON files. Do NOT generate audio or run any render scripts.
+After saving all plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
+
+  } else {
+    // ── SIMPLES: Sonnet com photography plan injetado + prompt compacto ───
+    scenePlanPrompt = `Create a scene plan JSON for a ${videoDur}s video ad.
 
 Campaign: "${task_name}". Format: 9:16 (1080x1920). ${langInstruction}
 
-PHOTOGRAPHY PLAN (follow exactly):
+PHOTOGRAPHY PLAN (follow exactly — each shot has start_s/end_s timestamps you MUST respect):
 ${photoPlanContent || photographyNote}
+
+CRITICAL — TIMESTAMP ANCHORING:
+The photography plan defines WHEN each shot appears (start_s → end_s). When you split a shot into multiple cuts:
+- All cuts from that shot MUST fit within its start_s → end_s window
+- Use the shot's image for all cuts within that window
+- text_overlay must match what the narrator is saying during that time window
+- Do NOT rearrange shots or move content between time windows
 
 AUDIO: ${narrationNote}
 ${musicInstructions}
@@ -2005,6 +2219,7 @@ Generate a JSON file with this structure:
 {
   "titulo": "...", "video_length": ${videoDur}, "format": "9:16",
   "width": 1080, "height": 1920,
+  "voice": "${job.data.narrator || 'rachel'}",
   "narration_file": "path or null", "music": "path or null", "music_volume": 0.15,
   "color_grading": { "gamma": 1.05, "saturate": 1.1, "contrast": 1.15, "hueRotate": 10 },
   "film_grain": { "intensity": 0.03, "monochromatic": true, "lightLeak": true },
@@ -2012,8 +2227,9 @@ Generate a JSON file with this structure:
   "scenes": [
     { "id": "hook_01", "type": "hook", "duration": 1.5,
       "image": "/absolute/path.png", "image_has_text": true,
+      "narration": "exact transcript segment spoken during this scene",
       "text_overlay": "", "motion": { "type": "breathe" },
-      "text_layout": { "font_size": 96, "font_weight": 900, "font_family": "Oswald", "position": "top", "color": "#FFFFFF", "line_height": 1.0 },
+      "text_layout": { "font_size": 96, "font_weight": 900, "font_family": "Playfair Display", "position": "top", "color": "#FFFFFF", "line_height": 1.0 },
       "overlay": "dark", "overlay_opacity": 0.45,
       "transition": "crossfade"
     }
@@ -2021,16 +2237,23 @@ Generate a JSON file with this structure:
 }
 
 RULES:
-- 25-40 cuts. First ≤1.5s, last ≥3s. Sum ≈ ${videoDur}s
+- NEVER use images from ads/ (carousel/banner) — video pro uses ONLY raw photographic images
+- 25-40 cuts. First ≤1.5s, last ≥3s. Sum MUST equal ${videoDur}s exactly
+- Every scene MUST have "narration" field with the exact transcript being spoken (or "" for silent scenes)
+- text_overlay must reinforce what narrator says at that moment — NOT generic/unrelated text
 - image_has_text:true → text_overlay:"", motion:"breathe"
-- image_has_text:false → text_overlay with max 6 words, position top/center only
-- Never same motion 2x in row. font_size ≥60px. Never position "bottom"
-- text_overlay complements narration, never repeats it
+- image_has_text:false → text_overlay with max 6 words
+- position "top" is DEFAULT. "center" ONLY for hooks/CTA (max 3 scenes). NEVER "bottom"
+- font_family: "Playfair Display"/"DM Serif Display" default. "Oswald"/"Bebas Neue" only for hooks (max 2-3)
+- Never same motion 2x in row. font_size ≥60px
+- Last 3s = silent closing shot with URL/logo (narration: "")
 
 Save to: ${output_dir}/video/${task_name}_video_0N_scene_plan_motion.json
 Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
+  }
 
-  await runClaude(scenePlanPrompt, 'video_pro', output_dir, 600000, { model: 'sonnet' });
+  const sceneTimeout = sceneQuality === 'premium' ? 900000 : 600000;
+  await runClaude(scenePlanPrompt, 'video_pro', output_dir, sceneTimeout, { model: sceneModel });
 
   // Extend lock after each heavy phase to prevent BullMQ stall
   await job.extendLock(job.token, 900000).catch(() => {});
@@ -2183,6 +2406,32 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       const motionTypes = ['zoom_in', 'zoom_out', 'pan_right', 'pan_left'];
       const positions = ['top', 'center', 'bottom'];
 
+      // Fix 0: Remove ads/ (carousel/banner) images from video pro (unless carousel_in_video)
+      if (!job.data.carousel_in_video) {
+        for (let s = 0; s < plan.scenes.length; s++) {
+          const imgPath = plan.scenes[s].image || '';
+          if (/\/ads\/|carousel_|_carousel|banner_/i.test(imgPath)) {
+            // Replace with a campaign image from imgs/ or brand asset
+            const absImgsDirFix = path.resolve(PROJECT_ROOT, output_dir, 'imgs');
+            const absAssetsDirFix = path.resolve(PROJECT_ROOT, project_dir, 'assets');
+            const imgExts2 = ['.jpg', '.jpeg', '.png', '.webp'];
+            const findReplacement = (dir) => {
+              if (!fs.existsSync(dir)) return null;
+              const imgs = fs.readdirSync(dir).filter(f => imgExts2.includes(path.extname(f).toLowerCase()));
+              return imgs.length > 0 ? path.join(dir, imgs[s % imgs.length]) : null;
+            };
+            const replacement = findReplacement(absImgsDirFix) || findReplacement(absAssetsDirFix);
+            if (replacement) {
+              log(output_dir, 'video_pro', `Auto-fix: replaced carousel image "${path.basename(imgPath)}" → "${path.basename(replacement)}" in scene ${plan.scenes[s].id}`);
+              plan.scenes[s].image = replacement;
+              plan.scenes[s].image_has_text = false;
+              if (!plan.scenes[s].text_overlay) plan.scenes[s].text_overlay = plan.scenes[s].id.replace(/_/g, ' ').toUpperCase();
+              fixes++;
+            }
+          }
+        }
+      }
+
       // Fix consecutive same motion
       for (let s = 1; s < plan.scenes.length; s++) {
         const prev = plan.scenes[s - 1].motion?.type;
@@ -2206,12 +2455,43 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
         }
       }
 
+      // Fix: Ensure video_length matches videoDur (audio + 3s)
+      const totalSceneDur = plan.scenes.reduce((s, c) => s + c.duration, 0);
+      if (plan.video_length && plan.video_length < videoDur) {
+        log(output_dir, 'video_pro', `Auto-fix: video_length ${plan.video_length}s → ${videoDur}s (audio + 3s)`);
+        plan.video_length = videoDur;
+        fixes++;
+      }
+
+      // Fix: If total scene duration is shorter than videoDur, extend last scene
+      if (totalSceneDur < videoDur - 1) {
+        const deficit = videoDur - totalSceneDur;
+        const lastScene = plan.scenes[plan.scenes.length - 1];
+        log(output_dir, 'video_pro', `Auto-fix: scene total ${totalSceneDur.toFixed(1)}s < ${videoDur}s — extending last scene "${lastScene.id}" by ${deficit.toFixed(1)}s`);
+        lastScene.duration += deficit;
+        fixes++;
+      }
+
+      // Fix: Ensure every scene has "narration" field
+      let missingNarration = 0;
+      for (let s = 0; s < plan.scenes.length; s++) {
+        if (plan.scenes[s].narration === undefined) {
+          plan.scenes[s].narration = '';
+          missingNarration++;
+        }
+      }
+      if (missingNarration > 0) {
+        log(output_dir, 'video_pro', `Auto-fix: added missing "narration" field to ${missingNarration} scenes`);
+        fixes += missingNarration;
+      }
+
       if (fixes > 0) {
         fs.writeFileSync(planPath, JSON.stringify(plan, null, 2), 'utf-8');
         log(output_dir, 'video_pro', `Auto-fixed ${fixes} rule violations in video ${idx}`);
       }
 
-      log(output_dir, 'video_pro', `Video ${idx}: ${plan.scenes.length} cuts, ${plan.scenes.reduce((s, c) => s + c.duration, 0).toFixed(1)}s total`);
+      const finalDur = plan.scenes.reduce((s, c) => s + c.duration, 0);
+      log(output_dir, 'video_pro', `Video ${idx}: ${plan.scenes.length} cuts, ${finalDur.toFixed(1)}s total (target: ${videoDur}s)`);
     } catch (e) {
       log(output_dir, 'video_pro', `Validation error video ${idx}: ${e.message}`);
     }

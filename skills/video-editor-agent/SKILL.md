@@ -96,6 +96,9 @@ Antes de qualquer decisão criativa, leia **todos** estes arquivos:
 8. **Cortes com texto ≥ 1.2s:** Mínimo para leitura confortável
 9. **Máximo 6 palavras por text_overlay:** Menos é mais
 10. **Text overlay complementa, nunca repete** a narração
+11. **Video Pro: PROIBIDO usar imagens de carrossel, banners ou artes gráficas do ads/ como source.** O vídeo pro é cinematográfico — usar APENAS imagens fotográficas (assets de marca, imagens geradas via API, pexels). Exceção única: quando o payload contém `carousel_in_video: true` explicitamente. No Video Quick, carrossel é permitido.
+12. **Imagens com texto (banners, carrosseis — quando permitido): PROIBIDO zoom, crop ou qualquer motion que corte a imagem.** Usar `image_type: "banner"` e motion `static` ou `breathe` com intensidade minima. Estas imagens ja tem layout proprio e qualquer corte destrói a composicao.
+13. **NUNCA colocar text_overlay sobre imagens que ja contem texto** (banners, carrosseis, artes). O texto da imagem + overlay = poluicao visual. Para estas cenas: `text_overlay: ""`
 
 ---
 
@@ -181,9 +184,21 @@ Com N imagens de marca e 30-50 cortes, cada imagem será reutilizada ~3-5x. Para
 
 | Posição | safe_margin | font_size | Usar quando |
 |---------|------------|-----------|-------------|
-| top | 120px | 72-96px | Quando imagem tem foco embaixo |
-| center | 0 | 80-96px | Destaque máximo, hooks |
-| bottom | 140px | 64-80px | Padrão, safe zone para UI apps |
+| top | 120px | 72-96px | **PADRÃO — usar em todas as cenas exceto hooks e CTA final** |
+| center | 0 | 80-96px | Apenas hooks e CTA final (máx 3 cenas no vídeo) |
+| bottom | — | — | **PROIBIDO em 9:16** — UI das redes cobre esta área |
+
+**Regra de posição:** `top` é o default obrigatório. `center` é exceção reservada para no máximo 3 cenas (hooks de abertura e CTA final). Nunca `bottom`.
+
+**Tipografia padrão (estilo magazine/editorial):**
+
+| Contexto | Font family | Estilo |
+|----------|-----------|--------|
+| **Padrão (todas as cenas)** | Playfair Display, DM Serif Display | Serifada editorial — elegância, contraste de traço, leitura premium |
+| Hooks de impacto | Oswald, Bebas Neue | Condensed bold caps — urgência, energia |
+| Dados/números | Montserrat | Sans-serif limpa — clareza técnica |
+
+**Regra de tipografia:** Fontes serifadas magazine são o default. Oswald/Bebas Neue apenas para hooks (máx 2-3 cenas). A combinação serif (corpo) + condensed sans (hook) cria contraste editorial profissional.
 
 **Backgrounds de texto:**
 
@@ -305,6 +320,10 @@ Antes de finalizar o scene plan, verifique TODOS:
 - [ ] narration_script completo (50-60s de fala)
 - [ ] Seções definidas com start_s/end_s/cuts
 - [ ] text_overlay complementa, NUNCA repete narração
+- [ ] **Video Pro: ZERO imagens de carrossel/banner/ads/** (exceto se carousel_in_video: true no payload)
+- [ ] Imagens com texto (quando permitido) usam image_type "banner", motion static/breathe, SEM text_overlay
+- [ ] text_layout.position = `top` na maioria das cenas, `center` em no máximo 3 (hooks/CTA)
+- [ ] Fonte padrão serifada (Playfair Display / DM Serif Display), Oswald/Bebas só em hooks (máx 2-3 cenas)
 - [ ] Curva de energia: hook(5) → problema(3-4) → solução(4-5) → prova(4) → cta(3)
 
 ---

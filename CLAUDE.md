@@ -116,12 +116,44 @@ Responsibilities:
 - Track job status via log files in `<project_dir>/outputs/<task_name>_<date>/logs/`
 - Report pipeline completion and surface the generated Publish MD file
 
+### Dependências de Runtime
+
+**Redis** roda via Docker local (`redis:alpine`, porta 6379). Container configurado com `--restart unless-stopped` — reinicia automaticamente após reboot. Se o bot/worker der `ECONNREFUSED 6379`, o Redis parou:
+
+```bash
+docker start redis              # iniciar Redis
+docker ps | grep redis          # verificar se está rodando
+```
+
+### PM2 — Bot e Worker
+
+Bot e worker rodam via PM2. **Sempre manter PM2 limpo** — processos duplicados causam conflitos (mensagens duplicadas, jobs processados 2x). Processos salvos com `pm2 save` — restauram automaticamente se o daemon reiniciar.
+
+```bash
+# Iniciar
+npx pm2 start telegram/bot.js --name bot
+npx pm2 start pipeline/worker.js --name worker
+
+# Reiniciar (após alterar bot.js ou worker.js)
+npx pm2 restart bot
+npx pm2 restart worker
+
+# Ver status / logs
+npx pm2 list
+npx pm2 logs bot --lines 30
+npx pm2 logs worker --lines 30
+
+# Limpar tudo (se houver conflito ou processos fantasma)
+npx pm2 delete all
+```
+
+**Regra:** Antes de iniciar, rodar `npx pm2 list` para verificar se já existem processos. Se existir, usar `restart` em vez de `start`. Nunca deixar 2 instâncias do mesmo processo.
+
 ### Pipeline Commands
 
 ```bash
 npm run pipeline:run                     # run with default demo payload
 npm run pipeline:run:payload '<json>'    # run with inline JSON payload
-node pipeline/worker.js                  # start the BullMQ worker (separate terminal)
 ```
 
 ### Skip Flags
