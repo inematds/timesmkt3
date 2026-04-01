@@ -1025,7 +1025,7 @@ STEP 3 — Create scene plan for EACH video. Save to ${output_dir}/video/${task_
       "text_color": "#FFFFFF",
       "text_position": "top",
       "overlay_opacity": 0.5,
-      "font_family": "Playfair Display",
+      "font_family": "Lora",
       "font_size": 88,
       "font_weight": "900",
       "text_shadow": "0 4px 12px rgba(0,0,0,0.8)",
@@ -1049,9 +1049,9 @@ TYPOGRAPHY — MAGAZINE HEADLINE AT TOP (CRITICAL):
 - text_position: ALWAYS "top" — NEVER "bottom" or "center"
 - text_overlay = the KEY WORD or SHORT PHRASE from what the narrator is saying at that moment
 - The text must FILL the upper portion of the screen — big, bold, magazine cover style
-- font_size: 80-108px — large enough to dominate the top third of the screen
+- font_size: 96-120px — LARGE, dominating the top third of the screen. NEVER below 88px
 - font_weight: 900 (black) — maximum visual weight
-- font_family: "Playfair Display" or "DM Serif Display" (DEFAULT — editorial serif magazine style). "Bebas Neue" only for hook scene
+- font_family: "Lora" or "DM Serif Display" (DEFAULT — editorial serif magazine style). "Bebas Neue" only for hook scene
 - text_color: "#FFFFFF" with strong text_shadow: "0 4px 12px rgba(0,0,0,0.8)"
 - overlay_opacity: 0.45-0.55 (dark overlay behind text for legibility)
 - Max 4-5 words per text_overlay — shorter is better, one impactful phrase
@@ -2187,9 +2187,9 @@ CAROUSEL/BANNER BAN (CRITICAL):
 
 TYPOGRAPHY — MAGAZINE EDITORIAL STYLE:
 - text_layout.position: "top" is the DEFAULT for all scenes. "center" ONLY for hooks and CTA final (max 3 scenes total). NEVER "bottom"
-- text_layout.font_size: hook 96-140px, headlines 80-120px, body 60-80px. NEVER below 60px
+- text_layout.font_size: hook 120-140px, headlines 96-120px, body 80-96px. NEVER below 80px
 - text_layout.font_weight: 900 for headlines, 700 for body
-- text_layout.font_family: "Playfair Display" or "DM Serif Display" (DEFAULT — editorial serif), "Oswald" or "Bebas Neue" ONLY for hooks (max 2-3 scenes), "Montserrat" for data/numbers
+- text_layout.font_family: "Lora" or "DM Serif Display" (DEFAULT — editorial serif), "Oswald" or "Bebas Neue" ONLY for hooks (max 2-3 scenes), "Montserrat" for data/numbers
 - text_layout.line_height: 1.0 for tight headlines, 1.15 for body
 - text_layout.color: "#FFFFFF" on dark overlays, "#0D0D0D" on light — NEVER gray
 - Every scene with text MUST have text_layout with ALL fields (font_size, font_weight, font_family, position, color, line_height)
@@ -2245,7 +2245,7 @@ Generate a JSON file with this structure:
       "image": "/absolute/path.png", "image_has_text": true,
       "narration": "exact transcript segment spoken during this scene",
       "text_overlay": "", "motion": { "type": "breathe" },
-      "text_layout": { "font_size": 96, "font_weight": 900, "font_family": "Playfair Display", "position": "top", "color": "#FFFFFF", "line_height": 1.0 },
+      "text_layout": { "font_size": 96, "font_weight": 900, "font_family": "Lora", "position": "top", "color": "#FFFFFF", "line_height": 1.0 },
       "overlay": "dark", "overlay_opacity": 0.45,
       "transition": "crossfade"
     }
@@ -2260,7 +2260,7 @@ RULES:
 - image_has_text:true → text_overlay:"", motion:"breathe"
 - image_has_text:false → text_overlay with max 6 words
 - position "top" is DEFAULT. "center" ONLY for hooks/CTA (max 3 scenes). NEVER "bottom"
-- font_family: "Playfair Display"/"DM Serif Display" default. "Oswald"/"Bebas Neue" only for hooks (max 2-3)
+- font_family: "Lora"/"DM Serif Display" default. "Oswald"/"Bebas Neue" only for hooks (max 2-3)
 - Never same motion 2x in row. font_size ≥60px
 - Last 3s = silent closing shot with URL/logo (narration: "")
 
@@ -2529,7 +2529,7 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
         // Fix 1: Font size minimum (magazine style)
         if (scene.text_overlay && scene.text_layout) {
-          const minSize = scene.type === 'hook' ? 96 : scene.type === 'cta' ? 88 : 60;
+          const minSize = scene.type === 'hook' ? 120 : scene.type === 'cta' ? 96 : 80;
           if (scene.text_layout.font_size && scene.text_layout.font_size < minSize) {
             scene.text_layout.font_size = minSize;
             typoFixes++;

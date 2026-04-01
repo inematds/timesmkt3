@@ -194,7 +194,7 @@ Com N imagens de marca e 30-50 cortes, cada imagem será reutilizada ~3-5x. Para
 
 | Contexto | Font family | Estilo |
 |----------|-----------|--------|
-| **Padrão (todas as cenas)** | Playfair Display, DM Serif Display | Serifada editorial — elegância, contraste de traço, leitura premium |
+| **Padrão (todas as cenas)** | Lora, DM Serif Display | Serifada editorial — elegância, contraste de traço, leitura premium |
 | Hooks de impacto | Oswald, Bebas Neue | Condensed bold caps — urgência, energia |
 | Dados/números | Montserrat | Sans-serif limpa — clareza técnica |
 
@@ -323,7 +323,7 @@ Antes de finalizar o scene plan, verifique TODOS:
 - [ ] **Video Pro: ZERO imagens de carrossel/banner/ads/** (exceto se carousel_in_video: true no payload)
 - [ ] Imagens com texto (quando permitido) usam image_type "banner", motion static/breathe, SEM text_overlay
 - [ ] text_layout.position = `top` na maioria das cenas, `center` em no máximo 3 (hooks/CTA)
-- [ ] Fonte padrão serifada (Playfair Display / DM Serif Display), Oswald/Bebas só em hooks (máx 2-3 cenas)
+- [ ] Fonte padrão serifada (Lora / DM Serif Display), Oswald/Bebas só em hooks (máx 2-3 cenas)
 - [ ] Curva de energia: hook(5) → problema(3-4) → solução(4-5) → prova(4) → cta(3)
 
 ---

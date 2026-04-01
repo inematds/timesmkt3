@@ -51,7 +51,7 @@ Cria videos curtos (10-20s) usando as imagens ja produzidas pelo Ad Creative Des
       "text_color": "#FFFFFF",
       "text_position": "top",
       "overlay_opacity": 0.5,
-      "font_family": "Playfair Display",
+      "font_family": "Lora",
       "font_size": 88,
       "font_weight": "900",
       "text_shadow": "0 4px 12px rgba(0,0,0,0.8)",
@@ -70,7 +70,7 @@ O texto do Quick segue estilo **capa de revista** — grande, bold, ocupando o t
 | text_position | **SEMPRE "top"** — NUNCA "bottom" ou "center" |
 | font_size | 80-108px — grande o suficiente para dominar o topo |
 | font_weight | 900 (black) — peso visual maximo |
-| font_family | **"Playfair Display" ou "DM Serif Display"** (default editorial). "Bebas Neue" so para hook |
+| font_family | **"Lora" ou "DM Serif Display"** (default editorial). "Bebas Neue" so para hook |
 | text_color | "#FFFFFF" com text_shadow forte |
 | text_shadow | "0 4px 12px rgba(0,0,0,0.8)" |
 | overlay_opacity | 0.45-0.55 (overlay escuro para legibilidade) |
