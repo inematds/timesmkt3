@@ -1920,6 +1920,18 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
       return;
     }
+    if (/^fundo\s+(blur|desfoque|desfocado)/i.test(lower)) {
+      s.pendingCampaign.image_bg_mode = 'blur';
+      await ctx.reply('✅ Fundo do quick: <b>blur</b> (imagem desfocada)', { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
+    if (/^fundo\s+(escuro|dark|black|preto)/i.test(lower)) {
+      s.pendingCampaign.image_bg_mode = 'dark';
+      await ctx.reply('✅ Fundo do quick: <b>escuro</b> (default)', { parse_mode: 'HTML' });
+      showCampaignConfirmation(ctx, chatId, s.pendingCampaign);
+      return;
+    }
     if (/^pular\s+(imagens?|image)$/i.test(lower)) {
       s.pendingCampaign.skip_image = true;
       await ctx.reply('✅ Imagens serão puladas.');
@@ -2164,7 +2176,8 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
   const vPro = payload.video_pro === true;
   lines.push('');
   lines.push(`<b>Video:</b>`);
-  lines.push(`  ▶️ Quick: ${vQuick ? 'sim' : 'nao'} | ▶️ Pro: ${vPro ? 'sim' : 'nao'}`);
+  const bgLabel = payload.image_bg_mode === 'blur' ? 'blur' : 'escuro';
+  lines.push(`  ▶️ Quick: ${vQuick ? 'sim' : 'nao'} (fundo ${bgLabel}) | ▶️ Pro: ${vPro ? 'sim' : 'nao'}`);
   if (vPro) {
     lines.push(`  <i>Narração:</i> ${payload.narrator || 'rachel'}`);
     lines.push(`  <i>Duração:</i> ${payload.video_duration || 60}s`);
@@ -2204,6 +2217,7 @@ async function showCampaignConfirmation(ctx, chatId, payload) {
   lines.push(`• <code>notif off</code> / <code>notif on</code>`);
   lines.push(`• <code>pro</code> — adicionar video pro`);
   lines.push(`• <code>sem quick</code> — desativar video quick`);
+  lines.push(`• <code>fundo blur</code> / <code>fundo escuro</code> — fundo do quick`);
   lines.push(`• <code>pular pesquisa</code> / <code>pular imagens</code>`);
   lines.push(`• <code>idioma pt-BR</code> / <code>idioma en</code>`);
   lines.push(`• <code>narrador rachel</code> / <code>narrador bella</code>`);

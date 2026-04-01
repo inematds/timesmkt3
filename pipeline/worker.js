@@ -1086,6 +1086,16 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
     const ts = videoTimestamp();
     const videoOutput = path.resolve(PROJECT_ROOT, output_dir, 'video', `${task_name}_quick_${idx}_${ts}.mp4`);
     backupIfExists(videoOutput);
+
+    // Inject image_bg_mode from payload into scene plan (dark = default, blur = option)
+    if (job.data.image_bg_mode) {
+      try {
+        const planData = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+        planData.image_bg_mode = job.data.image_bg_mode;
+        fs.writeFileSync(planPath, JSON.stringify(planData, null, 2));
+      } catch {}
+    }
+
     log(output_dir, 'video_quick', `Rendering video ${i}/${video_count}...`);
 
     try {
