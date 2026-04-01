@@ -25,3 +25,4 @@ playwright-browsers/
 # Remotion sub-project dependencies
 remotion-ad/node_modules/
 remotion-ad/package-lock.json
+.sessions.json

@@ -3707,7 +3707,7 @@ async function resumeInProgressCampaigns(monitoredSignals) {
 
       console.log(`[resume] Campaign ${campaign} — stage ${highestDone} done, resuming from stage ${highestDone + 1}`);
 
-      // Pre-populate monitoredSignals with completed stages so monitor doesn't re-enqueue
+      // Pre-populate monitoredSignals with completed stages so monitor doesn't re-trigger
       const outputDir = `prj/${prj}/outputs/${campaign}`;
       if (monitoredSignals) {
         for (let doneStage = 1; doneStage <= highestDone; doneStage++) {
@@ -3715,37 +3715,30 @@ async function resumeInProgressCampaigns(monitoredSignals) {
         }
       }
 
-      // Restore session so monitor can track this campaign after restart
-      const projectDir = `prj/${prj}`;
-      session.setProject(chatId, projectDir);
-      session.setRunningTask(chatId, {
-        taskName: campaign,
-        taskDate: payload.task_date,
-        outputDir,
-        startedAt: payload.started_at || new Date().toISOString(),
-      });
-      session.setCampaignV3(chatId, {
-        outputDir,
-        payload,
-        approvalModes: payload.approval_modes || {},
-        notifications: payload.notifications !== false,
-      });
-      session.setCampaignV3Stage(chatId, highestDone);
-      console.log(`[resume] Restored session for ${campaign} — stage ${highestDone}, outputDir ${outputDir}`);
+      // Session is persisted on disk — check if it already has this campaign
+      const sess = session.get(chatId);
+      const hasSession = sess?.runningTask?.outputDir === outputDir;
 
-      // Send approval for next stage (humano mode) or notify (auto mode)
-      const nextStage = highestDone + 1;
-      const approvalMode = payload.approval_modes?.[`stage${highestDone}`] || 'auto';
-      if (approvalMode === 'humano') {
-        const fakeCtx = { reply: (text, opts) => bot.api.sendMessage(chatId, text, opts) };
-        sendStageApprovalRequest(fakeCtx, chatId, nextStage).catch(e => {
-          console.error(`[resume] Failed to send approval for stage ${highestDone}:`, e.message);
+      if (!hasSession) {
+        // Session lost (first boot or .sessions.json deleted) — restore from payload
+        const projectDir = `prj/${prj}`;
+        session.setProject(chatId, projectDir);
+        session.setRunningTask(chatId, {
+          taskName: campaign,
+          taskDate: payload.task_date,
+          outputDir,
+          startedAt: payload.started_at || new Date().toISOString(),
         });
+        session.setCampaignV3(chatId, {
+          outputDir,
+          payload,
+          approvalModes: payload.approval_modes || {},
+          notifications: payload.notifications !== false,
+        });
+        session.setCampaignV3Stage(chatId, highestDone);
+        console.log(`[resume] Restored session for ${campaign} — stage ${highestDone}`);
       } else {
-        bot.api.sendMessage(chatId,
-          `ℹ️ Campanha <b>${campaign}</b> retomada (etapa ${highestDone}/5 completa).`,
-          { parse_mode: 'HTML' }
-        ).catch(() => {});
+        console.log(`[resume] Session already exists for ${campaign} — stage ${highestDone}`);
       }
     }
   }
