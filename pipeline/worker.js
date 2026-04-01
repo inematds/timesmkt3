@@ -2610,20 +2610,20 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
           typoFixes++;
         }
 
-        // Fix 7: Aspect ratio mismatch — replace 16:9 images in 9:16 video
-        if (plan.format === '9:16' || plan.height > plan.width) {
+        // Fix 7: Landscape has_text/banner images in 9:16 video — replace
+        // Photos (has_text=false) can be cropped freely, so only fix has_text images
+        if ((plan.format === '9:16' || plan.height > plan.width) && scene.image_has_text) {
           const imgPath2 = scene.image || '';
           if (imgPath2 && fs.existsSync(imgPath2)) {
             try {
               const dims = getImageDimensions(imgPath2);
               if (dims && dims.width && dims.height) {
                 const ratio = dims.width / dims.height;
-                // 16:9 landscape (ratio > 1.5) is terrible in 9:16 video — replace
-                if (ratio > 1.5) {
+                // Landscape has_text image can't be cropped — replace with portrait
+                if (ratio > 1.2) {
                   const absImgsDirFix = path.resolve(PROJECT_ROOT, output_dir, 'imgs');
                   const absAssetsDirFix = path.resolve(PROJECT_ROOT, project_dir, 'assets');
                   const imgExts3 = ['.jpg', '.jpeg', '.png', '.webp'];
-                  // Find a portrait or square replacement
                   const findPortrait = (dir) => {
                     if (!fs.existsSync(dir)) return null;
                     const imgs = fs.readdirSync(dir)
@@ -2631,17 +2631,17 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
                       .map(f => ({ name: f, path: path.join(dir, f) }))
                       .filter(f => {
                         const d = getImageDimensions(f.path);
-                        return d && d.height >= d.width; // portrait or square
+                        return d && d.height >= d.width;
                       });
                     return imgs.length > 0 ? imgs[s % imgs.length].path : null;
                   };
                   const replacement = findPortrait(absImgsDirFix) || findPortrait(absAssetsDirFix);
                   if (replacement) {
-                    log(output_dir, 'video_pro', `Auto-fix: replaced landscape image "${path.basename(imgPath2)}" (${dims.width}x${dims.height}) → "${path.basename(replacement)}" in scene ${scene.id}`);
+                    log(output_dir, 'video_pro', `Auto-fix: replaced landscape has_text image "${path.basename(imgPath2)}" (${dims.width}x${dims.height}) → "${path.basename(replacement)}" in scene ${scene.id}`);
                     scene.image = replacement;
                     typoFixes++;
                   } else {
-                    log(output_dir, 'video_pro', `WARN: scene ${scene.id} uses landscape image "${path.basename(imgPath2)}" in 9:16 video — no portrait replacement found`);
+                    log(output_dir, 'video_pro', `WARN: scene ${scene.id} uses landscape has_text image — no portrait replacement found`);
                   }
                 }
               }
