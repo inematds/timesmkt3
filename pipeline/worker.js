@@ -2067,9 +2067,9 @@ Typography: headline=${photoPlan.typography?.headline_font || 'Montserrat'}, bod
 Sections:
 ${(photoPlan.sections || []).map(s => `  ${s.name} (${s.start_s || '?'}s-${s.end_s || '?'}s): mood=${s.mood || '?'}, framing=${s.default_framing || '?'}, motion=${s.default_motion || '?'}, overlay=${s.overlay || 'dark'} ${s.overlay_opacity || 0.45}`).join('\n')}
 
-Shots (${(photoPlan.shots || []).length} defined):
-${(photoPlan.shots || []).slice(0, 10).map(s => `  ${s.timing}: ${s.framing} + ${s.motion} | "${(s.text_overlay || '').slice(0, 30)}" | img: ${(s.image_prompt || '').slice(0, 50)}`).join('\n')}
-${(photoPlan.shots || []).length > 10 ? `  ... (${photoPlan.shots.length} total — read the full file)` : ''}
+Shots (${(photoPlan.shots || photoPlan.scenes || []).length} defined):
+${(photoPlan.shots || photoPlan.scenes || []).slice(0, 10).map(s => `  ${s.timing || s.start_s + 's'}: ${s.framing} + ${s.motion} | face:${s.face_position || '?'} → text:${s.text_position || '?'} | "${(s.text_overlay || '').slice(0, 30)}" | img: ${(s.image || s.image_prompt || '').split('/').pop().slice(0, 40)}`).join('\n')}
+${(photoPlan.shots || photoPlan.scenes || []).length > 10 ? `  ... (${(photoPlan.shots || photoPlan.scenes).length} total — read the full file)` : ''}
 
 CRITICAL: You MUST follow the Photography Director's decisions. Do NOT override style, framing, motion, or color choices. Your job is ONLY to create the edit timeline (scene plan) using these visual decisions.
 Read the full photography_plan.json for all shots.`;
@@ -2098,11 +2098,11 @@ Read the full photography_plan.json for all shots.`;
         color_palette: fullPlan.color_palette,
         video_length: fullPlan.video_length || job.data.video_duration || 60,
         typography: fullPlan.typography,
-        shots: (fullPlan.shots || []).map(s => ({
-          timing: s.timing,
-          start_s: s.start_time,
-          end_s: s.end_time,
-          dur: s.duration,
+        shots: (fullPlan.shots || fullPlan.scenes || []).map(s => ({
+          timing: s.timing || `${s.start_s || s.start_time || 0}s`,
+          start_s: s.start_s || s.start_time || 0,
+          end_s: s.end_s || s.end_time || ((s.start_s || s.start_time || 0) + (s.duration_s || s.duration || 0)),
+          dur: s.duration_s || s.duration || 0,
           image: s.image || s.image_file,
           has_text: s.image_has_text || false,
           face_position: s.face_position || 'none',
@@ -2110,7 +2110,7 @@ Read the full photography_plan.json for all shots.`;
           motion: s.motion,
           text: s.text_overlay,
           text_position: s.text_position,
-          section: s.section,
+          section: s.section || s.label,
         })),
       };
       photoPlanContent = JSON.stringify(compact, null, 2);
