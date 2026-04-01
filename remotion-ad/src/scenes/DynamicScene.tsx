@@ -488,12 +488,7 @@ export const DynamicScene: React.FC<SceneProps> = ({
           />
         )}
 
-        {/* Sparkles for benefit/presente scenes */}
-        {(tipo.includes('presente') || tipo.includes('benefit')) && (
-          <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', zIndex: 5, opacity: 0.7 }}>
-            <SparkleBurst size={500} count={10} />
-          </div>
-        )}
+        {/* Sparkles removed — was covering faces and content */}
 
         {/* Vignette for close/flashback */}
         {(tipo.includes('close') || tipo.includes('flashback')) && <Vignette intensity={0.6} />}
@@ -605,11 +600,7 @@ export const DynamicScene: React.FC<SceneProps> = ({
         </div>
       )}
 
-      {(tipo.includes('presente') || tipo.includes('benefit')) && (
-        <div style={{ position: 'absolute', top: '30%', left: '50%', transform: 'translateX(-50%)', zIndex: 5 }}>
-          <SparkleBurst size={500} count={10} />
-        </div>
-      )}
+      {/* Sparkles removed — was covering faces and content */}
 
       {textBandEl}
       <TextOverlay
