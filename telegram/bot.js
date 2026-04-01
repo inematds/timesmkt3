@@ -3652,11 +3652,24 @@ async function resumeInProgressCampaigns(monitoredSignals) {
     5: ['distribution_agent'],
   };
 
+  // Collect all campaigns with their modification time, sort newest first
+  const allCampaigns = [];
   for (const prj of fs.readdirSync(prjRoot)) {
     const outRoot = path.join(prjRoot, prj, 'outputs');
     if (!fs.existsSync(outRoot)) continue;
-
     for (const campaign of fs.readdirSync(outRoot)) {
+      const pp = path.join(outRoot, campaign, 'campaign_payload.json');
+      try {
+        const mtime = fs.statSync(pp).mtimeMs;
+        allCampaigns.push({ prj, campaign, mtime });
+      } catch {}
+    }
+  }
+  allCampaigns.sort((a, b) => b.mtime - a.mtime); // newest first
+
+  for (const { prj, campaign } of allCampaigns) {
+    const outRoot = path.join(prjRoot, prj, 'outputs');
+    {
       const campDir = path.join(outRoot, campaign);
       const payloadPath = path.join(campDir, 'campaign_payload.json');
       const ctxFile = readChatContext(campDir);
@@ -3664,6 +3677,13 @@ async function resumeInProgressCampaigns(monitoredSignals) {
 
       // Skip archived campaigns
       if (fs.existsSync(path.join(campDir, 'archived.json'))) continue;
+
+      // Skip old campaigns (>24h) — only restore recent ones
+      try {
+        const stat = fs.statSync(payloadPath);
+        const ageHours = (Date.now() - stat.mtimeMs) / 3600000;
+        if (ageHours > 6) continue;
+      } catch { continue; }
 
       let payload;
       try { payload = JSON.parse(fs.readFileSync(payloadPath, 'utf-8')); } catch { continue; }
