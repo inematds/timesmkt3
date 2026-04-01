@@ -634,9 +634,28 @@ Each story has one bold key message with large text.`;
             return 'solution';
           });
         }
-        // Fallback: use photography_style as base description for all images
-        if (sceneDescriptions.filter(Boolean).length === 0 && brief.visual_direction?.photography_style) {
-          sceneDescriptions = Array(image_count).fill(brief.visual_direction.photography_style);
+        // Fallback: generate varied ENGLISH descriptions when no carousel_structure
+        if (sceneDescriptions.filter(Boolean).length === 0) {
+          const metaphor = brief.visual_direction?.key_visual_metaphor || '';
+          const mood = brief.visual_direction?.mood || '';
+
+          // Each slide gets a UNIQUE visual concept — different subject, angle, environment
+          const slideTemplates = [
+            { purpose: 'hook', desc: `${metaphor || 'leader commanding technology'}. low angle dramatic shot, strong silhouette, dark futuristic background, blue accent lighting, cinematic wide` },
+            { purpose: 'solution', desc: `close-up hands on tablet with AI workflow on screen, warm side lighting, shallow depth of field, modern office, professional atmosphere` },
+            { purpose: 'solution', desc: `diverse team collaborating around holographic display, aerial view, ${mood || 'premium dark'} environment, multiple screens, dynamic composition` },
+            { purpose: 'social_proof', desc: `community gathering in modern auditorium, faces lit by screens, warm golden hour light, sense of belonging, wide shot with depth` },
+            { purpose: 'cta', desc: `clean minimalist composition, brand logo space, premium dark background with subtle gradient, inviting atmosphere, centered framing` },
+          ];
+
+          sceneDescriptions = [];
+          scenePurposes = [];
+          for (let si = 0; si < image_count; si++) {
+            const tmpl = slideTemplates[si % slideTemplates.length];
+            sceneDescriptions.push(tmpl.desc.slice(0, 250));
+            scenePurposes.push(tmpl.purpose);
+          }
+          log(output_dir, 'ad_creative_designer', `Fallback: generated ${sceneDescriptions.length} varied English descriptions`);
         }
         log(output_dir, 'ad_creative_designer', `Creative brief loaded: ${sceneDescriptions.length} visual descriptions`);
       } catch (e) {
