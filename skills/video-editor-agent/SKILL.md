@@ -187,11 +187,11 @@ Com N imagens de marca e 30-50 cortes, cada imagem será reutilizada ~3-5x. Para
 
 | Posição | safe_margin | font_size | Usar quando |
 |---------|------------|-----------|-------------|
-| top | 120px | 72-96px | **PADRÃO — usar em todas as cenas exceto hooks e CTA final** |
-| center | 0 | 80-96px | Apenas hooks e CTA final (máx 3 cenas no vídeo) |
+| top | 120px | 72-96px | Quando imagem NÃO tem rosto no topo |
+| center | 0 | 80-96px | **PADRÃO — evita cobrir rostos (topo) e UI das redes (bottom)** |
 | bottom | — | — | **PROIBIDO em 9:16** — UI das redes cobre esta área |
 
-**Regra de posição:** `top` é o default obrigatório. `center` é exceção reservada para no máximo 3 cenas (hooks de abertura e CTA final). Nunca `bottom`.
+**Regra de posição:** `center` é o default obrigatório — evita cobrir rostos no topo e não conflita com UI mobile no bottom. Nunca `bottom`.
 
 **Tipografia padrão (estilo magazine/editorial):**
 

@@ -1065,7 +1065,7 @@ RULES:
 - Every scene MUST have "narration" field with the exact transcript being spoken (or "" for silent)
 
 TYPOGRAPHY — MAGAZINE HEADLINE AT TOP (CRITICAL):
-- text_position: ALWAYS "top" — NEVER "bottom" or "center"
+- text_position: "center" default (avoids faces at top, UI at bottom). NEVER "bottom"
 - text_overlay = the KEY WORD or SHORT PHRASE from what the narrator is saying at that moment
 - The text must FILL the upper portion of the screen — big, bold, magazine cover style
 - font_size: 96-120px — LARGE, dominating the top third of the screen. NEVER below 88px
@@ -2205,7 +2205,7 @@ CAROUSEL/BANNER BAN (CRITICAL):
 - Only exception: payload contains "carousel_in_video": true explicitly
 
 TYPOGRAPHY — MAGAZINE EDITORIAL STYLE:
-- text_layout.position: "top" is the DEFAULT for all scenes. "center" ONLY for hooks and CTA final (max 3 scenes total). NEVER "bottom"
+- text_layout.position: "center" is the DEFAULT for all scenes (avoids covering faces at top and mobile UI at bottom). NEVER "bottom"
 - text_layout.font_size: hook 120-140px, headlines 96-120px, body 80-96px. NEVER below 80px
 - text_layout.font_weight: 900 for headlines, 700 for body
 - text_layout.font_family: "Lora" or "DM Serif Display" (DEFAULT — editorial serif), "Oswald" or "Bebas Neue" ONLY for hooks (max 2-3 scenes), "Montserrat" for data/numbers
@@ -2278,7 +2278,7 @@ RULES:
 - text_overlay must reinforce what narrator says at that moment — NOT generic/unrelated text
 - image_has_text:true → text_overlay:"", motion:"breathe"
 - image_has_text:false → text_overlay with max 6 words
-- position "top" is DEFAULT. "center" ONLY for hooks/CTA (max 3 scenes). NEVER "bottom"
+- position "center" is DEFAULT (avoids faces at top, UI at bottom). NEVER "bottom"
 - font_family: "Lora"/"DM Serif Display" default. "Oswald"/"Bebas Neue" only for hooks (max 2-3)
 - Never same motion 2x in row. font_size ≥60px
 - Last 3s = silent closing shot with URL/logo (narration: "")
