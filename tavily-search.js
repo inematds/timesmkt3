@@ -1,7 +1,6 @@
 const { tavily } = require('@tavily/core');
-const fs = require('fs');
-const envData = fs.readFileSync('.env', 'utf-8');
-const TAVILY_API_KEY = envData.match(/TAVILY_API_KEY=(.*)/)[1].trim();
+const { requireEnv } = require('./config/env');
+const TAVILY_API_KEY = requireEnv('TAVILY_API_KEY');
 
 if (!TAVILY_API_KEY) {
   console.error("TAVILY_API_KEY is not set in the .env file.");
@@ -11,11 +10,11 @@ if (!TAVILY_API_KEY) {
 const client = tavily({ apiKey: TAVILY_API_KEY });
 
 const queries = [
-  "pascoa 2026 tendencias marketing digital brasil educacao tecnologia inteligencia artificial campanhas criativas",
-  "pascoa tecnologia educacao online brasil conteudo viral instagram reels carrossel ideias criativas 2025 2026",
-  "publico brasileiro interesse pascoa aprendizado ia motivacoes comportamento digital redes sociais engajamento",
-  "hooks virais pascoa humor criativo educacao tecnologia ia instagram tiktok reels brasil engajamento 2026",
-  "campanhas pascoa marcas educacionais tech brasil posicionamento diferenciado criativo futurista tendencias"
+  "inteligencia artificial gestores executivos 2025 2026 tendencias lideranca ia agentes autonomos transformacao digital empresas",
+  "vibe coding agentic systems executivos CEO gestao estrategica ia competencias digitais c-level brasil",
+  "pascoa simbolismo renascimento transformacao profissional lideranca digital maestro metafora gestao ia 2026",
+  "gestores tecnologia autonomia ia projetos sem TI automacao empreendedora empoderamento executivo brasil 2025",
+  "conteudo viral instagram linkedin executivos inteligencia artificial pascoa engajamento lideranca transformacao carreira"
 ];
 
 async function runSearches() {

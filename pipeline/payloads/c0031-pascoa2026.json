@@ -1,0 +1,38 @@
+{
+  "task_name": "c0031-pascoa2026",
+  "task_date": "2026-03-31",
+  "project_dir": "prj/inema",
+  "platform_targets": [],
+  "language": "pt-BR",
+
+  "skip_research": false,
+  "skip_image": false,
+  "skip_video": false,
+
+  "image_count": 7,
+  "image_formats": ["carousel_1080x1080"],
+  "image_source": "folder",
+  "image_folder": "prj/inema/imgs/pascoa",
+
+  "video_quick": false,
+  "video_pro": true,
+  "video_mode": "pro",
+  "video_format": "reel_1080x1920",
+  "video_audio": "both",
+  "voice": "rachel",
+  "voice_gender": "female",
+
+  "approval_modes": {
+    "stage1": "auto",
+    "stage2": "auto",
+    "stage3": "auto",
+    "stage4": "auto",
+    "stage5": "auto"
+  },
+
+  "notifications": true,
+  "use_brand_overlay": true,
+  "output_dir": "prj/inema/outputs/c0031-pascoa2026",
+
+  "campaign_brief": "Campanha de Páscoa 2026 para INEMA — Ecossistema de IA e Transformação Digital. Tema: Páscoa + tecnologia + educação, estilo futurista, divertido e inteligente. Usar EXCLUSIVAMENTE as imagens da pasta prj/inema/imgs/pascoa/ — NÃO gerar novas imagens via API. As imagens já retratam coelhos, ovos de páscoa e tecnologia. Montar 7 slides de carrossel 1080x1080 com texto sobreposto via HTML/CSS (nunca na imagem). Produzir 1 vídeo pro (Remotion) no formato Reels 9:16 (1080x1920) com narração em voz feminina (voice: rachel) + trilha musical. O vídeo deve usar as imagens da pasta pascoa com enquadramentos e animações adequadas ao formato vertical. Narrativa: aprender IA é o melhor ovo de Páscoa que você pode se dar — conhecimento que nunca expira. Tom: alegre, criativo, inteligente. CTA: inema.club (grátis) ou inema.vip (R$ 35/mês). Etapa 4 de plataformas NÃO executar. Todo pipeline automático sem aprovações manuais."
+}

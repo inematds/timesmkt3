@@ -3,6 +3,8 @@ node_modules/
 
 # Environment variables (contains API keys and secrets)
 .env
+.env.*
+!.env.example
 
 # Lock files (regenerated on npm install)
 package-lock.json
@@ -26,3 +28,13 @@ playwright-browsers/
 remotion-ad/node_modules/
 remotion-ad/package-lock.json
 .sessions.json
+
+# Generated campaign outputs and operational artifacts
+Waiting/
+arquivo/
+prj/
+prj/**/outputs/
+prj/**/logs/
+remotion-ad/public/audio/
+remotion-ad/public/assets/
+tavily_results*.json

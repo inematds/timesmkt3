@@ -10,9 +10,18 @@
  *   node pipeline/orchestrator.js --file pipeline/payloads/coldbrew_demo.json
  */
 
-const { pipelineQueue } = require('./queues');
 const fs = require('fs');
 const path = require('path');
+
+let pipelineQueueRef = null;
+
+function getPipelineQueue() {
+  if (!pipelineQueueRef) {
+    ({ pipelineQueue: pipelineQueueRef } = require('./queues'));
+  }
+
+  return pipelineQueueRef;
+}
 
 // ── Agent definitions ─────────────────────────────────────────────────────────
 
@@ -74,21 +83,21 @@ const AGENTS = [
   {
     name: 'platform_youtube',
     label: 'YouTube Agent',
-    dependencies: ['video_editor_agent', 'copywriter_agent'],
+    dependencies: ['video_quick', 'video_pro', 'copywriter_agent'],
     skippable: true,
     platformFlag: 'youtube',
   },
   {
     name: 'platform_tiktok',
     label: 'TikTok Agent',
-    dependencies: ['video_editor_agent', 'copywriter_agent'],
+    dependencies: ['video_quick', 'video_pro', 'copywriter_agent'],
     skippable: true,
     platformFlag: 'tiktok',
   },
   {
     name: 'platform_facebook',
     label: 'Facebook Agent',
-    dependencies: ['ad_creative_designer', 'video_editor_agent', 'copywriter_agent'],
+    dependencies: ['ad_creative_designer', 'video_quick', 'video_pro', 'copywriter_agent'],
     skippable: true,
     platformFlag: 'facebook',
   },
@@ -127,6 +136,59 @@ const STAGES = {
   stage4: PLATFORM_AGENTS,
   stage5: ['distribution_agent'],
 };
+
+function getRequestedVideoAgents(payload) {
+  const wantQuick = payload.video_quick !== false;
+  const wantPro = payload.video_pro === true || payload.video_mode === 'pro' || payload.video_mode === 'both';
+  return {
+    wantQuick,
+    wantPro,
+    active: [
+      ...(wantQuick ? ['video_quick'] : []),
+      ...(wantPro ? ['video_pro'] : []),
+    ],
+  };
+}
+
+function getEnabledAgents(payload = {}) {
+  const enabled = new Set();
+  const { wantQuick, wantPro } = getRequestedVideoAgents(payload);
+  const platformTargets = Array.isArray(payload.platform_targets) ? payload.platform_targets : [];
+
+  for (const agent of AGENTS) {
+    if (agent.platformFlag && platformTargets.length > 0 && !platformTargets.includes(agent.platformFlag)) {
+      continue;
+    }
+
+    if (agent.name === 'video_quick' && !wantQuick) continue;
+    if (agent.name === 'video_pro' && !wantPro) continue;
+    if (agent.skippable && agent.skipFlag && payload[agent.skipFlag]) continue;
+
+    enabled.add(agent.name);
+  }
+
+  return enabled;
+}
+
+function resolveDependencies(payload, dependencies = []) {
+  const enabled = getEnabledAgents(payload);
+  return dependencies.filter(dep => enabled.has(dep));
+}
+
+function validateAgentGraph(agents = AGENTS) {
+  const knownAgents = new Set(agents.map(agent => agent.name));
+  const errors = [];
+
+  for (const agent of agents) {
+    for (const dep of agent.dependencies || []) {
+      if (!knownAgents.has(dep)) {
+        errors.push(`Agent "${agent.name}" depends on unknown agent "${dep}"`);
+      }
+    }
+  }
+
+  return errors;
+}
 
 // ── Payload validation ────────────────────────────────────────────────────────
 
@@ -180,11 +242,38 @@ async function enqueueJobs(payload) {
   console.log(`   Platforms: ${platform_targets.join(', ')}`);
   console.log(`   Skips — research: ${skip_research}, image: ${skip_image}, video: ${skip_video}\n`);
 
+  // Resolve video agents based on video_quick / video_pro flags
+  const { wantQuick, wantPro } = getRequestedVideoAgents(payload);
+  if (!skip_video) {
+    if (wantQuick && wantPro) console.log('  [video] Running both video_quick + video_pro');
+    else if (wantPro) console.log('  [video] Running video_pro only');
+    else console.log('  [video] Running video_quick');
+  }
+
   for (const agent of AGENTS) {
-    const isSkipped = agent.skippable && payload[agent.skipFlag];
+    // Platform agents: skip if not in platform_targets
+    if (agent.platformFlag && !platform_targets.includes(agent.platformFlag)) {
+      skippedJobs.add(agent.name);
+      console.log(`  ⏭  ${agent.label} — not in platform_targets`);
+      continue;
+    }
+
+    // Video mode filtering: respect video_quick / video_pro flags
+    if (agent.name === 'video_quick' && !wantQuick && !skip_video) {
+      skippedJobs.add(agent.name);
+      console.log(`  ⏭  ${agent.label} — disabled via video_quick: false`);
+      continue;
+    }
+    if (agent.name === 'video_pro' && !wantPro && !skip_video) {
+      skippedJobs.add(agent.name);
+      console.log(`  ⏭  ${agent.label} — not requested`);
+      continue;
+    }
+
+    const isSkipped = agent.skippable && agent.skipFlag && payload[agent.skipFlag];
 
     // Mark dependencies as skipped so downstream agents can adjust
-    const activeDeps = agent.dependencies.filter(dep => !skippedJobs.has(dep));
+    const activeDeps = resolveDependencies(payload, agent.dependencies).filter(dep => !skippedJobs.has(dep));
 
     if (isSkipped) {
       skippedJobs.add(agent.name);
@@ -222,7 +311,7 @@ async function enqueueJobs(payload) {
       removeOnFail: false,
     };
 
-    const job = await pipelineQueue.add(agent.name, jobData, jobOptions);
+    const job = await getPipelineQueue().add(agent.name, jobData, jobOptions);
 
     const result = {
       job_name: agent.name,
@@ -278,8 +367,7 @@ async function enqueueStage(payload, agentNames) {
   let resolvedNames = [...agentNames];
   if (agentNames.includes('video_quick')) {
     // Quick always runs unless explicitly disabled; Pro runs when requested
-    const wantQuick = payload.video_quick !== false;
-    const wantPro = payload.video_pro === true || payload.video_mode === 'pro' || payload.video_mode === 'both';
+    const { wantQuick, wantPro } = getRequestedVideoAgents(payload);
 
     // Replace the default video_quick entry with what's actually requested
     resolvedNames = resolvedNames.filter(a => a !== 'video_quick');
@@ -317,7 +405,7 @@ async function enqueueStage(payload, agentNames) {
       skip_research,
       skip_image,
       skip_video,
-      dependencies: agent.dependencies,
+      dependencies: resolveDependencies(payload, agent.dependencies),
       project_dir,
       output_dir: payload.output_dir || `${project_dir}/outputs/${task_name}`,
     };
@@ -329,7 +417,7 @@ async function enqueueStage(payload, agentNames) {
       removeOnFail: false,
     };
 
-    const job = await pipelineQueue.add(agent.name, jobData, jobOptions);
+    const job = await getPipelineQueue().add(agent.name, jobData, jobOptions);
     jobResults.push({ job_name: agent.name, job_id: job.id });
     console.log(`  ✅ ${agent.label} — queued (job ID: ${job.id})`);
   }
@@ -356,6 +444,13 @@ async function main() {
     process.exit(1);
   }
 
+  const graphErrors = validateAgentGraph();
+  if (graphErrors.length > 0) {
+    console.error('\n❌ Agent graph validation failed:');
+    graphErrors.forEach(e => console.error(`   - ${e}`));
+    process.exit(1);
+  }
+
   // Validate before enqueuing
   const errors = validatePayload(payload);
   if (errors.length > 0) {
@@ -375,5 +470,5 @@ if (require.main === module) {
   });
 } else {
   // Module mode — used by bot.js for v3 stage-by-stage execution
-  module.exports = { enqueueStage, STAGES, validatePayload };
+  module.exports = { enqueueStage, STAGES, validatePayload, validateAgentGraph };
 }

@@ -6,10 +6,13 @@
  * Usage:
  *   node pipeline/generate-audio.js <output_mp3> <text> [voice_id]
  *
- * Available voices (pt-BR recommended):
- *   Rachel  — warm, emotional female  — 21m00Tcm4TlvDq8ikWAM
- *   Bella   — friendly, clear female — EXAVITQu4vr4xnSDxMaL
- *   Antoni  — professional male      — ErXwobaYiN019PkySvjV
+ * Available voices (multilingual v2 — works with pt-BR):
+ *   rachel  — warm, emotional female   — 21m00Tcm4TlvDq8ikWAM (default)
+ *   bella   — friendly, clear female   — EXAVITQu4vr4xnSDxMaL
+ *   domi    — strong, confident female — AZnzlk1XvdvUeBnXmlld
+ *   antoni  — professional male        — ErXwobaYiN019PkySvjV
+ *   josh    — deep, warm male          — TxGEqnHWrfWFTfGW9XjX
+ *   arnold  — bold, energetic male     — VR6AewLTigWG4xSOukaG
  *
  * Defaults to Rachel if no voice_id is specified.
  */
@@ -18,15 +21,18 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
 
 const API_KEY = process.env.ELEVENLABS_API_KEY;
 const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM'; // Rachel
 
 const VOICES = {
-  rachel: '21m00Tcm4TlvDq8ikWAM',
-  bella: 'EXAVITQu4vr4xnSDxMaL',
-  antoni: 'ErXwobaYiN019PkySvjV',
+  rachel: '21m00Tcm4TlvDq8ikWAM',   // warm, emotional female (default)
+  bella: 'EXAVITQu4vr4xnSDxMaL',     // friendly, clear female
+  antoni: 'ErXwobaYiN019PkySvjV',     // professional male
+  domi: 'AZnzlk1XvdvUeBnXmlld',      // strong, confident female
+  josh: 'TxGEqnHWrfWFTfGW9XjX',      // deep, warm male
+  arnold: 'VR6AewLTigWG4xSOukaG',    // bold, energetic male
 };
 
 async function generateAudio(outputPath, text, voiceIdOrName = DEFAULT_VOICE) {

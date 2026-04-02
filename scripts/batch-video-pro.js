@@ -213,6 +213,7 @@ async function main() {
       scene_quality: 'simples',
       approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
       notifications: false,
+      skip_dependencies: true,
     };
 
     await sendMessage(`▶️ [${i + 1}/${campaigns.length}] <b>${camp.name}</b> — gerando video pro 30s...`);

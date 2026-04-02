@@ -7,16 +7,7 @@
  * Each provider has: name, type, cost, quality, envKeys (required .env vars)
  */
 
-const fs = require('fs');
-const path = require('path');
-
-function getEnvVar(key) {
-  const envPath = path.resolve(__dirname, '../.env');
-  if (!fs.existsSync(envPath)) return null;
-  const envData = fs.readFileSync(envPath, 'utf-8');
-  const match = envData.match(new RegExp(`^${key}=(.*)`, 'm'));
-  return match ? match[1].trim() : null;
-}
+const { getEnv } = require('../config/env');
 
 // ── Provider Definitions ────────────────────────────────────────────────────
 
@@ -186,7 +177,7 @@ function isProviderAvailable(providerId) {
   if (!provider) return false;
   if (provider.envKeys.length === 0) return true;
   return provider.envKeys.every(key => {
-    const val = getEnvVar(key);
+    const val = getEnv(key);
     return val && val.length > 0 && !val.startsWith('YOUR_');
   });
 }
@@ -229,7 +220,7 @@ function printStatus() {
 
 module.exports = {
   PROVIDERS,
-  getEnvVar,
+  getEnvVar: getEnv,
   isProviderAvailable,
   getAvailableProviders,
   getBestProvider,
