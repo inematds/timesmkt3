@@ -65,17 +65,54 @@ async function sendVideo(filePath, caption) {
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 function cleanVideoPlans(campDir) {
-  const videoDir = path.join(campDir, 'video');
-  if (!fs.existsSync(videoDir)) return 0;
   let cleaned = 0;
-  for (const f of fs.readdirSync(videoDir)) {
-    if (f.endsWith('_scene_plan.json') || f.endsWith('_scene_plan_motion.json') ||
-        f === 'photography_plan.json' || f === 'approved.json' || f === 'rejected.json' ||
-        f === 'approval_needed.json') {
-      fs.unlinkSync(path.join(videoDir, f));
-      cleaned++;
+
+  // Clean video plans
+  const videoDir = path.join(campDir, 'video');
+  if (fs.existsSync(videoDir)) {
+    for (const f of fs.readdirSync(videoDir)) {
+      if (f.endsWith('_scene_plan.json') || f.endsWith('_scene_plan_motion.json') ||
+          f === 'photography_plan.json' || f === 'approved.json' || f === 'rejected.json' ||
+          f === 'approval_needed.json') {
+        fs.unlinkSync(path.join(videoDir, f));
+        cleaned++;
+      }
     }
   }
+
+  // Rename existing narration to _60s backup (don't delete — keep the original)
+  // Worker will generate new 30s narration since the expected file won't exist
+  const audioDir = path.join(campDir, 'audio');
+  if (fs.existsSync(audioDir)) {
+    for (const f of fs.readdirSync(audioDir)) {
+      if (f.includes('narration') && f.endsWith('.mp3') && !f.includes('_backup_')) {
+        const src = path.join(audioDir, f);
+        const dst = path.join(audioDir, f.replace('.mp3', '_backup_60s.mp3'));
+        if (!fs.existsSync(dst)) {
+          fs.renameSync(src, dst);
+          console.log(`    Backup: ${f} → ${path.basename(dst)}`);
+          cleaned++;
+        }
+      }
+      // Also rename timing files
+      if (f.includes('timing') && f.endsWith('.json') && !f.includes('_backup_')) {
+        const src = path.join(audioDir, f);
+        const dst = path.join(audioDir, f.replace('.json', '_backup_60s.json'));
+        if (!fs.existsSync(dst)) {
+          fs.renameSync(src, dst);
+          cleaned++;
+        }
+      }
+    }
+  }
+
+  // Clean video pro log (so phases re-trigger)
+  const logFile = path.join(campDir, 'logs', 'video_pro.log');
+  if (fs.existsSync(logFile)) {
+    fs.unlinkSync(logFile);
+    cleaned++;
+  }
+
   return cleaned;
 }
 

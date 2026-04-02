@@ -1654,7 +1654,7 @@ BACKGROUND MUSIC: No music files found. Set "music": null in the scene plan.
 
   const audioInstructions = hasElevenLabs ? `
 AUDIO NARRATION (ElevenLabs available):
-- Write a narration script (50-60 seconds of natural speech for 60s videos)
+- Write a narration script (${Math.round((job.data.video_duration || 60) * 0.85)}-${Math.round((job.data.video_duration || 60) * 0.95)} seconds of natural speech for ${job.data.video_duration || 60}s video)
 - Generate narration: node pipeline/generate-audio.js <output.mp3> "<script>" [rachel|bella|domi|antoni|josh|arnold]
 - Save as: ${output_dir}/audio/${task_name}_video_0N_narration.mp3
 - Recommended voices: rachel (warm/emotional), bella (clear/friendly), domi (confident), antoni (professional), josh (deep/warm), arnold (bold/energetic)
