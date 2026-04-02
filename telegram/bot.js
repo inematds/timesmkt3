@@ -1540,7 +1540,7 @@ bot.command('rerun', async (ctx) => {
 
   // Show full config table before running (same format as briefing)
   const stageLabelsMap = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
-  const stageLabel = stages.map(n => n === 3 ? `Video ${payload.video_pro && payload.video_quick ? 'Quick + Pro' : payload.video_pro ? 'Pro' : 'Quick'}` : stageLabelsMap[n]).join(' + ');
+  const stageLabel = sortedStages.map(n => n === 3 ? `Video ${payload.video_pro && payload.video_quick ? 'Quick + Pro' : payload.video_pro ? 'Pro' : 'Quick'}` : stageLabelsMap[n]).join(' + ');
 
   const configLines = buildConfigTable(payload, `Reprocessar: ${campaignFolder}`);
   configLines.push(`\n<b>Etapas:</b> ${stageLabel}`);
@@ -3853,17 +3853,27 @@ bot.start({
             monitoredSignals.delete(imgErrorKey);
           }
 
-          // 2. Video approval needed
+          // 2. Video approval needed (quick + pro both use this)
           const videoSignal = path.join(campDir, 'video', 'approval_needed.json');
           const videoApproved = path.join(campDir, 'video', 'approved.json');
           const videoRejected = path.join(campDir, 'video', 'rejected.json');
           const videoKey = `video_approval:${relDir}`;
           if (fs.existsSync(videoSignal) && !fs.existsSync(videoApproved) && !fs.existsSync(videoRejected) && !monitoredSignals.has(videoKey)) {
             monitoredSignals.add(videoKey);
-            session.setPendingVideoApproval(chatId, { outputDir: relDir, type: 'video' });
-            sendVideoApprovalRequest(bot, chatId, relDir).catch(e =>
-              console.error('[monitor] video approval send failed:', e.message)
-            );
+            const videoApprovalMode = cv?.payload?.approval_modes?.stage3 || 'humano';
+            if (videoApprovalMode === 'auto') {
+              // Auto-approve — write approved.json directly
+              writeVideoApproval(relDir, true, 'auto-approved');
+              console.log(`[monitor] Video auto-approved for ${relDir}`);
+              if (cv?.notifications !== false) {
+                bot.api.sendMessage(chatId, '⚡ Roteiro aprovado automaticamente').catch(() => {});
+              }
+            } else {
+              session.setPendingVideoApproval(chatId, { outputDir: relDir, type: 'video' });
+              sendVideoApprovalRequest(bot, chatId, relDir).catch(e =>
+                console.error('[monitor] video approval send failed:', e.message)
+              );
+            }
           }
           if ((fs.existsSync(videoApproved) || fs.existsSync(videoRejected)) && monitoredSignals.has(videoKey)) {
             monitoredSignals.delete(videoKey);
@@ -3876,10 +3886,20 @@ bot.start({
           const imgApprovalKey = `img_approval:${relDir}`;
           if (fs.existsSync(imgApprovalSignal) && !fs.existsSync(imgApproved) && !fs.existsSync(imgRejected) && !monitoredSignals.has(imgApprovalKey)) {
             monitoredSignals.add(imgApprovalKey);
-            session.setPendingVideoApproval(chatId, { outputDir: relDir, type: 'images' });
-            sendImageApprovalRequest(bot, chatId, relDir).catch(e =>
-              console.error('[monitor] img approval send failed:', e.message)
-            );
+            const imgApprovalMode = cv?.payload?.approval_modes?.stage2 || 'humano';
+            if (imgApprovalMode === 'auto') {
+              const imgDir = path.join(campDir, 'imgs');
+              fs.writeFileSync(path.join(imgDir, 'approved.json'), JSON.stringify({ approved: true, feedback: 'auto-approved', ts: new Date().toISOString() }));
+              console.log(`[monitor] Images auto-approved for ${relDir}`);
+              if (cv?.notifications !== false) {
+                bot.api.sendMessage(chatId, '⚡ Imagens aprovadas automaticamente').catch(() => {});
+              }
+            } else {
+              session.setPendingVideoApproval(chatId, { outputDir: relDir, type: 'images' });
+              sendImageApprovalRequest(bot, chatId, relDir).catch(e =>
+                console.error('[monitor] img approval send failed:', e.message)
+              );
+            }
           }
           if ((fs.existsSync(imgApproved) || fs.existsSync(imgRejected)) && monitoredSignals.has(imgApprovalKey)) {
             monitoredSignals.delete(imgApprovalKey);
