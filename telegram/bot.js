@@ -3942,7 +3942,7 @@ bot.start({
                 if (monitoredSignals.has(phaseKey)) continue;
                 if (!logContent.includes(phase.key)) break; // stop at first missing — preserves order
                 monitoredSignals.add(phaseKey);
-                bot.api.sendMessage(chatId, phase.msg).catch(() => {});
+                bot.api.sendMessage(chatId, phase.msg, { parse_mode: 'HTML' }).catch(() => {});
               }
             }
           }
