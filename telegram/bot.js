@@ -3906,15 +3906,18 @@ bot.start({
           }
 
           // 3.5 Phase-level notifications — notify user when each video phase starts
+          // Uses ordered phases — only sends the LATEST phase that hasn't been notified yet
           if (hasActiveSession && sess?.campaignV3?.notifications !== false) {
             const logsDir2 = path.join(campDir, 'logs');
             const phaseNotifs = [
               { file: 'video_pro.log', phases: [
-                { key: 'Generating narration', msg: '🎙️ Gerando narração...' },
-                { key: 'Photography Director', msg: '📷 Diretor de Fotografia analisando...' },
-                { key: 'Creating scene plan', msg: '🎬 Criando plano de cenas...' },
-                { key: 'Typography validation', msg: '🔤 Validando tipografia...' },
-                { key: 'Starting video render', msg: '🎥 Renderizando vídeo Pro...' },
+                { key: 'Generating narration', msg: '🎙️ Gerando narração...', order: 1 },
+                { key: 'Analyzing narration', msg: '⏱️ Analisando timing do áudio...', order: 2 },
+                { key: 'Photography Director', msg: '📷 Diretor de Fotografia...', order: 3 },
+                { key: 'Creating scene plan', msg: '🎬 Criando plano de cenas...', order: 4 },
+                { key: 'Typography validation', msg: '🔤 Validando tipografia...', order: 5 },
+                { key: 'Starting video render', msg: '🎥 Renderizando vídeo Pro...', order: 6 },
+                { key: 'Completed successfully', msg: '✅ Vídeo Pro concluído!', order: 7 },
               ]},
               { file: 'video_quick.log', phases: [
                 { key: 'Starting video render', msg: '🎥 Renderizando vídeo Quick...' },
@@ -3929,12 +3932,23 @@ bot.start({
               const logFile = path.join(logsDir2, pn.file);
               if (!fs.existsSync(logFile)) continue;
               const logContent = fs.readFileSync(logFile, 'utf-8');
+
+              // Find the highest-order phase present in the log
+              let highestFound = null;
               for (const phase of pn.phases) {
-                const phaseKey = `phase:${relDir}:${pn.file}:${phase.key}`;
-                if (monitoredSignals.has(phaseKey)) continue;
                 if (logContent.includes(phase.key)) {
+                  if (!highestFound || (phase.order || 0) > (highestFound.order || 0)) {
+                    highestFound = phase;
+                  }
+                }
+              }
+
+              // Only notify the latest phase (not all phases at once)
+              if (highestFound) {
+                const phaseKey = `phase:${relDir}:${pn.file}:${highestFound.key}`;
+                if (!monitoredSignals.has(phaseKey)) {
                   monitoredSignals.add(phaseKey);
-                  bot.api.sendMessage(chatId, phase.msg).catch(() => {});
+                  bot.api.sendMessage(chatId, highestFound.msg).catch(() => {});
                 }
               }
             }
