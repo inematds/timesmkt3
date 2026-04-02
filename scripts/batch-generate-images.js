@@ -58,13 +58,23 @@ async function sendPhoto(filePath, caption) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// Piramyd API key
-const PIRAMYD_API_KEY = getEnvVar('PIRAMYD_API_KEY') || '';
+// Piramyd API keys — multiple keys for higher throughput
+const PIRAMYD_KEYS = [
+  getEnvVar('PIRAMYD_API_KEY'),
+  'sk-150ad0f5c9ac42eb9928f44039cfc143',
+  'sk-574a5cb6547f4968b6fc435903ca97ac',
+].filter(Boolean);
+// Remove duplicates
+const uniquePiramydKeys = [...new Set(PIRAMYD_KEYS)];
 
 // Providers pool — rotates to avoid rate limits (~10/min each)
 const providers = [];
 providers.push({ name: 'Pollinations', generate: generatePollinations });
-if (PIRAMYD_API_KEY) providers.push({ name: 'Piramyd', generate: generatePiramyd });
+// Add one provider entry per Piramyd key
+uniquePiramydKeys.forEach((key, i) => {
+  const label = uniquePiramydKeys.length > 1 ? `Piramyd-${i + 1}` : 'Piramyd';
+  providers.push({ name: label, generate: (prompt, out, ratio) => generatePiramyd(prompt, out, ratio, key) });
+});
 let _providerIdx = 0;
 
 function getNextProvider() {
@@ -91,8 +101,10 @@ async function generatePollinations(prompt, outputPath, ratio = '1:1') {
 }
 
 // Generate image via Piramyd API (OpenAI-compatible, DALL-E)
-async function generatePiramyd(prompt, outputPath, ratio = '1:1') {
+async function generatePiramyd(prompt, outputPath, ratio = '1:1', apiKey = null) {
   const { default: fetch } = await import('node-fetch');
+  const key = apiKey || uniquePiramydKeys[0];
+  if (!key) throw new Error('No Piramyd API key');
 
   const sizeMap = { '1:1': '1024x1024', '9:16': '1024x1792', '16:9': '1792x1024' };
   const size = sizeMap[ratio] || '1024x1024';
@@ -101,7 +113,7 @@ async function generatePiramyd(prompt, outputPath, ratio = '1:1') {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${PIRAMYD_API_KEY}`,
+      'Authorization': `Bearer ${key}`,
     },
     body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size }),
   });
