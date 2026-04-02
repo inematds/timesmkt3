@@ -3933,23 +3933,14 @@ bot.start({
               if (!fs.existsSync(logFile)) continue;
               const logContent = fs.readFileSync(logFile, 'utf-8');
 
-              // Find the highest-order phase present in the log
-              let highestFound = null;
-              for (const phase of pn.phases) {
-                if (logContent.includes(phase.key)) {
-                  if (!highestFound || (phase.order || 0) > (highestFound.order || 0)) {
-                    highestFound = phase;
-                  }
-                }
-              }
-
-              // Only notify the latest phase (not all phases at once)
-              if (highestFound) {
-                const phaseKey = `phase:${relDir}:${pn.file}:${highestFound.key}`;
-                if (!monitoredSignals.has(phaseKey)) {
-                  monitoredSignals.add(phaseKey);
-                  bot.api.sendMessage(chatId, highestFound.msg).catch(() => {});
-                }
+              // Sort phases by order, send ALL in sequence but only once each
+              const sorted = [...pn.phases].sort((a, b) => (a.order || 0) - (b.order || 0));
+              for (const phase of sorted) {
+                const phaseKey = `phase:${relDir}:${pn.file}:${phase.key}`;
+                if (monitoredSignals.has(phaseKey)) continue;
+                if (!logContent.includes(phase.key)) break; // stop at first missing — preserves order
+                monitoredSignals.add(phaseKey);
+                bot.api.sendMessage(chatId, phase.msg).catch(() => {});
               }
             }
           }
