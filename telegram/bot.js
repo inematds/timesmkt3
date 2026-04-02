@@ -4029,7 +4029,7 @@ bot.start({
                     }
                   }
                   if (num === 3) {
-                    // Stage 3: send rendered videos as downloadable files
+                    // Stage 3: send rendered videos BEFORE advancing to stage 4
                     const videoDir = path.join(campDir, 'video');
                     if (fs.existsSync(videoDir)) {
                       for (const f of fs.readdirSync(videoDir)) {
@@ -4037,11 +4037,9 @@ bot.start({
                           const videoPath = path.join(videoDir, f);
                           const sizeMB = fs.statSync(videoPath).size / (1024 * 1024);
                           if (sizeMB > 50) {
-                            // Too large for Telegram — send path info
-                            bot.api.sendMessage(chatId, `🎬 <b>${f}</b> (${sizeMB.toFixed(1)}MB — muito grande para Telegram)\nUse <code>/enviar ${path.basename(path.dirname(campDir))} videos</code>`, { parse_mode: 'HTML' }).catch(() => {});
+                            await bot.api.sendMessage(chatId, `🎬 <b>${f}</b> (${sizeMB.toFixed(1)}MB — muito grande para Telegram)\nUse <code>/enviar ${path.basename(path.dirname(campDir))} videos</code>`, { parse_mode: 'HTML' }).catch(() => {});
                           } else {
-                            // Send as video (streamable) with fallback to document
-                            bot.api.sendVideo(chatId, new InputFile(videoPath), {
+                            await bot.api.sendVideo(chatId, new InputFile(videoPath), {
                               caption: `🎬 ${f} (${sizeMB.toFixed(1)}MB)`,
                               supports_streaming: true,
                             }).catch(() => {
