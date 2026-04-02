@@ -3911,17 +3911,19 @@ bot.start({
             const logsDir2 = path.join(campDir, 'logs');
             const phaseNotifs = [
               { file: 'video_pro.log', phases: [
-                { key: 'Generating narration', msg: '🎙️ Gerando narração...', order: 1 },
-                { key: 'Analyzing narration', msg: '⏱️ Analisando timing do áudio...', order: 2 },
-                { key: 'Photography Director', msg: '📷 Diretor de Fotografia...', order: 3 },
-                { key: 'Creating scene plan', msg: '🎬 Criando plano de cenas...', order: 4 },
-                { key: 'Typography validation', msg: '🔤 Validando tipografia...', order: 5 },
-                { key: 'Starting video render', msg: '🎥 Renderizando vídeo Pro...', order: 6 },
-                { key: 'Completed successfully', msg: '✅ Vídeo Pro concluído!', order: 7 },
+                { key: 'Generating narration', msg: '🎙️ <b>Pro:</b> Gerando narração...', order: 1 },
+                { key: 'Analyzing narration', msg: '⏱️ <b>Pro:</b> Analisando timing do áudio...', order: 2 },
+                { key: 'Photography Director', msg: '📷 <b>Pro:</b> Diretor de Fotografia...', order: 3 },
+                { key: 'Creating scene plan', msg: '🎬 <b>Pro:</b> Criando plano de cenas...', order: 4 },
+                { key: 'Typography validation', msg: '🔤 <b>Pro:</b> Validando tipografia...', order: 5 },
+                { key: 'Starting video render', msg: '🎥 <b>Pro:</b> Renderizando...', order: 6 },
+                { key: 'Completed successfully', msg: '✅ <b>Pro:</b> Concluído!', order: 7 },
               ]},
               { file: 'video_quick.log', phases: [
-                { key: 'Starting video render', msg: '🎥 Renderizando vídeo Quick...' },
-                { key: 'render_start', msg: '🎥 Renderizando vídeo Quick...' },
+                { key: 'Invoking Claude CLI', msg: '🎬 <b>Quick:</b> Criando plano de cenas...', order: 1 },
+                { key: 'Starting video render', msg: '🎥 <b>Quick:</b> Renderizando...', order: 2 },
+                { key: 'render_start', msg: '🎥 <b>Quick:</b> Renderizando...', order: 2 },
+                { key: 'Completed successfully', msg: '✅ <b>Quick:</b> Concluído!', order: 3 },
               ]},
               { file: 'ad_creative_designer.log', phases: [
                 { key: 'Generating image', msg: '🖼️ Gerando imagens...' },
