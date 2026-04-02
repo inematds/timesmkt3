@@ -58,8 +58,23 @@ async function sendPhoto(filePath, caption) {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// Generate image via Pollinations
-async function generateImage(prompt, outputPath, ratio = '1:1') {
+// Piramyd API key
+const PIRAMYD_API_KEY = getEnvVar('PIRAMYD_API_KEY') || '';
+
+// Providers pool — rotates to avoid rate limits (~10/min each)
+const providers = [];
+providers.push({ name: 'Pollinations', generate: generatePollinations });
+if (PIRAMYD_API_KEY) providers.push({ name: 'Piramyd', generate: generatePiramyd });
+let _providerIdx = 0;
+
+function getNextProvider() {
+  const p = providers[_providerIdx % providers.length];
+  _providerIdx++;
+  return p;
+}
+
+// Generate image via Pollinations (free, FLUX Schnell)
+async function generatePollinations(prompt, outputPath, ratio = '1:1') {
   const { default: fetch } = await import('node-fetch');
 
   const dims = ratio === '9:16' ? { w: 576, h: 1024 } : { w: 768, h: 768 };
@@ -73,6 +88,60 @@ async function generateImage(prompt, outputPath, ratio = '1:1') {
   const buffer = Buffer.from(await response.arrayBuffer());
   fs.writeFileSync(outputPath, buffer);
   return outputPath;
+}
+
+// Generate image via Piramyd API (OpenAI-compatible, DALL-E)
+async function generatePiramyd(prompt, outputPath, ratio = '1:1') {
+  const { default: fetch } = await import('node-fetch');
+
+  const sizeMap = { '1:1': '1024x1024', '9:16': '1024x1792', '16:9': '1792x1024' };
+  const size = sizeMap[ratio] || '1024x1024';
+
+  const response = await fetch('https://api.piramyd.cloud/v1/images/generations', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${PIRAMYD_API_KEY}`,
+    },
+    body: JSON.stringify({ model: 'dall-e-3', prompt, n: 1, size }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text().catch(() => '');
+    throw new Error(`Piramyd ${response.status}: ${err.slice(0, 200)}`);
+  }
+
+  const result = await response.json();
+  const imgUrl = result.data?.[0]?.url;
+  if (!imgUrl) throw new Error('Piramyd: no image URL');
+
+  // Download the image
+  const imgResp = await fetch(imgUrl);
+  const buffer = Buffer.from(await imgResp.arrayBuffer());
+  fs.writeFileSync(outputPath, buffer);
+  return outputPath;
+}
+
+// Unified generate with rotation + fallback
+async function generateImage(prompt, outputPath, ratio = '1:1') {
+  const primary = getNextProvider();
+  try {
+    await primary.generate(prompt, outputPath, ratio);
+    return { provider: primary.name, path: outputPath };
+  } catch (e) {
+    console.log(`    ${primary.name} falhou: ${e.message.slice(0, 80)} — tentando fallback...`);
+    // Try other providers as fallback
+    for (const fallback of providers) {
+      if (fallback.name === primary.name) continue;
+      try {
+        await fallback.generate(prompt, outputPath, ratio);
+        return { provider: fallback.name, path: outputPath };
+      } catch (e2) {
+        console.log(`    ${fallback.name} também falhou: ${e2.message.slice(0, 80)}`);
+      }
+    }
+    throw new Error(`Todos os providers falharam para: ${prompt.slice(0, 60)}`);
+  }
 }
 
 function getActiveCampaigns(filterCampaign, force) {
@@ -229,14 +298,14 @@ async function main() {
       fs.writeFileSync(outputPath.replace(/\.[^.]+$/, '_prompt.txt'), p.prompt);
 
       try {
-        await generateImage(p.prompt, outputPath, p.ratio);
+        const result = await generateImage(p.prompt, outputPath, p.ratio);
         const sizeMB = (fs.statSync(outputPath).size / (1024 * 1024)).toFixed(1);
-        console.log(`    ✅ Salvo (${sizeMB}MB)`);
+        console.log(`    ✅ ${result.provider} — salvo (${sizeMB}MB)`);
         totalGenerated++;
 
         // Send to Telegram
-        await sendPhoto(outputPath, `🖼️ ${camp.name} [${j + 1}/${prompts.length}] ${p.format} ${p.ratio}`);
-        await sleep(2000); // Rate limit Pollinations
+        await sendPhoto(outputPath, `🖼️ ${camp.name} [${j + 1}/${prompts.length}] ${p.format} ${p.ratio} via ${result.provider}`);
+        await sleep(3000); // Rate limit between requests
       } catch (e) {
         console.error(`    ❌ Falhou: ${e.message}`);
         await sendMessage(`❌ ${camp.name} imagem ${j + 1}: ${e.message.slice(0, 100)}`);

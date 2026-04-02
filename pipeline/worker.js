@@ -20,6 +20,7 @@ require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: t
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const kieProvider = require('./generate-image-kie');
 const pollinationsProvider = require('./generate-image-pollinations');
+const piramydProvider = require('./generate-image-piramyd');
 
 // Video renderer dispatcher — Remotion for Pro, ffmpeg for Quick (fallback)
 const RENDER_FFMPEG = path.resolve(__dirname, 'render-video-ffmpeg.js');
@@ -46,7 +47,21 @@ const FREE_IMAGE_PROVIDER = (process.env.FREE_IMAGE_PROVIDER || 'pexels').toLowe
 function getImageProvider(jobProvider) {
   const p = (jobProvider || IMAGE_PROVIDER || 'kie').toLowerCase();
   if (p === 'pollinations') return pollinationsProvider;
+  if (p === 'piramyd') return piramydProvider;
   return kieProvider;
+}
+
+// Rotating provider pool — cycles through multiple providers to avoid rate limits
+const ROTATING_PROVIDERS = ['pollinations', 'piramyd'].filter(p => {
+  if (p === 'piramyd') return !!process.env.PIRAMYD_API_KEY;
+  return true;
+});
+let _rotatingIdx = 0;
+function getRotatingProvider() {
+  if (ROTATING_PROVIDERS.length === 0) return pollinationsProvider;
+  const p = ROTATING_PROVIDERS[_rotatingIdx % ROTATING_PROVIDERS.length];
+  _rotatingIdx++;
+  return getImageProvider(p);
 }
 
 /**
