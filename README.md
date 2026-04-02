@@ -1,43 +1,44 @@
-# ITAGMKT v4.2.6
+# ITAGMKT v4.3
 
 **INEMA Time de Agentes de Marketing** — sistema de automacao de conteudo para marketing digital usando agentes de IA coordenados por um bot Telegram.
 
 O sistema pesquisa, cria narrativa, gera imagens, produz videos, adapta copy para cada plataforma e publica — tudo automatizado com aprovacoes humanas em cada etapa.
 
 > Documentacao tecnica completa em [`CLAUDE.md`](CLAUDE.md)
+> Fluxo detalhado em [`doc/fluxo-pipeline-v4.md`](doc/fluxo-pipeline-v4.md)
 
 ---
 
 ## Pipeline — 5 Estagios
 
 ```
-Usuario define campanha no Telegram
-    |
-    v
-[Stage 1] Estrategia & Narrativa
-    Research Agent -> Diretor Criativo -> Copywriter
-    >>> aprovacao 1 (brief + narrativa)
-    |
-    v
-[Stage 2] Imagens
-    Ad Creative Designer
-    >>> aprovacao 2 (imagens estaticas)
-    |
-    v
-[Stage 3] Video
-    Video Quick (default, 10-20s) + Video Pro (sob demanda, 30-60s) — independentes, podem rodar juntos
-    >>> aprovacao 3 (video + selecao de plataformas)
-    |
-    v
-[Stage 4] Plataformas
-    Instagram + YouTube + TikTok + Facebook + Threads + LinkedIn
-    (so rodam as plataformas selecionadas)
-    >>> aprovacao 4 (copy nativo por plataforma)
-    |
-    v
-[Stage 5] Distribuicao
-    Upload Supabase -> Agendar -> Publicar
-    >>> aprovacao 5 (publicar)
+┌─────────────────────────────────────────────────────────┐
+│  STAGE 1 — Brief & Narrativa                           │
+│  Research Agent (Tavily)                                │
+│  Creative Director → creative_brief.json                │
+│  Copywriter → narrative.json                            │
+│  [APROVACAO]                                            │
+├─────────────────────────────────────────────────────────┤
+│  STAGE 2 — Imagens                                      │
+│  Se fonte=api: gera imagens (KIE/Pollinations)          │
+│  Ad Creative Designer (Claude + Playwright)             │
+│  → ads/*.png (carousel + stories)                       │
+│  [APROVACAO]                                            │
+├─────────────────────────────────────────────────────────┤
+│  STAGE 3 — Video                                        │
+│  Quick: slideshow 10-20s (sempre roda)                  │
+│  Pro: 30-70s cinematografico (sob demanda)              │
+│    Narracao → Photography Dir → Scene Plan → Render     │
+│  [APROVACAO]                                            │
+├─────────────────────────────────────────────────────────┤
+│  STAGE 4 — Plataformas                                  │
+│  Instagram/YouTube/TikTok/Facebook/Threads/LinkedIn     │
+│  [APROVACAO]                                            │
+├─────────────────────────────────────────────────────────┤
+│  STAGE 5 — Distribuicao                                 │
+│  Upload Supabase → Publish MD → Posting                 │
+│  [APROVACAO FINAL]                                      │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -119,10 +120,26 @@ Classificacao automatica:
 | Relacao | Independentes — podem rodar juntos na mesma campanha | Independentes — podem rodar juntos na mesma campanha |
 | Trigger | Sempre roda (skip_video para pular) | `video_mode: 'pro'` no payload |
 | Duracao | 10-20s | 30-60s |
-| Imagens | Usa PNGs do Designer (ads/) | Gera proprias (API/brand/free) |
+| Imagens | Usa PNGs do Designer (ads/) | Usa imgs/ (raw API) e assets/ (marca) — nunca ads/ |
 | Narracao | Opcional | Obrigatoria |
 | Musica | Opcional | Sim |
 | Fluxo | Direto | Rascunho -> aprovacao -> final |
+| Texto | Topo ou centro (nunca em baixo) | Topo ou centro (nunca em baixo) |
+
+---
+
+## Toggle Simples / Premium
+
+Dois agentes suportam modo simples (rapido) e premium (qualidade maxima):
+
+| Agente | Simples (default) | Premium |
+|---|---|---|
+| Photography Director | Sonnet + arquivos injetados (~1-2min) | Opus + le 8 arquivos (~5-8min) |
+| Scene Plan | Sonnet + photo plan injetado (~1-2min) | Opus + prompt extenso completo (~5-8min) |
+
+Comandos no briefing:
+- `foto simples` / `foto premium` — controla o Photography Director
+- `videoplan simples` / `videoplan premium` — controla o Scene Plan
 
 ---
 
@@ -188,6 +205,17 @@ O sistema escolhe automaticamente baseado nas API keys configuradas.
 | OpenAI TTS | $0.015/1k chars | Alta |
 | MiniMax | ~$0.01/1k chars | Alta |
 | **Piper (local)** | Gratis | Boa |
+
+#### Vozes ElevenLabs (default: rachel)
+
+| Voz | Estilo | Uso recomendado |
+|---|---|---|
+| `rachel` | Calorosa, emocional (F) | Campanhas emocionais, storytelling **(padrao)** |
+| `bella` | Amigavel, clara (F) | Produto, tutorial |
+| `domi` | Forte, confiante (F) | Empoderamento, lancamentos |
+| `antoni` | Profissional (M) | Corporativo, B2B |
+| `josh` | Profundo, quente (M) | Luxo, premium |
+| `arnold` | Energetico, ousado (M) | Promocoes, urgencia |
 
 ### Selecao automatica
 
@@ -318,13 +346,49 @@ itagmkt/
 | `/campanha <nome>` | Inicia pipeline completo |
 | `/projetos` | Lista projetos |
 | `/projeto <nome>` | Seleciona projeto ativo |
-| `/status` | Status do pipeline |
+| `/status` | Status do pipeline com fases detalhadas |
 | `/outputs` | Lista campanhas geradas |
 | `/relatorio <campanha>` | Resumo + inventario de arquivos |
 | `/enviar <campanha> [tipo]` | Recebe arquivos (imagens, videos, audio, copy, tudo) |
 | `/modos [etapa] [humano\|agente\|auto]` | Configura modos de aprovacao |
-| `/rerun <campanha> [stage]` | Reprocessa stages de campanhas existentes |
+| `/rerun <campanha> [stage]` | Reprocessa stages (mostra config antes de rodar) |
 | `/aprovar` | Re-verifica aprovacoes pendentes |
+
+### Painel de Briefing
+
+Ao iniciar campanha, o bot mostra tabela de config:
+
+```
+Config       Atual         Opcoes
+──────────── ───────────── ─────────────
+  Fonte imgs brand          brand / api / free / screenshot
+  Provider   KIE            kie / pollinations
+  Modelo     Z-Image        z-image / flux / flux-2 / seedream
+  Quick      sim            sim / sem quick
+  Pro        nao            pro
+  Narrador   rachel         rachel / bella / domi / antoni / josh / arnold
+  Duracao    60s            30 / 60
+  Estilo     inema_hightech inema_hightech / 01_hero_film
+  Dir.Foto   simples        simples / premium
+  Scene plan simples        simples / premium
+  Fundo quick escuro        escuro / blur
+  Idioma     pt-BR          pt-BR / en
+  Aprovacao  humano         humano / auto
+  Notif      on             on / off
+```
+
+Digite o comando para alterar (ex: `pro`, `narrador bella`, `modelo flux`). `sim` para rodar, `nao` para cancelar.
+
+### /rerun — Reprocessar Etapas
+
+```bash
+/rerun c0038 3 pro              # refazer video pro
+/rerun c0038 2 api              # refazer imagens com API
+/rerun c0038 3 pro cleanplan    # limpar planos e refazer
+/rerun c0038 3 pro cleanall     # limpar tudo (plan+img+audio)
+```
+
+Flags: `cleanplan`, `cleanimg`, `cleanaudio`, `cleanall`
 
 ---
 
@@ -376,10 +440,24 @@ THREADS_USER_ID=
 THREADS_ACCESS_TOKEN=
 ```
 
-### 4. Rodar o bot
+### 4. Rodar o bot (PM2)
 
 ```bash
-node telegram/bot.js
+# Iniciar
+npx pm2 start telegram/bot.js --name bot
+npx pm2 start pipeline/worker.js --name worker
+
+# Reiniciar (apos alterar bot.js ou worker.js)
+npx pm2 restart bot
+npx pm2 restart worker
+
+# Ver status / logs
+npx pm2 list
+npx pm2 logs bot --lines 30
+npx pm2 logs worker --lines 30
+
+# Limpar tudo
+npx pm2 delete all
 ```
 
 Depois no Telegram: `/campanha minha_campanha`
@@ -387,10 +465,7 @@ Depois no Telegram: `/campanha minha_campanha`
 ### 5. Rodar pipeline manualmente
 
 ```bash
-# Terminal 1 — worker
-node pipeline/worker.js
-
-# Terminal 2 — enfileirar
+# Enfileirar com payload
 node pipeline/orchestrator.js --file pipeline/payloads/coldbrew_demo.json
 ```
 
