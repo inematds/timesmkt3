@@ -137,9 +137,20 @@ const STAGES = {
   stage5: ['distribution_agent'],
 };
 
-function getRequestedVideoAgents(payload) {
-  const wantQuick = payload.video_quick !== false;
+function hasGeneratedAdAssets(payload, options = {}) {
+  const projectRoot = options.projectRoot || path.resolve(__dirname, '..');
+  const outputDir = payload.output_dir || `${payload.project_dir}/outputs/${payload.task_name}`;
+  const adsDir = path.resolve(projectRoot, outputDir, 'ads');
+  if (!fs.existsSync(adsDir)) return false;
+  return fs.readdirSync(adsDir).some((file) => /\.(png|jpg|jpeg)$/i.test(file));
+}
+
+function getRequestedVideoAgents(payload, options = {}) {
+  let wantQuick = payload.video_quick !== false;
   const wantPro = payload.video_pro === true || payload.video_mode === 'pro' || payload.video_mode === 'both';
+  if (payload.skip_image && wantQuick && !hasGeneratedAdAssets(payload, options)) {
+    wantQuick = false;
+  }
   return {
     wantQuick,
     wantPro,
@@ -472,6 +483,79 @@ function ensureSkippedResearchArtifacts(payload, options = {}) {
   return { outputDir, sourceFolder, created };
 }
 
+function ensureSkippedImageArtifacts(payload, options = {}) {
+  if (!payload?.skip_image) return null;
+
+  const projectRoot = options.projectRoot || path.resolve(__dirname, '..');
+  const outputDir = payload.output_dir || `${payload.project_dir}/outputs/${payload.task_name}`;
+  const adsDir = path.resolve(projectRoot, outputDir, 'ads');
+  fs.mkdirSync(adsDir, { recursive: true });
+
+  const writes = [
+    [
+      'layout.json',
+      JSON.stringify({
+        simulated: true,
+        generated_from: 'skip_image',
+        task_name: payload.task_name,
+        note: 'Nenhum criativo estático foi renderizado porque skip_image está ativo.',
+        images: [],
+      }, null, 2),
+    ],
+    [
+      'skip_image.json',
+      JSON.stringify({
+        simulated: true,
+        output_dir: outputDir,
+        ts: Date.now(),
+        reason: 'skip_image ativo',
+      }, null, 2),
+    ],
+  ];
+
+  const created = [];
+  for (const [relativePath, content] of writes) {
+    const target = path.join(adsDir, relativePath);
+    if (fs.existsSync(target)) continue;
+    fs.writeFileSync(target, content);
+    created.push(path.join('ads', relativePath));
+  }
+
+  return { outputDir, created };
+}
+
+function ensureSkippedVideoArtifacts(payload, options = {}) {
+  if (!payload?.skip_video) return null;
+
+  const projectRoot = options.projectRoot || path.resolve(__dirname, '..');
+  const outputDir = payload.output_dir || `${payload.project_dir}/outputs/${payload.task_name}`;
+  const videoDir = path.resolve(projectRoot, outputDir, 'video');
+  fs.mkdirSync(videoDir, { recursive: true });
+
+  const writes = [
+    [
+      'skip_video.json',
+      JSON.stringify({
+        simulated: true,
+        output_dir: outputDir,
+        ts: Date.now(),
+        reason: 'skip_video ativo',
+        videos: [],
+      }, null, 2),
+    ],
+  ];
+
+  const created = [];
+  for (const [relativePath, content] of writes) {
+    const target = path.join(videoDir, relativePath);
+    if (fs.existsSync(target)) continue;
+    fs.writeFileSync(target, content);
+    created.push(path.join('video', relativePath));
+  }
+
+  return { outputDir, created };
+}
+
 // ── Job enqueue ───────────────────────────────────────────────────────────────
 
 async function enqueueJobs(payload) {
@@ -499,13 +583,26 @@ async function enqueueJobs(payload) {
       console.log(`  🧩 skip_research fallback prepared: ${result.created.join(', ')}`);
     }
   }
+  if (skip_image) {
+    const result = ensureSkippedImageArtifacts(payload);
+    if (result?.created?.length) {
+      console.log(`  🧩 skip_image fallback prepared: ${result.created.join(', ')}`);
+    }
+  }
+  if (skip_video) {
+    const result = ensureSkippedVideoArtifacts(payload);
+    if (result?.created?.length) {
+      console.log(`  🧩 skip_video fallback prepared: ${result.created.join(', ')}`);
+    }
+  }
 
   // Resolve video agents based on video_quick / video_pro flags
   const { wantQuick, wantPro } = getRequestedVideoAgents(payload);
   if (!skip_video) {
     if (wantQuick && wantPro) console.log('  [video] Running both video_quick + video_pro');
     else if (wantPro) console.log('  [video] Running video_pro only');
-    else console.log('  [video] Running video_quick');
+    else if (wantQuick) console.log('  [video] Running video_quick');
+    else console.log('  [video] No video agents active after skip/fallback rules');
   }
 
   for (const agent of AGENTS) {
@@ -625,6 +722,12 @@ async function enqueueStage(payload, agentNames) {
   if (skip_research) {
     ensureSkippedResearchArtifacts(payload);
   }
+  if (skip_image) {
+    ensureSkippedImageArtifacts(payload);
+  }
+  if (skip_video) {
+    ensureSkippedVideoArtifacts(payload);
+  }
 
   let resolvedNames = [...agentNames];
   if (agentNames.includes('video_quick')) {
@@ -639,6 +742,7 @@ async function enqueueStage(payload, agentNames) {
     if (wantQuick && wantPro) console.log('  [video] Running both video_quick + video_pro');
     else if (wantPro) console.log('  [video] Running video_pro only');
     else if (wantQuick) console.log('  [video] Running video_quick');
+    else console.log('  [video] No video agents active after skip/fallback rules');
   }
 
   const stageAgentDefs = AGENTS.filter(a => resolvedNames.includes(a.name));
@@ -738,5 +842,7 @@ if (require.main === module) {
     validatePayload,
     validateAgentGraph,
     ensureSkippedResearchArtifacts,
+    ensureSkippedImageArtifacts,
+    ensureSkippedVideoArtifacts,
   };
 }

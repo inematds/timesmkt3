@@ -129,3 +129,70 @@ test('startContinuousMonitor advances stage1 when research is skipped and copywr
     global.setInterval = originalSetInterval;
   }
 });
+
+test('startContinuousMonitor advances stage3 when skip_image disables quick video', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-monitor-stage3-'));
+  const campDir = path.join(projectRoot, 'prj', 'inema', 'outputs', 'camp-03');
+  fs.mkdirSync(path.join(campDir, 'logs'), { recursive: true });
+  fs.mkdirSync(path.join(campDir, 'ads'), { recursive: true });
+  fs.writeFileSync(path.join(campDir, 'chat_context.json'), JSON.stringify({ chatId: '777' }));
+
+  const monitoredSignals = new Set([
+    'stage_done:prj/inema/outputs/camp-03:1',
+    'stage_done:prj/inema/outputs/camp-03:2',
+  ]);
+  const sessionState = {
+    runningTask: { outputDir: 'prj/inema/outputs/camp-03' },
+    campaignV3: {
+      payload: {
+        skip_image: true,
+        video_quick: true,
+        video_pro: false,
+        approval_modes: { stage3: 'auto' },
+      },
+      notifications: true,
+    },
+  };
+
+  const originalSetInterval = global.setInterval;
+  const enqueued = [];
+  global.setInterval = (fn) => {
+    Promise.resolve().then(fn);
+    return { fake: true };
+  };
+
+  try {
+    startContinuousMonitor({
+      bot: {
+        api: {
+          sendMessage: async () => {},
+          sendDocument: async () => {},
+          sendVideo: async () => {},
+        },
+      },
+      session: {
+        get: () => sessionState,
+        clearRunningTask: () => {},
+        clearCampaignV3: () => {},
+        setCampaignV3Stage: (_chatId, stage) => { sessionState.campaignV3.currentStage = stage; },
+      },
+      projectRoot,
+      monitoredSignals,
+      readChatContext: (dir) => JSON.parse(fs.readFileSync(path.join(dir, 'chat_context.json'), 'utf-8')),
+      writeImageApproval: () => {},
+      writeVideoApproval: () => {},
+      sendImageApprovalRequest: async () => {},
+      sendVideoApprovalRequest: async () => {},
+      sendStageApprovalRequest: async () => {},
+      enqueueStage: async (_payload, nextAgents) => { enqueued.push(nextAgents); },
+      stages: { stage4: ['platform_instagram'] },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    assert.equal(sessionState.campaignV3.currentStage, 4);
+    assert.deepEqual(enqueued[0], ['platform_instagram']);
+  } finally {
+    global.setInterval = originalSetInterval;
+  }
+});

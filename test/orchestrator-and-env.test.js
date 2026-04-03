@@ -6,7 +6,13 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { validatePayload, validateAgentGraph, ensureSkippedResearchArtifacts } = require('../pipeline/orchestrator');
+const {
+  validatePayload,
+  validateAgentGraph,
+  ensureSkippedResearchArtifacts,
+  ensureSkippedImageArtifacts,
+  ensureSkippedVideoArtifacts,
+} = require('../pipeline/orchestrator');
 
 test('validateAgentGraph passes for the current agent graph', () => {
   assert.deepEqual(validateAgentGraph(), []);
@@ -68,4 +74,31 @@ test('ensureSkippedResearchArtifacts creates simulated stage1 inputs', () => {
   assert.equal(creative.simulated, true);
   assert.ok(Array.isArray(research.ad_hooks));
   assert.ok(Array.isArray(creative.approved_ctas));
+});
+
+test('ensureSkippedImageArtifacts and ensureSkippedVideoArtifacts create simulated stage outputs', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-skip-stages-'));
+
+  const imageResult = ensureSkippedImageArtifacts({
+    task_name: 'campanha_demo',
+    project_dir: 'prj/demo',
+    output_dir: 'prj/demo/outputs/campanha_demo',
+    skip_image: true,
+  }, { projectRoot });
+
+  const videoResult = ensureSkippedVideoArtifacts({
+    task_name: 'campanha_demo',
+    project_dir: 'prj/demo',
+    output_dir: 'prj/demo/outputs/campanha_demo',
+    skip_video: true,
+  }, { projectRoot });
+
+  assert.ok(imageResult.created.includes(path.join('ads', 'layout.json')));
+  assert.ok(videoResult.created.includes(path.join('video', 'skip_video.json')));
+
+  const layout = JSON.parse(fs.readFileSync(path.join(projectRoot, 'prj', 'demo', 'outputs', 'campanha_demo', 'ads', 'layout.json'), 'utf-8'));
+  const video = JSON.parse(fs.readFileSync(path.join(projectRoot, 'prj', 'demo', 'outputs', 'campanha_demo', 'video', 'skip_video.json'), 'utf-8'));
+
+  assert.equal(layout.simulated, true);
+  assert.equal(video.simulated, true);
 });

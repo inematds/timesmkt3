@@ -172,12 +172,15 @@ function startContinuousMonitor(deps) {
             return true;
           });
           if (num === 3) {
-            const vq = cv.payload?.video_quick !== false;
+            const adsDir = path.join(campDir, 'ads');
+            const hasAdImages = fs.existsSync(adsDir)
+              && fs.readdirSync(adsDir).some((file) => /\.(png|jpg|jpeg)$/i.test(file));
+            const vq = cv.payload?.video_quick !== false && (!cv.payload?.skip_image || hasAdImages);
             const vp = cv.payload?.video_pro === true;
             activeAgents = [];
             if (vq) activeAgents.push('video_quick');
             if (vp) activeAgents.push('video_pro');
-            if (activeAgents.length === 0) activeAgents = ['video_quick'];
+            if (activeAgents.length === 0 && !cv.payload?.skip_video && !cv.payload?.skip_image) activeAgents = ['video_quick'];
             activeAgents = activeAgents.filter((agent) => !cv.payload?.skip_video || !['video_quick', 'video_pro'].includes(agent));
           }
           if (num === 4) {
