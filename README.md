@@ -443,24 +443,26 @@ THREADS_ACCESS_TOKEN=
 ### 4. Rodar o bot (PM2)
 
 ```bash
-# Iniciar
-npx pm2 start telegram/bot.js --name bot
-npx pm2 start pipeline/worker.js --name worker
+# Iniciar via ecosystem
+pm2 start ecosystem.config.cjs
+pm2 save
+pm2 startup
 
 # Reiniciar (apos alterar bot.js ou worker.js)
-npx pm2 restart bot
-npx pm2 restart worker
+pm2 restart ecosystem.config.cjs
 
 # Ver status / logs
-npx pm2 list
-npx pm2 logs bot --lines 30
-npx pm2 logs worker --lines 30
+pm2 list
+pm2 logs timesmkt3-bot --lines 30
+pm2 logs timesmkt3-worker --lines 30
 
 # Limpar tudo
-npx pm2 delete all
+pm2 delete all
 ```
 
 Depois no Telegram: `/campanha minha_campanha`
+
+Deploy de VPS mais direto em [deploy/DEPLOY.md](./deploy/DEPLOY.md).
 
 ### 5. Rodar pipeline manualmente
 
