@@ -30,6 +30,7 @@ const { startContinuousMonitor } = require('./bot-monitor');
 const { createBotRuntime } = require('./bot-runtime');
 const { registerStatusCommand } = require('./bot-status');
 const { registerRerunCommands } = require('./bot-rerun');
+const { createPendingTextHandlers } = require('./bot-text-pending');
 const {
   createCampaignOutputHandlers,
   detectProjectFromText,
@@ -865,66 +866,7 @@ bot.on('message:text', async (ctx) => {
   const chatId = String(ctx.chat.id);
   const s = session.get(chatId);
 
-  // ── Image generation error decision ────────────────────────────────────
-  if (s.pendingImageError) {
-    const lower = text.toLowerCase().trim();
-    const { outputDir } = s.pendingImageError;
-    const decisionPath = path.resolve(PROJECT_ROOT, outputDir, 'imgs', 'error_decision.json');
-
-    let action = null;
-    let newSource = null;
-    if (/^(avan[çc]|avanc|continuar|sem imagem)/.test(lower)) action = 'advance';
-    else if (/^(tentar|retry|repetir|novamente)/.test(lower))  action = 'retry';
-    else if (/^(cancel|cancelar|nao|não|para)/.test(lower))    action = 'cancel';
-    else if (/^(outra|trocar|mudar|fonte|source)/.test(lower) || /^(api|free|gratis|brand|marca|folder|pasta)/.test(lower)) {
-      // Parse new image source from the message
-      if (/api/.test(lower)) newSource = 'api';
-      else if (/free|gratis|stock/.test(lower)) newSource = 'free';
-      else if (/brand|marca/.test(lower)) newSource = 'brand';
-      else if (/folder|pasta/.test(lower)) {
-        newSource = 'folder';
-        // Try to extract folder path from message
-        const folderMatch = text.match(/(?:folder|pasta)\s+(\S+)/i);
-        if (folderMatch) {
-          // Store folder path in decision for worker to pick up
-          action = 'change_source';
-          fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
-          fs.writeFileSync(decisionPath, JSON.stringify({ action, image_source: 'folder', image_folder: folderMatch[1], ts: Date.now() }));
-          session.clearPendingImageError(chatId);
-          await ctx.reply(`🔄 Trocando para pasta: <code>${folderMatch[1]}</code>`, { parse_mode: 'HTML' });
-          return;
-        }
-      }
-      if (newSource && !action) {
-        action = 'change_source';
-        fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
-        fs.writeFileSync(decisionPath, JSON.stringify({ action, image_source: newSource, ts: Date.now() }));
-        session.clearPendingImageError(chatId);
-        const sourceLabels = { api: 'IA (API)', free: 'banco grátis', brand: 'assets da marca', folder: 'pasta' };
-        await ctx.reply(`🔄 Trocando fonte de imagens para: <b>${sourceLabels[newSource]}</b>`, { parse_mode: 'HTML' });
-        return;
-      }
-    }
-
-    if (action) {
-      fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
-      fs.writeFileSync(decisionPath, JSON.stringify({ action, ts: Date.now() }));
-      session.clearPendingImageError(chatId);
-      const msgs = {
-        advance:  '▶️ Avançando sem imagens — usando layout CSS.',
-        retry:    '🔄 Tentando gerar as imagens novamente...',
-        cancel:   '❌ Campanha cancelada.',
-      };
-      await ctx.reply(msgs[action]);
-      return;
-    }
-    // unknown reply — show options again
-    await ctx.reply(
-      'Responda:\n• <b>avançar</b> — continuar sem imagens (CSS)\n• <b>tentar novamente</b> — repetir a geração\n• <b>outra fonte</b> — trocar: api, free, brand, pasta xxx\n• <b>cancelar</b>',
-      { parse_mode: 'HTML' }
-    );
-    return;
-  }
+  if (await handlePendingImageError(ctx, chatId, s, text)) return;
 
   // ── V3 stage approval ──────────────────────────────────────────────────
   if (s.campaignV3?.pendingApproval) {
@@ -932,427 +874,11 @@ bot.on('message:text', async (ctx) => {
     if (handled) return;
   }
 
-  // ── Video storyboard approval ───────────────────────────────────────────
-  if (s.pendingVideoApproval) {
-    const lower = text.toLowerCase().trim();
-    const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda|rodar|renderiza|renderizar)/.test(lower);
-    const isCancel  = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);
+  if (await handlePendingVideoApproval(ctx, chatId, s, text)) return;
 
-    if (isConfirm) {
-      const { outputDir } = s.pendingVideoApproval;
-      session.clearPendingVideoApproval(chatId);
-      writeVideoApproval(PROJECT_ROOT, outputDir, true);
-      await ctx.reply('Aprovado! Renderizando os vídeos agora...');
-      return;
-    }
+  if (await handlePendingRerun(ctx, chatId, s, text)) return;
 
-    if (isCancel) {
-      const { outputDir } = s.pendingVideoApproval;
-      session.clearPendingVideoApproval(chatId);
-      writeVideoApproval(PROJECT_ROOT, outputDir, false);
-      await ctx.reply('Vídeos cancelados. Os outros arquivos da campanha continuam disponíveis.');
-      return;
-    }
-
-    // User wants to adjust — rewrite scene plans via Claude then re-show
-    if (lower.length > 10) {
-      const { outputDir, absOutputDir } = s.pendingVideoApproval;
-      await ctx.reply('Entendido — ajustando o roteiro...');
-
-      const planFiles = fs.existsSync(path.join(absOutputDir, 'video'))
-        ? fs.readdirSync(path.join(absOutputDir, 'video')).filter(f => f.endsWith('_scene_plan.json'))
-        : [];
-
-      const adjustPrompt = `Adjust the video scene plans based on this feedback: "${text}"
-
-Scene plan files to update:
-${planFiles.map(f => path.join(absOutputDir, 'video', f)).join('\n')}
-
-Read each scene plan, apply the feedback, and save the updated versions to the same file paths.
-Keep the same JSON structure. Only modify what the feedback requests.`;
-
-      runClaude(adjustPrompt, 'video_adjustment', (code) => {
-        if (code !== 0) {
-          ctx.reply('Erro ao ajustar o roteiro.');
-          return;
-        }
-        sendVideoApprovalRequest(ctx, chatId, outputDir).catch(() => {});
-      });
-      return;
-    }
-  }
-
-  // ── Confirmation replies for pending rerun ──────────────────────────────
-  if (s.pendingRerun) {
-    const lower = text.toLowerCase().trim();
-    const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda)/.test(lower);
-    const isCancel  = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);
-
-    if (isConfirm) {
-      const { payload, stages, campaignFolder } = s.pendingRerun;
-      session.clearPendingRerun(chatId);
-
-      const videoMode = payload.video_pro && payload.video_quick ? 'Quick + Pro'
-        : payload.video_pro ? 'Pro' : 'Quick';
-      session.setRunningTask(chatId, {
-        taskName: campaignFolder,
-        taskDate: payload.task_date,
-        outputDir: payload.output_dir,
-        startedAt: new Date().toISOString(),
-        rerun: true,
-        rerunStages: stages,
-        videoMode,
-      });
-
-      // Set campaignV3 so monitor can track phases and send notifications
-      session.setCampaignV3(chatId, {
-        payload,
-        outputDir: payload.output_dir,
-        approvalModes: payload.approval_modes || {},
-        notifications: payload.notifications !== false,
-      });
-      session.setCampaignV3Stage(chatId, Math.min(...stages) - 1);
-
-      // Clear monitoredSignals for re-processed stages + phases so monitor re-detects
-      for (const stageNum of stages) {
-        const sigKey = `stage_done:${payload.output_dir}:${stageNum}`;
-        monitoredSignals.delete(sigKey);
-        console.log(`[rerun] Cleared monitor signal: ${sigKey}`);
-      }
-      // Clear all phase signals for this campaign so they fire again
-      for (const sig of [...monitoredSignals]) {
-        if (sig.startsWith(`phase:${payload.output_dir}:`)) {
-          monitoredSignals.delete(sig);
-        }
-      }
-
-      const stageLabels = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
-      const label = stages.map(n => n === 3 ? `Video ${videoMode}` : stageLabels[n]).join(' + ');
-      await ctx.reply(`Reprocessando <b>${campaignFolder}</b> — ${label}...`, { parse_mode: 'HTML' });
-
-      // Apply cleanup flags
-      const absOutDir = path.resolve(PROJECT_ROOT, payload.output_dir);
-      if (payload.cleanFlags) {
-        if (payload.cleanFlags.plan) {
-          const videoDir = path.join(absOutDir, 'video');
-          if (fs.existsSync(videoDir)) {
-            for (const f of fs.readdirSync(videoDir)) {
-              if (f.endsWith('_scene_plan.json') || f.endsWith('_scene_plan_motion.json') || f === 'photography_plan.json') {
-                fs.unlinkSync(path.join(videoDir, f));
-              }
-            }
-            await ctx.reply('🗑️ Planos de cena limpos.').catch(() => {});
-          }
-        }
-        if (payload.cleanFlags.img) {
-          const imgsDir = path.join(absOutDir, 'imgs');
-          if (fs.existsSync(imgsDir)) {
-            for (const f of fs.readdirSync(imgsDir)) {
-              if (f.endsWith('.jpg') || f.endsWith('.png') || f.endsWith('.webp')) {
-                fs.unlinkSync(path.join(imgsDir, f));
-              }
-            }
-            // Also clean approval files
-            for (const f of ['approved.json', 'rejected.json', 'approval_needed.json', 'error_decision.json']) {
-              const fp = path.join(imgsDir, f);
-              if (fs.existsSync(fp)) fs.unlinkSync(fp);
-            }
-            await ctx.reply('🗑️ Imagens limpas.').catch(() => {});
-          }
-        }
-        if (payload.cleanFlags.audio) {
-          const audioDir = path.join(absOutDir, 'audio');
-          if (fs.existsSync(audioDir)) {
-            for (const f of fs.readdirSync(audioDir)) {
-              if (f.endsWith('.mp3') || f.endsWith('.wav') || f.endsWith('_timing.json')) {
-                fs.unlinkSync(path.join(audioDir, f));
-              }
-            }
-            await ctx.reply('🗑️ Áudio limpo.').catch(() => {});
-          }
-        }
-      }
-
-      // Run each requested stage sequentially
-      const runRerunStages = async () => {
-        for (const stageNum of stages) {
-          const stageKey = `stage${stageNum}`;
-          const agentNames = STAGES[stageKey];
-          if (!agentNames) continue;
-
-          await ctx.reply(`Etapa ${stageNum}/5 — ${stageLabels[stageNum]}...`).catch(() => {});
-
-          // Ensure worker is running (use existing if available)
-          const worker = ensureWorker();
-
-          // Determine which agents will actually run for this stage
-          let activeAgents = [...agentNames];
-          if (stageNum === 3) {
-            activeAgents = [];
-            if (payload.video_quick !== false) activeAgents.push('video_quick');
-            if (payload.video_pro === true) activeAgents.push('video_pro');
-            if (activeAgents.length === 0) activeAgents.push('video_quick');
-          }
-          if (stageNum === 4) {
-            const targets = payload.platform_targets || [];
-            activeAgents = agentNames.filter(a => targets.includes(a.replace('platform_', '')));
-          }
-
-          // Clear old logs for agents being reprocessed so polling doesn't see stale completions
-          const logsDir = path.resolve(PROJECT_ROOT, payload.output_dir, 'logs');
-          fs.mkdirSync(logsDir, { recursive: true });
-          for (const a of activeAgents) {
-            const logFile = path.join(logsDir, `${a}.log`);
-            if (fs.existsSync(logFile)) fs.unlinkSync(logFile);
-          }
-
-          await _enqueueStage(payload, agentNames);
-
-          // Wait for all ACTIVE agents to complete by polling log files
-          const expected = activeAgents.length;
-          await new Promise((resolve) => {
-            const checkInterval = setInterval(() => {
-              if (!fs.existsSync(logsDir)) return;
-              let done = 0;
-              for (const a of activeAgents) {
-                const logFile = path.join(logsDir, `${a}.log`);
-                if (!fs.existsSync(logFile)) continue;
-                const content = fs.readFileSync(logFile, 'utf-8');
-                if (content.includes('Completed successfully') || content.includes('FAILED')) done++;
-              }
-              if (done >= expected) {
-                clearInterval(checkInterval);
-                if (worker) worker.kill('SIGTERM');
-                resolve();
-              }
-            }, 5000);
-
-            // Timeout 30 min per stage
-            setTimeout(() => { clearInterval(checkInterval); if (worker) worker.kill('SIGTERM'); resolve(); }, 1800000);
-          });
-        }
-
-        session.clearRunningTask(chatId);
-        session.clearCampaignV3(chatId);
-        await bot.api.sendMessage(chatId, `Reprocessamento de <b>${campaignFolder}</b> concluido!`, { parse_mode: 'HTML' }).catch(() => {});
-      };
-
-      runRerunStages().catch(e => {
-        console.error('[rerun error]', e.message);
-        session.clearRunningTask(chatId);
-        session.clearCampaignV3(chatId);
-        bot.api.sendMessage(chatId, `Erro no reprocessamento: ${e.message}`).catch(() => {});
-      });
-
-      return;
-    }
-
-    if (isCancel) {
-      session.clearPendingRerun(chatId);
-      await ctx.reply('Reprocessamento cancelado.');
-      return;
-    }
-  }
-
-  // ── Confirmation replies for pending campaign ───────────────────────────
-  if (s.pendingCampaign) {
-    const lower = text.toLowerCase().trim();
-
-    const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda|rodar)/.test(lower);
-    const isCancel  = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);
-
-    if (isConfirm) {
-      const payload = s.pendingCampaign;
-      session.clearPendingCampaign(chatId);
-
-      // Assign a global sequential counter per project: c0001-{name}, c0002-{name}, ...
-      const baseName = payload.task_name;
-      const outsDir = path.join(PROJECT_ROOT, payload.project_dir, 'outputs');
-      let nextCounter = 1;
-      if (fs.existsSync(outsDir)) {
-        const existing = fs.readdirSync(outsDir);
-        const re = /^c(\d{4})-/;
-        for (const folder of existing) {
-          const m = folder.match(re);
-          if (m) nextCounter = Math.max(nextCounter, parseInt(m[1], 10) + 1);
-        }
-      }
-      payload.task_name = `c${String(nextCounter).padStart(4, '0')}-${baseName}`;
-      const outputDir = `${payload.project_dir}/outputs/${payload.task_name}`;
-      payload.output_dir = outputDir;
-
-      session.setRunningTask(chatId, {
-        taskName: payload.task_name,
-        taskDate: payload.task_date,
-        outputDir,
-        startedAt: new Date().toISOString(),
-      });
-
-      session.clearHistory(chatId); // Clean slate for new campaign
-      await ctx.reply(`Iniciando pipeline <b>${payload.task_name}</b>...\n\nUse /status para acompanhar.`, { parse_mode: 'HTML' });
-      runPipelineV3(ctx, chatId, payload, outputDir);
-      return;
-    }
-
-    if (isCancel) {
-      session.clearPendingCampaign(chatId);
-      await ctx.reply('Campanha cancelada.');
-      return;
-    }
-
-    // Quick config commands before confirming
-    if (/^auto$/.test(lower)) {
-      s.pendingCampaign.approval_modes = { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' };
-      await ctx.reply('✅ Todas as aprovações definidas como <b>auto</b>.', { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^(notif|notifica).*(off|desativ|nao|não)/.test(lower)) {
-      s.pendingCampaign.notifications = false;
-      await ctx.reply('🔇 Notificações desativadas.');
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^(notif|notifica).*(on|ativ|sim)/.test(lower)) {
-      s.pendingCampaign.notifications = true;
-      await ctx.reply('🔔 Notificações ativadas.');
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^pro$/.test(lower)) {
-      s.pendingCampaign.video_pro = true;
-      s.pendingCampaign.video_quick = true;
-      s.pendingCampaign.video_mode = 'both';
-      await ctx.reply('✅ Video Pro adicionado.');
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^humano$/.test(lower)) {
-      s.pendingCampaign.approval_modes = { stage1: 'humano', stage2: 'humano', stage3: 'humano', stage4: 'humano', stage5: 'humano' };
-      await ctx.reply('✅ Todas as aprovações definidas como <b>humano</b>.', { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^sem\s*quick$/i.test(lower)) {
-      s.pendingCampaign.video_quick = false;
-      s.pendingCampaign.video_mode = s.pendingCampaign.video_pro ? 'pro' : 'quick';
-      await ctx.reply('✅ Video Quick desativado.');
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^pular\s+(pesquisa|research)$/i.test(lower)) {
-      s.pendingCampaign.skip_research = true;
-      await ctx.reply('✅ Pesquisa será pulada.');
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^fundo\s+(blur|desfoque|desfocado)/i.test(lower)) {
-      s.pendingCampaign.image_bg_mode = 'blur';
-      await ctx.reply('✅ Fundo do quick: <b>blur</b> (imagem desfocada)', { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^fundo\s+(escuro|dark|black|preto)/i.test(lower)) {
-      s.pendingCampaign.image_bg_mode = 'dark';
-      await ctx.reply('✅ Fundo do quick: <b>escuro</b> (default)', { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^pular\s+(imagens?|image)$/i.test(lower)) {
-      s.pendingCampaign.skip_image = true;
-      await ctx.reply('✅ Imagens serão puladas.');
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^idioma\s+(.+)$/i.test(lower)) {
-      const lang = lower.match(/^idioma\s+(.+)$/i)[1].trim();
-      s.pendingCampaign.language = lang;
-      await ctx.reply(`✅ Idioma: <b>${lang}</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^narrad(or|ora)\s+(.+)$/i.test(lower)) {
-      const narrator = lower.match(/^narrad(?:or|ora)\s+(.+)$/i)[1].trim();
-      s.pendingCampaign.narrator = narrator;
-      await ctx.reply(`✅ Narrador: <b>${narrator}</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^estilo\s+(.+)$/i.test(lower)) {
-      const style = lower.match(/^estilo\s+(.+)$/i)[1].trim();
-      s.pendingCampaign.style_preset = style;
-      await ctx.reply(`✅ Estilo visual: <b>${style}</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^dura[çc][aã]o\s+(\d+)/i.test(lower)) {
-      const dur = parseInt(lower.match(/^dura[çc][aã]o\s+(\d+)/i)[1]);
-      s.pendingCampaign.video_duration = dur;
-      await ctx.reply(`✅ Duração do vídeo Pro: <b>${dur}s</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^(provider|provedor)\s+(.+)$/i.test(lower)) {
-      const prov = lower.match(/^(?:provider|provedor)\s+(.+)$/i)[1].trim();
-      process.env.IMAGE_PROVIDER = prov;
-      s.pendingCampaign.image_provider = prov;
-      // Update model to provider default if not explicitly set
-      if (!s.pendingCampaign._modelExplicit) {
-        s.pendingCampaign.image_model = prov === 'pollinations' ? 'flux' : 'z-image';
-      }
-      await ctx.reply(`✅ Provider de imagens: <b>${prov}</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^modelo?\s+(.+)$/i.test(lower)) {
-      const model = lower.match(/^modelo?\s+(.+)$/i)[1].trim();
-      s.pendingCampaign.image_model = model;
-      s.pendingCampaign._modelExplicit = true;
-      await ctx.reply(`✅ Modelo de imagem: <b>${model}</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^foto\s+(simples|premium)$/i.test(lower)) {
-      const q = lower.match(/^foto\s+(simples|premium)$/i)[1].toLowerCase();
-      s.pendingCampaign.photo_quality = q;
-      await ctx.reply(`✅ Fotografia: <b>${q}</b> (${q === 'premium' ? 'Opus — mais criativo, ~5min' : 'Sonnet — rápido, ~1min'})`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^videoplan\s+(simples|premium)$/i.test(lower)) {
-      const q = lower.match(/^videoplan\s+(simples|premium)$/i)[1].toLowerCase();
-      s.pendingCampaign.scene_quality = q;
-      await ctx.reply(`✅ Video Plan: <b>${q}</b> (${q === 'premium' ? 'Opus — mais detalhado, ~5min' : 'Sonnet — rápido, ~1min'})`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-    if (/^fonte\s+(brand|api|free|screenshot|pasta)$/i.test(lower)) {
-      const source = lower.match(/^fonte\s+(.+)$/i)[1].trim();
-      s.pendingCampaign.image_source = source;
-      await ctx.reply(`✅ Fonte de imagens: <b>${source}</b>`, { parse_mode: 'HTML' });
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
-      return;
-    }
-
-    // User is refining the brief — combine original brief with adjustment
-    if (lower.length > 5) {
-      const originalBrief = s.pendingCampaign.campaign_brief || '';
-      const combinedText = `${originalBrief}. Ajuste: ${text}`;
-      await ctx.reply('Atualizando o briefing...');
-      parseCampaignFromText({ text: combinedText, projectDir: s.projectDir, projectRoot: PROJECT_ROOT, runClaude, callback: (payload) => {
-        if (payload) {
-          // Preserve original settings, override only what changed
-          const merged = { ...s.pendingCampaign, ...payload };
-          merged.campaign_brief = payload.campaign_brief || combinedText;
-          session.setPendingCampaign(chatId, merged);
-          showCampaignConfirmation({ ctx, chatId, payload: merged, session, env: process.env });
-        } else {
-          ctx.reply('Nao entendi o ajuste. Responda <b>sim</b> para confirmar ou descreva o que quer mudar.', { parse_mode: 'HTML' });
-        }
-      }, env: process.env });
-      return;
-    }
-  }
+  if (await handlePendingCampaign(ctx, chatId, s, text)) return;
 
   // ── Detect rerun intent in free text ─────────────────────────────────
   const rerunKeywords = /\b(recri[ae]|refaz|refazer|reprocessa|re-?run|gera? novas?|nova vers[ãa]o|outra vers[ãa]o|recriar)\b/i;
@@ -1648,6 +1174,26 @@ const { handleChatMessage, runPipeline, runPipelineV3 } = createBotRuntime({
   sendImageApprovalRequest,
   sendVideoApprovalRequest,
   runClaude,
+});
+const {
+  handlePendingImageError,
+  handlePendingVideoApproval,
+  handlePendingRerun,
+  handlePendingCampaign,
+} = createPendingTextHandlers({
+  projectRoot: PROJECT_ROOT,
+  session,
+  bot,
+  monitoredSignals,
+  ensureWorker,
+  stages: STAGES,
+  enqueueStage: _enqueueStage,
+  writeVideoApproval,
+  runClaude,
+  sendVideoApprovalRequest,
+  showCampaignConfirmation,
+  parseCampaignFromText,
+  runPipelineV3,
 });
 
 const { runStage, runAgentReview, handleV3StageApproval } = createV3Flow({
