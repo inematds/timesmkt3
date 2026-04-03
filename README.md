@@ -502,6 +502,28 @@ npx pm2 logs timesmkt3-bot --lines 100
 npx pm2 logs timesmkt3-worker --lines 100
 ```
 
+### 5.1 Timeout de aprovacao e retomada
+
+Quando uma etapa exige aprovacao e a resposta nao chega dentro do prazo:
+
+- a tentativa atual da etapa expira
+- o job antigo nao e reativado por aprovacao tardia
+- o fluxo nao fica preso esperando indefinidamente
+
+Se a aprovacao chegar depois do timeout, o bot informa que ela expirou e que o fluxo ja seguiu adiante.
+
+Para retomar depois:
+
+```text
+/continue c0042
+```
+
+Ou para refazer uma etapa especifica:
+
+```text
+/rerun c0042 video quick
+```
+
 ### 6. Rodar pipeline manualmente
 
 ```bash
@@ -539,6 +561,7 @@ npm run media:status
 | Video sai igual ao template | Passar scene_plan.json como argumento no render-video.js |
 | Texto sobre rosto | Seguir regras de posicionamento (analisar imagem antes) |
 | Instagram token expirado | Renovar a cada 60 dias |
+| Aprovacao expirou | Retomar com `/continue CAMPANHA` ou `/rerun CAMPANHA ETAPA` |
 
 ---
 
