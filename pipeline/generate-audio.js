@@ -20,10 +20,9 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { getEnv } = require('../config/env');
 
-require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
-
-const API_KEY = process.env.ELEVENLABS_API_KEY;
+const API_KEY = getEnv('ELEVENLABS_API_KEY', '');
 const DEFAULT_VOICE = '21m00Tcm4TlvDq8ikWAM'; // Rachel
 
 const VOICES = {

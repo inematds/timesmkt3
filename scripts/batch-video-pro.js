@@ -16,6 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 const { enqueueStage } = require('../pipeline/orchestrator');
+const { getEnv } = require('../config/env');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const PROJECT_DIR = 'prj/inema';
@@ -23,12 +24,7 @@ const OUTPUTS_DIR = path.join(PROJECT_ROOT, PROJECT_DIR, 'outputs');
 const CHAT_ID = '7388953786'; // Telegram chat ID
 
 // Bot API for sending messages/files
-let botToken;
-try {
-  const envFile = fs.readFileSync(path.join(PROJECT_ROOT, '.env'), 'utf-8');
-  const match = envFile.match(/^TELEGRAM_BOT_TOKEN=(.+)$/m);
-  if (match) botToken = match[1].trim();
-} catch {}
+const botToken = getEnv('TELEGRAM_BOT_TOKEN', '');
 
 async function sendTelegram(method, params) {
   if (!botToken) { console.log('[telegram] No bot token — skipping send'); return; }

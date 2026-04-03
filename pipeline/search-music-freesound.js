@@ -17,10 +17,9 @@
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
+const { getEnv } = require('../config/env');
 
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
-const API_KEY = process.env.FREESOUND_API_KEY;
+const API_KEY = getEnv('FREESOUND_API_KEY', '');
 const BASE_URL = 'https://freesound.org/apiv2';
 
 function httpsGet(url) {

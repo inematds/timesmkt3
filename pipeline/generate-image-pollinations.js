@@ -29,12 +29,11 @@ const https = require('https');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+const { getEnv } = require('../config/env');
 
 const BASE_URL = 'https://image.pollinations.ai';
 const DEFAULT_MODEL = 'flux';
-const POLLINATIONS_TOKEN = process.env.POLLINATIONS_TOKEN || null;
+const POLLINATIONS_TOKEN = getEnv('POLLINATIONS_TOKEN', '') || null;
 
 const ASPECT_RATIO_SIZES = {
   '1:1':  { width: 1080, height: 1080 },

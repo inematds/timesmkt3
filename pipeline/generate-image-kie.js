@@ -30,10 +30,9 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const { getEnv } = require('../config/env');
 
-require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
-
-const KIE_API_KEY = process.env.KIE_API_KEY;
+const KIE_API_KEY = getEnv('KIE_API_KEY', '');
 const BASE_URL = 'https://api.kie.ai';
 const DEFAULT_MODEL = 'z-image';
 

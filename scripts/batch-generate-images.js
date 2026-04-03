@@ -14,22 +14,14 @@
 
 const fs = require('fs');
 const path = require('path');
+const { getEnv } = require('../config/env');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const PROJECT_DIR = 'prj/inema';
 const OUTPUTS_DIR = path.join(PROJECT_ROOT, PROJECT_DIR, 'outputs');
 const CHAT_ID = '7388953786';
 
-// Load env
-function getEnvVar(key) {
-  try {
-    const envData = fs.readFileSync(path.join(PROJECT_ROOT, '.env'), 'utf-8');
-    const match = envData.match(new RegExp(`^${key}=(.*)`, 'm'));
-    return match ? match[1].trim() : null;
-  } catch { return null; }
-}
-
-const botToken = getEnvVar('TELEGRAM_BOT_TOKEN');
+const botToken = getEnv('TELEGRAM_BOT_TOKEN', '');
 
 async function sendTelegram(method, params) {
   if (!botToken) { console.log('[telegram] No bot token — skipping'); return; }
@@ -60,7 +52,7 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // Piramyd API keys — multiple keys for higher throughput
 const PIRAMYD_KEYS = [
-  getEnvVar('PIRAMYD_API_KEY'),
+  getEnv('PIRAMYD_API_KEY', ''),
   'sk-150ad0f5c9ac42eb9928f44039cfc143',
   'sk-574a5cb6547f4968b6fc435903ca97ac',
 ].filter(Boolean);

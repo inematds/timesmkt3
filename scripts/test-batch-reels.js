@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const { getEnv } = require('../config/env');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const camp = 'c0038-pascoa_2026';
@@ -8,15 +9,8 @@ const campDir = path.join(PROJECT_ROOT, 'prj/inema/outputs', camp);
 const imgsDir = path.join(campDir, 'imgs');
 const CHAT_ID = '7388953786';
 
-function getEnvVar(key) {
-  try {
-    const d = fs.readFileSync(path.join(PROJECT_ROOT, '.env'), 'utf-8');
-    const m = d.match(new RegExp('^' + key + '=(.*)', 'm'));
-    return m ? m[1].trim() : null;
-  } catch { return null; }
-}
-const botToken = getEnvVar('TELEGRAM_BOT_TOKEN');
-const PIRAMYD_KEYS = [...new Set([getEnvVar('PIRAMYD_API_KEY'), 'sk-150ad0f5c9ac42eb9928f44039cfc143', 'sk-574a5cb6547f4968b6fc435903ca97ac'].filter(Boolean))];
+const botToken = getEnv('TELEGRAM_BOT_TOKEN', '');
+const PIRAMYD_KEYS = [...new Set([getEnv('PIRAMYD_API_KEY', ''), 'sk-150ad0f5c9ac42eb9928f44039cfc143', 'sk-574a5cb6547f4968b6fc435903ca97ac'].filter(Boolean))];
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
