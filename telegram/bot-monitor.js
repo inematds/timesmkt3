@@ -165,6 +165,12 @@ function startContinuousMonitor(deps) {
           if (monitoredSignals.has(stageKey)) continue;
 
           let activeAgents = agents;
+          activeAgents = activeAgents.filter((agent) => {
+            if ((agent === 'research_agent' || agent === 'creative_director') && cv.payload?.skip_research) return false;
+            if (agent === 'ad_creative_designer' && cv.payload?.skip_image) return false;
+            if ((agent === 'video_quick' || agent === 'video_pro') && cv.payload?.skip_video) return false;
+            return true;
+          });
           if (num === 3) {
             const vq = cv.payload?.video_quick !== false;
             const vp = cv.payload?.video_pro === true;
@@ -172,14 +178,15 @@ function startContinuousMonitor(deps) {
             if (vq) activeAgents.push('video_quick');
             if (vp) activeAgents.push('video_pro');
             if (activeAgents.length === 0) activeAgents = ['video_quick'];
+            activeAgents = activeAgents.filter((agent) => !cv.payload?.skip_video || !['video_quick', 'video_pro'].includes(agent));
           }
           if (num === 4) {
             const targets = cv.payload?.platform_targets || [];
             activeAgents = agents.filter((agent) => targets.includes(agent.replace('platform_', '')));
           }
 
-          let allDone = activeAgents.length > 0;
-          let anyStarted = false;
+          let allDone = true;
+          let anyStarted = activeAgents.length === 0;
           for (const agent of activeAgents) {
             const logFile = path.join(logsDir, `${agent}.log`);
             if (!fs.existsSync(logFile)) {

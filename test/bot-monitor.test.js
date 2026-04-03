@@ -68,3 +68,64 @@ test('startContinuousMonitor auto-approves pending video when stage3 mode is aut
     global.setInterval = originalSetInterval;
   }
 });
+
+test('startContinuousMonitor advances stage1 when research is skipped and copywriter completed', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-monitor-skip-'));
+  const campDir = path.join(projectRoot, 'prj', 'inema', 'outputs', 'camp-02');
+  fs.mkdirSync(path.join(campDir, 'logs'), { recursive: true });
+  fs.writeFileSync(path.join(campDir, 'chat_context.json'), JSON.stringify({ chatId: '654' }));
+  fs.writeFileSync(path.join(campDir, 'logs', 'copywriter_agent.log'), 'Completed successfully\n');
+
+  const sessionState = {
+    runningTask: { outputDir: 'prj/inema/outputs/camp-02' },
+    campaignV3: {
+      payload: {
+        skip_research: true,
+        approval_modes: { stage1: 'auto' },
+      },
+      notifications: true,
+    },
+  };
+
+  const originalSetInterval = global.setInterval;
+  const enqueued = [];
+  global.setInterval = (fn) => {
+    Promise.resolve().then(fn);
+    return { fake: true };
+  };
+
+  try {
+    startContinuousMonitor({
+      bot: {
+        api: {
+          sendMessage: async () => {},
+          sendDocument: async () => {},
+          sendVideo: async () => {},
+        },
+      },
+      session: {
+        get: () => sessionState,
+        clearRunningTask: () => {},
+        clearCampaignV3: () => {},
+        setCampaignV3Stage: (_chatId, stage) => { sessionState.campaignV3.currentStage = stage; },
+      },
+      projectRoot,
+      monitoredSignals: new Set(),
+      readChatContext: (dir) => JSON.parse(fs.readFileSync(path.join(dir, 'chat_context.json'), 'utf-8')),
+      writeImageApproval: () => {},
+      writeVideoApproval: () => {},
+      sendImageApprovalRequest: async () => {},
+      sendVideoApprovalRequest: async () => {},
+      sendStageApprovalRequest: async () => {},
+      enqueueStage: async (_payload, nextAgents) => { enqueued.push(nextAgents); },
+      stages: { stage2: ['ad_creative_designer'] },
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    assert.equal(sessionState.campaignV3.currentStage, 2);
+    assert.deepEqual(enqueued[0], ['ad_creative_designer']);
+  } finally {
+    global.setInterval = originalSetInterval;
+  }
+});

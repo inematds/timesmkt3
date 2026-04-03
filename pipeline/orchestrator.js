@@ -221,6 +221,257 @@ function validatePayload(payload) {
   return errors;
 }
 
+function buildFallbackResearchArtifacts(payload, sourceFolder) {
+  const sourceAssets = fs.existsSync(sourceFolder)
+    ? fs.readdirSync(sourceFolder).filter((name) => !name.startsWith('.')).slice(0, 20)
+    : [];
+  const campaignLabel = String(payload.task_name || 'campanha').replace(/[_-]+/g, ' ').trim();
+  const campaignBrief = payload.campaign_brief || payload.description || `Campanha ${campaignLabel}`;
+  const platformTargets = Array.isArray(payload.platform_targets) && payload.platform_targets.length > 0
+    ? payload.platform_targets
+    : ['instagram'];
+  const primaryPlatform = platformTargets[0];
+  const approvedCtas = [
+    'Saiba mais',
+    'Conheça a campanha',
+    'Acesse agora',
+  ];
+
+  const researchResults = {
+    simulated: true,
+    generated_from: 'skip_research',
+    task_name: payload.task_name,
+    task_date: payload.task_date,
+    source_folder: sourceFolder,
+    source_assets: sourceAssets,
+    summary: `Pesquisa simulada a partir do briefing e dos assets disponíveis para ${campaignLabel}.`,
+    industry_trends: [
+      `Conteúdo orientado a ${campaignLabel} com foco em relevância prática e aplicação imediata.`,
+      'Materiais visuais e narrativas curtas tendem a performar melhor em social.',
+      'A clareza do benefício e o CTA direto são mais importantes que volume de informação.',
+    ],
+    audience_insights: [
+      `O público precisa entender rapidamente o valor central de ${campaignLabel}.`,
+      'Tom humano, claro e orientado a resultado reduz fricção na primeira interação.',
+      'Provas visuais, contexto real e consistência de marca aumentam confiança.',
+    ],
+    competitor_gaps: [
+      'Mensagens genéricas e pouco conectadas ao briefing real do produto.',
+      'Excesso de promessa sem evidência visual ou contextual.',
+      'CTAs fracos ou desconectados da proposta principal.',
+    ],
+    emotional_hooks: [
+      'clareza',
+      'pertencimento',
+      'transformação prática',
+    ],
+    winning_angles: [
+      campaignBrief,
+      `Mostrar ${campaignLabel} com benefício direto e linguagem simples.`,
+      `Usar ${primaryPlatform} como canal principal para narrativa curta e clara.`,
+    ],
+    content_topics: [
+      `${campaignLabel} explicado de forma objetiva`,
+      'prova visual do benefício',
+      'CTA orientado à ação',
+    ],
+    keywords: [
+      payload.task_name,
+      campaignLabel,
+      primaryPlatform,
+      'campanha',
+      'conteúdo',
+    ].filter(Boolean),
+    ad_hooks: [
+      `O que torna ${campaignLabel} diferente?`,
+      `A forma mais clara de apresentar ${campaignLabel}.`,
+      'Menos ruído, mais valor percebido.',
+    ],
+    video_concepts: [
+      {
+        title: `${campaignLabel} em 15 segundos`,
+        hook: `Mostrar o benefício central de ${campaignLabel} logo na abertura.`,
+        platform: primaryPlatform,
+        duration: 15,
+      },
+      {
+        title: `${campaignLabel} com prova visual`,
+        hook: 'Usar assets reais para reforçar credibilidade.',
+        platform: primaryPlatform,
+        duration: 30,
+      },
+    ],
+    scheduling: {
+      best_days: ['terça', 'quarta', 'quinta'],
+      best_times: ['09:00', '12:00', '19:00'],
+    },
+  };
+
+  const creativeBrief = {
+    simulated: true,
+    generated_from: 'skip_research',
+    campaign_theme: campaignLabel,
+    campaign_angle: campaignBrief,
+    positioning_statement: `${campaignLabel} apresentado com clareza, foco em benefício e linguagem alinhada à marca.`,
+    emotional_hook: 'clareza prática com apelo humano',
+    visual_direction: {
+      mood: 'premium, claro e direto',
+      dominant_colors: ['#0D0D0D', '#0099FF'],
+      photography_style: sourceAssets.length > 0 ? 'usar assets reais disponíveis como base visual' : 'lifestyle e produto com composição limpa',
+      typography_mood: 'bold e legível',
+      key_visual_metaphor: 'transformação visível com benefício em destaque',
+    },
+    carousel_structure: {
+      slide_1: {
+        tema: 'hook',
+        conceito_visual: `Hero frame introducing ${campaignLabel}, bold typography, premium contrast lighting.`,
+        mensagem: `Apresentar ${campaignLabel} com impacto imediato.`,
+      },
+      slide_2: {
+        tema: 'benefit',
+        conceito_visual: 'Focused product or interface detail, clean composition, benefit highlighted with depth.',
+        mensagem: 'Mostrar o benefício central de forma objetiva.',
+      },
+      slide_3: {
+        tema: 'benefit',
+        conceito_visual: 'Lifestyle or contextual usage scene, natural motion and strong subject framing.',
+        mensagem: 'Conectar o produto ao uso real.',
+      },
+      slide_4: {
+        tema: 'proof',
+        conceito_visual: 'Trust-building scene with social proof or concrete result, premium editorial look.',
+        mensagem: 'Adicionar prova, contexto ou resultado.',
+      },
+      slide_5: {
+        tema: 'cta',
+        conceito_visual: 'Brand-led closing frame with clean CTA area and strong contrast.',
+        mensagem: 'Fechar com CTA direto e coerente.',
+      },
+    },
+    key_messages: {
+      instagram: [
+        `Apresentar ${campaignLabel} com clareza`,
+        'Destacar benefício visualmente',
+        'Fechar com CTA simples',
+      ],
+      youtube: [
+        `Explicar ${campaignLabel} com contexto`,
+        'Mostrar problema, solução e prova',
+        'Encerrar com CTA objetivo',
+      ],
+      threads: [
+        `Resumo curto de ${campaignLabel}`,
+        'Tom humano e conversacional',
+      ],
+    },
+    approved_ctas: approvedCtas,
+    avoid: [
+      'mensagem genérica',
+      'excesso de texto por peça',
+      'CTA desconectado do briefing',
+    ],
+  };
+
+  const researchBriefMd = `# Research Brief Simulado — ${campaignLabel}
+
+## Contexto
+Pesquisa simulada porque \`skip_research\` foi ativado.
+
+## Base usada
+- Brief: ${campaignBrief}
+- Fonte de assets: \`${sourceFolder}\`
+- Plataformas: ${platformTargets.join(', ')}
+
+## Principais insights
+- Clareza do benefício precisa vir antes de detalhe técnico.
+- Assets reais e consistência visual aumentam confiança.
+- CTA curto e explícito tende a funcionar melhor que mensagens longas.
+`;
+
+  const creativeBriefMd = `# Brief Criativo — ${campaignLabel}
+
+## Ângulo da Campanha
+${campaignBrief}
+
+## Direção Visual
+- Mood: ${creativeBrief.visual_direction.mood}
+- Fotografia: ${creativeBrief.visual_direction.photography_style}
+- Tipografia: ${creativeBrief.visual_direction.typography_mood}
+
+## CTAs Aprovados
+- ${approvedCtas.join('\n- ')}
+
+## O que evitar
+- ${creativeBrief.avoid.join('\n- ')}
+`;
+
+  const interactiveReportHtml = `<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Research Report Simulado — ${campaignLabel}</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #0d0d0d; color: #fff; padding: 32px; }
+    .card { max-width: 860px; margin: 0 auto; background: #171717; border: 1px solid #2a2a2a; border-radius: 16px; padding: 24px; }
+    h1 { margin-top: 0; color: #0099FF; }
+    code { color: #00d084; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Research Report Simulado</h1>
+    <p>Este relatório foi gerado automaticamente porque <code>skip_research</code> está ativo.</p>
+    <p><strong>Campanha:</strong> ${campaignLabel}</p>
+    <p><strong>Base:</strong> ${campaignBrief}</p>
+    <p><strong>Assets:</strong> ${sourceAssets.length > 0 ? sourceAssets.join(', ') : 'nenhum asset listado'}</p>
+  </div>
+</body>
+</html>`;
+
+  return {
+    researchResults,
+    creativeBrief,
+    researchBriefMd,
+    creativeBriefMd,
+    interactiveReportHtml,
+  };
+}
+
+function ensureSkippedResearchArtifacts(payload, options = {}) {
+  if (!payload?.skip_research) return null;
+
+  const projectRoot = options.projectRoot || path.resolve(__dirname, '..');
+  const outputDir = payload.output_dir || `${payload.project_dir}/outputs/${payload.task_name}`;
+  const absOutputDir = path.resolve(projectRoot, outputDir);
+  const sourceFolder = payload.source_folder
+    ? path.resolve(projectRoot, payload.source_folder)
+    : path.resolve(projectRoot, payload.project_dir, 'assets', payload.task_name);
+
+  fs.mkdirSync(absOutputDir, { recursive: true });
+  fs.mkdirSync(path.join(absOutputDir, 'creative'), { recursive: true });
+
+  const artifacts = buildFallbackResearchArtifacts(payload, sourceFolder);
+  const writes = [
+    ['research_results.json', JSON.stringify(artifacts.researchResults, null, 2)],
+    ['research_brief.md', artifacts.researchBriefMd],
+    ['interactive_report.html', artifacts.interactiveReportHtml],
+    [path.join('creative', 'creative_brief.json'), JSON.stringify(artifacts.creativeBrief, null, 2)],
+    [path.join('creative', 'creative_brief.md'), artifacts.creativeBriefMd],
+    [path.join('creative', 'stage1_done.json'), JSON.stringify({ stage: 1, simulated: true, output_dir: outputDir, ts: Date.now() }, null, 2)],
+  ];
+
+  const created = [];
+  for (const [relativePath, content] of writes) {
+    const target = path.join(absOutputDir, relativePath);
+    if (fs.existsSync(target)) continue;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, content);
+    created.push(relativePath);
+  }
+
+  return { outputDir, sourceFolder, created };
+}
+
 // ── Job enqueue ───────────────────────────────────────────────────────────────
 
 async function enqueueJobs(payload) {
@@ -241,6 +492,13 @@ async function enqueueJobs(payload) {
   console.log(`\n🚀 Starting pipeline: ${task_name} (${task_date})`);
   console.log(`   Platforms: ${platform_targets.join(', ')}`);
   console.log(`   Skips — research: ${skip_research}, image: ${skip_image}, video: ${skip_video}\n`);
+
+  if (skip_research) {
+    const result = ensureSkippedResearchArtifacts(payload);
+    if (result?.created?.length) {
+      console.log(`  🧩 skip_research fallback prepared: ${result.created.join(', ')}`);
+    }
+  }
 
   // Resolve video agents based on video_quick / video_pro flags
   const { wantQuick, wantPro } = getRequestedVideoAgents(payload);
@@ -364,6 +622,10 @@ async function enqueueStage(payload, agentNames) {
   } = payload;
 
   // Resolve video agents based on video_mode / video_quick / video_pro flags
+  if (skip_research) {
+    ensureSkippedResearchArtifacts(payload);
+  }
+
   let resolvedNames = [...agentNames];
   if (agentNames.includes('video_quick')) {
     // Quick always runs unless explicitly disabled; Pro runs when requested
@@ -470,5 +732,11 @@ if (require.main === module) {
   });
 } else {
   // Module mode — used by bot.js for v3 stage-by-stage execution
-  module.exports = { enqueueStage, STAGES, validatePayload, validateAgentGraph };
+  module.exports = {
+    enqueueStage,
+    STAGES,
+    validatePayload,
+    validateAgentGraph,
+    ensureSkippedResearchArtifacts,
+  };
 }

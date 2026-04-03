@@ -2,7 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const { getEnv, getList } = require('../config/env');
-const { validatePayload, validateAgentGraph } = require('../pipeline/orchestrator');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const { validatePayload, validateAgentGraph, ensureSkippedResearchArtifacts } = require('../pipeline/orchestrator');
 
 test('validateAgentGraph passes for the current agent graph', () => {
   assert.deepEqual(validateAgentGraph(), []);
@@ -36,4 +40,32 @@ test('env helpers read process env and parse comma-separated lists', () => {
 
   delete process.env.CODEX_TEST_SINGLE;
   delete process.env.CODEX_TEST_LIST;
+});
+
+test('ensureSkippedResearchArtifacts creates simulated stage1 inputs', () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-skip-research-'));
+  const sourceFolder = path.join(projectRoot, 'prj', 'demo', 'assets', 'campanha_demo');
+  fs.mkdirSync(sourceFolder, { recursive: true });
+  fs.writeFileSync(path.join(sourceFolder, 'hero.jpg'), 'x');
+
+  const result = ensureSkippedResearchArtifacts({
+    task_name: 'campanha_demo',
+    task_date: '2026-04-03',
+    project_dir: 'prj/demo',
+    output_dir: 'prj/demo/outputs/campanha_demo',
+    platform_targets: ['instagram'],
+    campaign_brief: 'Campanha de teste com fallback',
+    skip_research: true,
+  }, { projectRoot });
+
+  assert.ok(result.created.includes('research_results.json'));
+  assert.ok(result.created.includes(path.join('creative', 'creative_brief.json')));
+
+  const research = JSON.parse(fs.readFileSync(path.join(projectRoot, 'prj', 'demo', 'outputs', 'campanha_demo', 'research_results.json'), 'utf-8'));
+  const creative = JSON.parse(fs.readFileSync(path.join(projectRoot, 'prj', 'demo', 'outputs', 'campanha_demo', 'creative', 'creative_brief.json'), 'utf-8'));
+
+  assert.equal(research.simulated, true);
+  assert.equal(creative.simulated, true);
+  assert.ok(Array.isArray(research.ad_hooks));
+  assert.ok(Array.isArray(creative.approved_ctas));
 });
