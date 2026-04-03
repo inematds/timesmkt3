@@ -10,6 +10,7 @@
     "pipeline:run:payload": "node pipeline/orchestrator.js --payload",
     "media:status": "node -e \"require('./media/providers').printStatus()\"",
     "bot": "node telegram/bot.js",
+    "check:syntax": "find scripts pipeline telegram media -type f \\( -name '*.js' -o -name '*.cjs' \\) -print0 | xargs -0 -n1 node --check",
     "test": "node --test test/*.test.js"
   },
   "keywords": [],
