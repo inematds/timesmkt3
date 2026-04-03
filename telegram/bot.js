@@ -932,7 +932,7 @@ bot.on('message:text', async (ctx) => {
         use_brand_overlay: true,
         campaign_brief: briefData.campaign_angle || '',
         video_mode: 'quick',
-        approval_modes: { stage1: 'auto', stage2: 'humano', stage3: 'humano', stage4: 'humano', stage5: 'humano' },
+        approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
         notifications: true,
         skip_dependencies: true,
       };

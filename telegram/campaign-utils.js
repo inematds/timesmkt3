@@ -32,6 +32,7 @@ function buildPayload(taskName, opts, projectDir, today, env = process.env) {
     use_brand_overlay: opts['brand-overlay'] !== 'false',
     campaign_brief: opts.brief || '',
     video_mode: opts['video-pro'] ? 'pro' : 'quick',
+    approval_modes: { stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto' },
   };
 }
 
@@ -51,7 +52,7 @@ function buildConfigTable(payload, title, env = process.env) {
     narrator: 'rachel', video_duration: 60, style_preset: 'inema_hightech',
     photo_quality: 'simples', scene_quality: 'simples',
     video_quick: true, video_pro: false, language: 'pt-BR',
-    image_bg_mode: 'dark', notifications: true, approval: 'humano',
+    image_bg_mode: 'dark', notifications: true, approval: 'auto',
   };
 
   const vQuick = payload.video_quick !== false;
@@ -161,11 +162,11 @@ Return a JSON object with these fields:
   "image_source": "brand",
   "image_model": "${env.KIE_DEFAULT_MODEL || 'z-image'}",
   "approval_modes": {
-    "stage1": "humano",
-    "stage2": "humano",
-    "stage3": "humano",
-    "stage4": "humano",
-    "stage5": "humano"
+    "stage1": "auto",
+    "stage2": "auto",
+    "stage3": "auto",
+    "stage4": "auto",
+    "stage5": "auto"
   },
   "notifications": true,
   "video_audio": "narration",
@@ -180,7 +181,7 @@ Rules:
 - video_pro: true if user says "video pro", "video profissional", "remotion", "pro", "both", "2 videos"
 - image_source: "brand" (or "marca") if user mentions brand images, project images, fotos da marca; "free" (or "gratis") if user mentions free stock photos, banco de imagens, pexels, unsplash, pixabay; "api" if user mentions AI generation, gerar imagens, criar imagens com IA; "folder" (or "pasta") if user specifies a folder path; "screenshot" (or "captura") if user mentions screenshot, captura de site, print do site, capturar pagina. When screenshot, also populate "screenshot_urls" with any URLs mentioned. Default "brand".
 - image_model: only relevant when image_source is "api". Default is ALWAYS "${env.KIE_DEFAULT_MODEL || 'z-image'}" (from .env). Only change if the user explicitly requests a different model. Options: "z-image", "z-image-turbo", "flux-kontext-pro", "flux-kontext-max", "gpt-image-1".
-- approval_modes: each stage can be "humano" (user must approve), "agente" (AI reviewer decides), or "auto" (advance automatically). Default "humano" for all. Set to "auto" if user says "sem aprovações", "automático", "full auto". Set to "agente" if user says "aprovação por agente", "agente revisa".
+- approval_modes: each stage can be "humano" (user must approve), "agente" (AI reviewer decides), or "auto" (advance automatically). Default "auto" for all. Set to "humano" if user explicitly asks for approval before each stage. Set to "agente" if user says "aprovação por agente", "agente revisa".
 - notifications: false only if user explicitly says "sem notificações", "silencioso", "não notificar".
 - video_audio: "narration" if user wants voiceover/narração (default), "music" if user wants background music only, "both" if user wants narration + music, "none" for silent/no audio.
 - campaign_brief: comprehensive summary of everything the user described

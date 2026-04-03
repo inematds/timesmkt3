@@ -69,7 +69,7 @@ function startContinuousMonitor(deps) {
         const videoKey = `video_approval:${relDir}`;
         if (fs.existsSync(videoSignal) && !fs.existsSync(videoApproved) && !fs.existsSync(videoRejected) && !monitoredSignals.has(videoKey)) {
           monitoredSignals.add(videoKey);
-          const videoApprovalMode = cv?.payload?.approval_modes?.stage3 || 'humano';
+          const videoApprovalMode = cv?.payload?.approval_modes?.stage3 || 'auto';
           if (videoApprovalMode === 'auto') {
             writeVideoApproval(projectRoot, relDir, true, 'auto-approved');
             console.log(`[monitor] Video auto-approved for ${relDir}`);
@@ -91,7 +91,7 @@ function startContinuousMonitor(deps) {
         const imgApprovalKey = `img_approval:${relDir}`;
         if (fs.existsSync(imgApprovalSignal) && !fs.existsSync(imgApproved) && !fs.existsSync(imgRejected) && !monitoredSignals.has(imgApprovalKey)) {
           monitoredSignals.add(imgApprovalKey);
-          const imgApprovalMode = cv?.payload?.approval_modes?.stage2 || 'humano';
+          const imgApprovalMode = cv?.payload?.approval_modes?.stage2 || 'auto';
           if (imgApprovalMode === 'auto') {
             writeImageApproval(projectRoot, relDir, true, 'auto-approved');
             console.log(`[monitor] Images auto-approved for ${relDir}`);

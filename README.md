@@ -464,14 +464,52 @@ Depois no Telegram: `/campanha minha_campanha`
 
 Deploy de VPS mais direto em [deploy/DEPLOY.md](./deploy/DEPLOY.md).
 
-### 5. Rodar pipeline manualmente
+### 5. Teste Guiado No Telegram
+
+Teste simples do fluxo com fallback de pesquisa:
+
+```text
+/campanha teste_local --platforms instagram --images 2 --videos 0 --img-source brand --skip-research
+```
+
+Quando o bot enviar a confirmação, responder:
+
+```text
+sim
+```
+
+Validar:
+- stage 1 avança mesmo com `skip_research`
+- o sistema gera `research_results.json` e `creative_brief.json` simulados
+- a campanha segue para imagens sem travar no monitor
+
+Teste mais forte para validar múltiplos skips:
+
+```text
+/campanha teste_skips --platforms instagram,threads --images 2 --videos 1 --skip-research --skip-image
+```
+
+Validar:
+- stage 1 não trava
+- stage 2 gera fallback de `skip_image`
+- `video_quick` não roda sem `ads` reais
+- plataformas continuam com os artefatos simulados
+
+Para acompanhar localmente:
+
+```bash
+npx pm2 logs timesmkt3-bot --lines 100
+npx pm2 logs timesmkt3-worker --lines 100
+```
+
+### 6. Rodar pipeline manualmente
 
 ```bash
 # Enfileirar com payload
 node pipeline/orchestrator.js --file pipeline/payloads/coldbrew_demo.json
 ```
 
-### 6. Publicar manualmente
+### 7. Publicar manualmente
 
 ```bash
 # Dry run (sem publicar de verdade)

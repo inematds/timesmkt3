@@ -22,6 +22,13 @@ test('buildPayload uses sane defaults', () => {
   assert.equal(payload.image_model, 'z-image-turbo');
   assert.equal(payload.video_mode, 'quick');
   assert.deepEqual(payload.platform_targets, ['instagram', 'youtube', 'threads', 'facebook', 'tiktok', 'linkedin']);
+  assert.deepEqual(payload.approval_modes, {
+    stage1: 'auto',
+    stage2: 'auto',
+    stage3: 'auto',
+    stage4: 'auto',
+    stage5: 'auto',
+  });
 });
 
 test('buildConfigTable includes skip flags when enabled', () => {

@@ -215,7 +215,7 @@ Be concise and helpful. You have full access to the codebase.`;
     );
 
     const approvalModes = payload.approval_modes || {
-      stage1: 'humano', stage2: 'humano', stage3: 'humano', stage4: 'humano', stage5: 'humano',
+      stage1: 'auto', stage2: 'auto', stage3: 'auto', stage4: 'auto', stage5: 'auto',
     };
 
     session.setCampaignV3(chatId, {
