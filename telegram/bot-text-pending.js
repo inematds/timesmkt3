@@ -16,6 +16,7 @@ function createPendingTextHandlers(deps) {
     showCampaignConfirmation,
     parseCampaignFromText,
     runPipelineV3,
+    env = process.env,
   } = deps;
 
   async function handlePendingImageError(ctx, chatId, s, text) {
@@ -331,7 +332,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
 
     const replyAndRefresh = async (message) => {
       await ctx.reply(message, { parse_mode: 'HTML' }).catch(() => ctx.reply(message));
-      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env: process.env });
+      showCampaignConfirmation({ ctx, chatId, payload: s.pendingCampaign, session, env });
     };
 
     if (/^auto$/.test(lower)) {
@@ -409,7 +410,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
     }
     if (/^(provider|provedor)\s+(.+)$/i.test(lower)) {
       const prov = lower.match(/^(?:provider|provedor)\s+(.+)$/i)[1].trim();
-      process.env.IMAGE_PROVIDER = prov;
+      env.IMAGE_PROVIDER = prov;
       s.pendingCampaign.image_provider = prov;
       if (!s.pendingCampaign._modelExplicit) {
         s.pendingCampaign.image_model = prov === 'pollinations' ? 'flux' : 'z-image';
@@ -455,12 +456,12 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
             const merged = { ...s.pendingCampaign, ...payload };
             merged.campaign_brief = payload.campaign_brief || combinedText;
             session.setPendingCampaign(chatId, merged);
-            showCampaignConfirmation({ ctx, chatId, payload: merged, session, env: process.env });
+            showCampaignConfirmation({ ctx, chatId, payload: merged, session, env });
           } else {
             ctx.reply('Nao entendi o ajuste. Responda <b>sim</b> para confirmar ou descreva o que quer mudar.', { parse_mode: 'HTML' });
           }
         },
-        env: process.env,
+        env,
       });
       return true;
     }

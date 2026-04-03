@@ -9,9 +9,10 @@
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const { getEnv } = require('../config/env');
 
 const PIRAMYD_URL = 'https://api.piramyd.cloud/v1/images/generations';
-const PIRAMYD_API_KEY = process.env.PIRAMYD_API_KEY || '';
+const PIRAMYD_API_KEY = getEnv('PIRAMYD_API_KEY', '');
 const DEFAULT_MODEL = 'dall-e-3';
 
 function buildImagePrompt(brief, brand, format, index, total, sceneType, sceneDescription, modelId) {

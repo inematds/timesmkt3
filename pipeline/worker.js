@@ -14,10 +14,17 @@ const { QUEUE_NAME, pipelineQueue } = require('./queues');
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
-
-require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
+const { getEnv, hasEnv, loadEnv } = require('../config/env');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+loadEnv({ override: true });
+const workerEnv = {
+  IMAGE_PROVIDER: getEnv('IMAGE_PROVIDER', 'kie'),
+  FREE_IMAGE_PROVIDER: getEnv('FREE_IMAGE_PROVIDER', 'pexels'),
+  PEXELS_API_KEY: getEnv('PEXELS_API_KEY', ''),
+  UNSPLASH_ACCESS_KEY: getEnv('UNSPLASH_ACCESS_KEY', ''),
+  PIXABAY_API_KEY: getEnv('PIXABAY_API_KEY', ''),
+};
 const { createWorkerAssetHelpers } = require('./worker-assets');
 const { videoTimestamp, backupIfExists, createLogger, createDependencyWaiter, createClaudeRunner } = require('./worker-runtime');
 const { createAdCreativeHandler } = require('./worker-ad-creative');
@@ -45,10 +52,10 @@ function getVideoRenderer(mode = 'quick') {
 }
 
 // Active provider — default KIE, switch to pollinations via IMAGE_PROVIDER env or job.data.image_provider
-const IMAGE_PROVIDER = (process.env.IMAGE_PROVIDER || 'kie').toLowerCase();
+const IMAGE_PROVIDER = workerEnv.IMAGE_PROVIDER.toLowerCase();
 
 // Free image provider — default pexels, configurable via FREE_IMAGE_PROVIDER env
-const FREE_IMAGE_PROVIDER = (process.env.FREE_IMAGE_PROVIDER || 'pexels').toLowerCase();
+const FREE_IMAGE_PROVIDER = workerEnv.FREE_IMAGE_PROVIDER.toLowerCase();
 const log = createLogger(PROJECT_ROOT);
 const runClaude = createClaudeRunner({ projectRoot: PROJECT_ROOT, log, command: 'claude' });
 const waitForDependencies = createDependencyWaiter({ queueName: QUEUE_NAME, redisConnection, log });
@@ -60,7 +67,7 @@ const {
   getImageDimensions,
   getProjectAssets,
   formatAssetList,
-} = createWorkerAssetHelpers({ projectRoot: PROJECT_ROOT, freeImageProviderEnv: FREE_IMAGE_PROVIDER, env: process.env });
+} = createWorkerAssetHelpers({ projectRoot: PROJECT_ROOT, freeImageProviderEnv: FREE_IMAGE_PROVIDER, env: workerEnv });
 
 function getImageProvider(jobProvider) {
   const p = (jobProvider || IMAGE_PROVIDER || 'kie').toLowerCase();
@@ -71,7 +78,7 @@ function getImageProvider(jobProvider) {
 
 // Rotating provider pool — cycles through multiple providers to avoid rate limits
 const ROTATING_PROVIDERS = ['pollinations', 'piramyd'].filter(p => {
-  if (p === 'piramyd') return !!process.env.PIRAMYD_API_KEY;
+  if (p === 'piramyd') return hasEnv('PIRAMYD_API_KEY');
   return true;
 });
 let _rotatingIdx = 0;

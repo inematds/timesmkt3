@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { getEnv } = require('../config/env');
 
 function registerRerunCommands(bot, deps) {
   const {
@@ -139,7 +140,7 @@ function registerRerunCommands(bot, deps) {
       video_count: 1,
       image_source: imageSource,
       image_folder: null,
-      image_model: process.env.KIE_DEFAULT_MODEL || 'z-image',
+      image_model: getEnv('KIE_DEFAULT_MODEL', 'z-image'),
       screenshot_urls: screenshotUrls,
       use_brand_overlay: true,
       campaign_brief: briefData.campaign_angle || '',
@@ -329,7 +330,7 @@ function registerRerunCommands(bot, deps) {
       video_count: 1,
       image_source: imageSource,
       image_folder: payloadImageFolder,
-      image_model: process.env.KIE_DEFAULT_MODEL || 'z-image',
+      image_model: getEnv('KIE_DEFAULT_MODEL', 'z-image'),
       screenshot_urls: screenshotUrls,
       use_brand_overlay: true,
       campaign_brief: briefData.campaign_angle || '',

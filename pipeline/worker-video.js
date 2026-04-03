@@ -2,6 +2,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
+const { getEnv, hasEnv } = require('../config/env');
 
 function createWorkerVideoHandlers({
   projectRoot,
@@ -56,7 +57,7 @@ function createWorkerVideoHandlers({
       ? adImages.map(f => `  - ${f}`).join('\n')
       : '  (no images found in ads/)';
 
-    const hasElevenLabs = !!process.env.ELEVENLABS_API_KEY;
+    const hasElevenLabs = hasEnv('ELEVENLABS_API_KEY');
     const musicDirs = [
       path.resolve(projectRoot, project_dir, 'assets', 'music'),
       path.resolve(projectRoot, project_dir, 'assets', 'audio'),
@@ -252,7 +253,7 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       ? `\nCampaign Brief: ${campaign_brief}`
       : '';
 
-    const hasElevenLabs = !!process.env.ELEVENLABS_API_KEY;
+    const hasElevenLabs = hasEnv('ELEVENLABS_API_KEY');
 
     const videoBriefsText = video_briefs.length > 0
       ? video_briefs.map((b, i) => `  ${i + 1}. ${b}`).join('\n')
@@ -457,7 +458,7 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
       const jobProvider = job.data.image_provider || imageProviderName;
       const imageProvider = getImageProvider(jobProvider);
       const genImage = imageProvider.generateImage;
-      const model = job.data.image_model || process.env.KIE_DEFAULT_MODEL || defaultModel;
+      const model = job.data.image_model || getEnv('KIE_DEFAULT_MODEL', defaultModel);
       const useBrand = job.data.use_brand_overlay !== false;
       const brand = useBrand ? readBrandContext(project_dir) : null;
       if (brand) log(output_dir, 'video_ad_specialist', `Brand context: ${brand.brandName} | provider: ${jobProvider}`);

@@ -2,6 +2,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
+const { getEnv, hasEnv } = require('../config/env');
 
 function createWorkerVideoProHandler({
   projectRoot,
@@ -61,7 +62,7 @@ function createWorkerVideoProHandler({
       ? `\nCampaign Brief: ${campaign_brief}`
       : '';
 
-    const hasElevenLabs = !!process.env.ELEVENLABS_API_KEY;
+    const hasElevenLabs = hasEnv('ELEVENLABS_API_KEY');
     const videoBriefsText = video_briefs.length > 0
       ? video_briefs.map((b, i) => `  ${i + 1}. ${b}`).join('\n')
       : Array.from({ length: video_count }, (_, i) =>
@@ -83,7 +84,7 @@ function createWorkerVideoProHandler({
         }
       }
     }
-    if (musicFiles.length === 0 && process.env.FREESOUND_API_KEY) {
+    if (musicFiles.length === 0 && hasEnv('FREESOUND_API_KEY')) {
       log(output_dir, 'video_pro', 'No local music found — searching Freesound...');
       try {
         const { searchMusic, downloadPreview } = require('./search-music-freesound');
@@ -776,7 +777,7 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       const jobProvider = job.data.image_provider || imageProviderName;
       const imageProvider = getImageProvider(jobProvider);
       const genImage = imageProvider.generateImage;
-      const model = job.data.image_model || process.env.KIE_DEFAULT_MODEL || defaultModel;
+      const model = job.data.image_model || getEnv('KIE_DEFAULT_MODEL', defaultModel);
       const useBrand = job.data.use_brand_overlay !== false;
       const brand = useBrand ? readBrandContext(project_dir) : null;
       if (brand) log(output_dir, 'video_pro', `Brand context: ${brand.brandName} | provider: ${jobProvider}`);

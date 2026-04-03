@@ -2,6 +2,7 @@ const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
+const { getEnv } = require('../config/env');
 
 function createAdCreativeHandler({
   projectRoot,
@@ -189,7 +190,7 @@ Each story has one bold key message with large text.`;
     const providerName = job.data.image_provider || imageProviderName;
     let apiGeneratedAssets = [];
     if (image_source === 'api') {
-      const model = job.data.image_model || process.env.KIE_DEFAULT_MODEL || defaultModel;
+      const model = job.data.image_model || getEnv('KIE_DEFAULT_MODEL', defaultModel);
       const useBrand = job.data.use_brand_overlay !== false;
 
       let scenePurposes = [];

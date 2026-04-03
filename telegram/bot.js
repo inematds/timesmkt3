@@ -8,7 +8,7 @@
  */
 
 const path = require('path');
-require('dotenv').config({ path: path.resolve(__dirname, '../.env'), override: true });
+const { getEnv } = require('../config/env');
 
 const { Bot, InputFile } = require('grammy');
 const fs = require('fs');
@@ -48,6 +48,10 @@ const {
 } = require('./approval-utils');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
+const runtimeEnv = {
+  IMAGE_PROVIDER: getEnv('IMAGE_PROVIDER', 'kie'),
+  KIE_DEFAULT_MODEL: getEnv('KIE_DEFAULT_MODEL', 'z-image'),
+};
 const ensureWorker = () => ensureWorkerProcess({ projectRoot: PROJECT_ROOT });
 const sendStageApprovalRequestRef = { current: null };
 const sendImageApprovalRequest = (_ctx, chatId, outputDir) => sendImageApprovalRequestBase({
@@ -667,9 +671,9 @@ bot.command('campanha', async (ctx) => {
   const opts = parseArgs(args.slice(1));
 
   const today = new Date().toISOString().slice(0, 10);
-  const payload = buildPayload(taskName, opts, s.projectDir, today, process.env);
+  const payload = buildPayload(taskName, opts, s.projectDir, today, runtimeEnv);
 
-  await showCampaignConfirmation({ ctx, chatId, payload, session, env: process.env });
+  await showCampaignConfirmation({ ctx, chatId, payload, session, env: runtimeEnv });
 });
 
 // ── /pesquisa <tema> ────────────────────────────────────────────────────────
@@ -924,7 +928,7 @@ bot.on('message:text', async (ctx) => {
         image_formats: ['carousel_1080x1080', 'story_1080x1920'],
         video_count: 1,
         image_source: 'brand',
-        image_model: process.env.KIE_DEFAULT_MODEL || (process.env.IMAGE_PROVIDER === 'pollinations' ? 'flux' : 'z-image'),
+        image_model: runtimeEnv.KIE_DEFAULT_MODEL || (runtimeEnv.IMAGE_PROVIDER === 'pollinations' ? 'flux' : 'z-image'),
         use_brand_overlay: true,
         campaign_brief: briefData.campaign_angle || '',
         video_mode: 'quick',
@@ -960,12 +964,12 @@ bot.on('message:text', async (ctx) => {
       parseCampaignFromText({ text, projectDir: s.projectDir, projectRoot: PROJECT_ROOT, runClaude, callback: (payload) => {
         if (payload) {
           session.setPendingCampaign(chatId, payload);
-          showCampaignConfirmation({ ctx, chatId, payload, session, env: process.env });
+          showCampaignConfirmation({ ctx, chatId, payload, session, env: runtimeEnv });
         } else {
           // Fall through to regular Claude chat
           handleChatMessage(ctx, chatId, s, text);
         }
-      }, env: process.env });
+      }, env: runtimeEnv });
       return;
     }
   }
@@ -1194,6 +1198,7 @@ const {
   showCampaignConfirmation,
   parseCampaignFromText,
   runPipelineV3,
+  env: runtimeEnv,
 });
 
 const { runStage, runAgentReview, handleV3StageApproval } = createV3Flow({
