@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
 const { getEnv } = require('../config/env');
+const { writeImageApprovalTimeout } = require('../telegram/approval-utils');
 
 function createAdCreativeHandler({
   projectRoot,
@@ -262,6 +263,7 @@ Each story has one bold key message with large text.`;
             log(output_dir, 'ad_creative_designer', 'User rejected generated images. Stopping.');
             return { status: 'skipped', reason: 'images rejected' };
           }
+          writeImageApprovalTimeout(projectRoot, output_dir);
           log(output_dir, 'ad_creative_designer', 'Image approval timeout. Proceeding anyway.');
         } else {
           log(output_dir, 'ad_creative_designer', 'Images approved. Proceeding to creative assembly.');

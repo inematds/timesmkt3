@@ -81,6 +81,16 @@ function createPendingTextHandlers(deps) {
   async function handlePendingVideoApproval(ctx, chatId, s, text) {
     if (!s.pendingVideoApproval) return false;
 
+    const currentOutputDir = s.pendingVideoApproval.outputDir;
+    const videoDir = path.resolve(projectRoot, currentOutputDir, 'video');
+    const approvalSignal = path.join(videoDir, 'approval_needed.json');
+    const timedOutPath = path.join(videoDir, 'timed_out.json');
+    if (fs.existsSync(timedOutPath) || !fs.existsSync(approvalSignal)) {
+      session.clearPendingVideoApproval(chatId);
+      await ctx.reply('Essa aprovação expirou. O fluxo já seguiu adiante.');
+      return true;
+    }
+
     const lower = text.toLowerCase().trim();
     const isConfirm = /^(sim|ok|confirmar|confirma|aprovado|aprovar|vai|bora|yes|roda|rodar|renderiza|renderizar)/.test(lower);
     const isCancel = /^(nao|não|cancela|cancelar|cancel|para|parar|no\b)/.test(lower);

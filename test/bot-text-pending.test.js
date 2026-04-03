@@ -115,6 +115,9 @@ test('handlePendingVideoApproval confirms and writes approval', async () => {
   const chatId = '456';
   const s = session.get(chatId);
   s.pendingVideoApproval = { outputDir: 'prj/demo/outputs/campanha' };
+  const videoDir = path.join(projectRoot, 'prj/demo/outputs/campanha/video');
+  fs.mkdirSync(videoDir, { recursive: true });
+  fs.writeFileSync(path.join(videoDir, 'approval_needed.json'), JSON.stringify({ needed: true }));
 
   const approvals = [];
   const { handlePendingVideoApproval } = createHandlers(projectRoot, session, {
@@ -127,6 +130,31 @@ test('handlePendingVideoApproval confirms and writes approval', async () => {
   assert.deepEqual(approvals, [{ outputDir: 'prj/demo/outputs/campanha', approved: true }]);
   assert.equal(session.get(chatId).pendingVideoApproval, undefined);
   assert.match(ctx.replies[0].text, /Aprovado! Renderizando os vídeos agora/);
+});
+
+test('handlePendingVideoApproval ignores expired approval', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-text-'));
+  const session = createSessionDouble();
+  const ctx = createCtx();
+  const chatId = '457';
+  const s = session.get(chatId);
+  s.pendingVideoApproval = { outputDir: 'prj/demo/outputs/campanha' };
+
+  const videoDir = path.join(projectRoot, 'prj/demo/outputs/campanha/video');
+  fs.mkdirSync(videoDir, { recursive: true });
+  fs.writeFileSync(path.join(videoDir, 'timed_out.json'), JSON.stringify({ timed_out: true }));
+
+  const approvals = [];
+  const { handlePendingVideoApproval } = createHandlers(projectRoot, session, {
+    writeVideoApproval: () => approvals.push('called'),
+  });
+
+  const handled = await handlePendingVideoApproval(ctx, chatId, s, 'sim');
+
+  assert.equal(handled, true);
+  assert.equal(approvals.length, 0);
+  assert.equal(session.get(chatId).pendingVideoApproval, undefined);
+  assert.match(ctx.replies[0].text, /aprovação expirou/i);
 });
 
 test('handlePendingCampaign starts pipeline and numbers campaign on confirmation', async () => {

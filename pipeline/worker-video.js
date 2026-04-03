@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
 const { getEnv, hasEnv } = require('../config/env');
+const { writeVideoApprovalTimeout } = require('../telegram/approval-utils');
 
 function createWorkerVideoHandlers({
   projectRoot,
@@ -188,6 +189,7 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
         log(output_dir, 'video_quick', 'User rejected. Skipping render.');
         return { status: 'skipped', reason: 'rejected' };
       }
+      writeVideoApprovalTimeout(projectRoot, output_dir);
       log(output_dir, 'video_quick', 'Approval timeout. Skipping.');
       return { status: 'skipped', reason: 'approval timeout' };
     }
@@ -541,6 +543,7 @@ After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_di
         log(output_dir, 'video_ad_specialist', 'User rejected the video plan. Skipping render.');
         return { status: 'skipped', reason: 'rejected by user' };
       }
+      writeVideoApprovalTimeout(projectRoot, output_dir);
       log(output_dir, 'video_ad_specialist', 'Approval timeout. Skipping video render.');
       return { status: 'skipped', reason: 'approval timeout' };
     }

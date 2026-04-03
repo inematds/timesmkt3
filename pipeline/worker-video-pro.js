@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screenshots');
 const { getEnv, hasEnv } = require('../config/env');
+const { writeVideoApprovalTimeout } = require('../telegram/approval-utils');
 
 function createWorkerVideoProHandler({
   projectRoot,
@@ -1081,6 +1082,7 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
         log(output_dir, 'video_pro', 'User rejected the video plan. Skipping render.');
         return { status: 'skipped', reason: 'rejected by user' };
       }
+      writeVideoApprovalTimeout(projectRoot, output_dir);
       log(output_dir, 'video_pro', 'Approval timeout. Skipping video render.');
       return { status: 'skipped', reason: 'approval timeout' };
     }

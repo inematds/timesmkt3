@@ -25,6 +25,22 @@ function writeVideoApproval(projectRoot, outputDir, approved, feedback = null) {
   fs.writeFileSync(path.join(videoDir, file), JSON.stringify({ approved, feedback, ts: new Date().toISOString() }));
 }
 
+function writeImageApprovalTimeout(projectRoot, outputDir, reason = 'approval timeout') {
+  const imgsDir = path.join(projectRoot, outputDir, 'imgs');
+  fs.mkdirSync(imgsDir, { recursive: true });
+  fs.writeFileSync(path.join(imgsDir, 'timed_out.json'), JSON.stringify({ timed_out: true, reason, ts: new Date().toISOString() }));
+  const signal = path.join(imgsDir, 'approval_needed.json');
+  if (fs.existsSync(signal)) fs.unlinkSync(signal);
+}
+
+function writeVideoApprovalTimeout(projectRoot, outputDir, reason = 'approval timeout') {
+  const videoDir = path.join(projectRoot, outputDir, 'video');
+  fs.mkdirSync(videoDir, { recursive: true });
+  fs.writeFileSync(path.join(videoDir, 'timed_out.json'), JSON.stringify({ timed_out: true, reason, ts: new Date().toISOString() }));
+  const signal = path.join(videoDir, 'approval_needed.json');
+  if (fs.existsSync(signal)) fs.unlinkSync(signal);
+}
+
 function formatStoryboardMessage(projectRoot, outputDir, escapeHtml) {
   const videoDir = path.join(projectRoot, outputDir, 'video');
   if (!fs.existsSync(videoDir)) return null;
@@ -157,7 +173,8 @@ async function scanPendingApprovals({ projectRoot, targetChatId, ctx, botApi, se
       const videoSignal = path.join(campDir, 'video', 'approval_needed.json');
       const videoApproved = path.join(campDir, 'video', 'approved.json');
       const videoRejected = path.join(campDir, 'video', 'rejected.json');
-      if (fs.existsSync(videoSignal) && !fs.existsSync(videoApproved) && !fs.existsSync(videoRejected)) {
+      const videoTimedOut = path.join(campDir, 'video', 'timed_out.json');
+      if (fs.existsSync(videoSignal) && !fs.existsSync(videoApproved) && !fs.existsSync(videoRejected) && !fs.existsSync(videoTimedOut)) {
         const ctx2 = readChatContext(campDir);
         if (!targetChatId || ctx2?.chatId === targetChatId || !ctx2) {
           pending.push({ type: 'video', outputDir: relDir, chatId: ctx2?.chatId || targetChatId });
@@ -167,7 +184,8 @@ async function scanPendingApprovals({ projectRoot, targetChatId, ctx, botApi, se
       const imgSignal = path.join(campDir, 'imgs', 'approval_needed.json');
       const imgApproved = path.join(campDir, 'imgs', 'approved.json');
       const imgRejected = path.join(campDir, 'imgs', 'rejected.json');
-      if (fs.existsSync(imgSignal) && !fs.existsSync(imgApproved) && !fs.existsSync(imgRejected)) {
+      const imgTimedOut = path.join(campDir, 'imgs', 'timed_out.json');
+      if (fs.existsSync(imgSignal) && !fs.existsSync(imgApproved) && !fs.existsSync(imgRejected) && !fs.existsSync(imgTimedOut)) {
         const ctx2 = readChatContext(campDir);
         if (!targetChatId || ctx2?.chatId === targetChatId || !ctx2) {
           pending.push({ type: 'images', outputDir: relDir, chatId: ctx2?.chatId || targetChatId });
@@ -198,6 +216,8 @@ module.exports = {
   readChatContext,
   writeImageApproval,
   writeVideoApproval,
+  writeImageApprovalTimeout,
+  writeVideoApprovalTimeout,
   formatStoryboardMessage,
   sendImageApprovalRequest,
   sendVideoApprovalRequest,
