@@ -1,4 +1,4 @@
-# Agentes de Distribuicao — ITAGMKT v4.2.6
+# Agentes de Distribuicao — timesmkt3 v4.2.6
 
 ## Stage 4 — Agentes de Plataforma
 

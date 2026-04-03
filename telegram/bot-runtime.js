@@ -40,7 +40,7 @@ function createBotRuntime(deps) {
       return `${prefix}: ${message.content}`;
     }).join('\n\n');
 
-    const systemContext = `You are the assistant for the ITAGMKT marketing automation system.
+    const systemContext = `You are the assistant for the timesmkt3 marketing automation system.
 The active project is: ${s.projectDir}
 Project root contains: skills/ (agent skills), pipeline/ (BullMQ orchestrator), prj/ (client projects).
 Each project in prj/ has: assets/, knowledge/ (brand_identity.md, product_campaign.md, platform_guidelines.md), outputs/.

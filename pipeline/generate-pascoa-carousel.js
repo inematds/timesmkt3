@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
 
-const BASE = '/home/nmaldaner/projetos/timesmkt2';
+const BASE = '/home/nmaldaner/projetos/timesmkt3';
 const IMG = `${BASE}/prj/inema/imgs/pascoa`;
 const OUT = `${BASE}/prj/inema/outputs/c0031-pascoa2026/ads`;
 

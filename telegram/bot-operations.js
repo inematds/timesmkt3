@@ -32,7 +32,7 @@ function registerOperationalCommands(bot, deps) {
     );
 
     const claudePath = '/home/nmaldaner/.local/bin/claude';
-    const prompt = `You are Claude Code working on the ITAGMKT social media automation project at ${projectRoot}.
+    const prompt = `You are Claude Code working on the timesmkt3 social media automation project at ${projectRoot}.
 
 Task: ${description}
 

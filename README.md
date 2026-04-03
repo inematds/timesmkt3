@@ -1,6 +1,6 @@
-# ITAGMKT v4.3
+# timesmkt3 v4.3
 
-**INEMA Time de Agentes de Marketing** — sistema de automacao de conteudo para marketing digital usando agentes de IA coordenados por um bot Telegram.
+**ITAGMKT / timesmkt3** — sistema de automacao de conteudo para marketing digital usando agentes de IA coordenados por um bot Telegram.
 
 O sistema pesquisa, cria narrativa, gera imagens, produz videos, adapta copy para cada plataforma e publica — tudo automatizado com aprovacoes humanas em cada etapa.
 
