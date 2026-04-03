@@ -1,6 +1,6 @@
 # timesmkt3 v4.3
 
-**ITAGMKT / timesmkt3** — sistema de automacao de conteudo para marketing digital usando agentes de IA coordenados por um bot Telegram.
+**timesmkt3** — sistema de automacao de conteudo para marketing digital usando agentes de IA coordenados por um bot Telegram.
 
 O sistema pesquisa, cria narrativa, gera imagens, produz videos, adapta copy para cada plataforma e publica — tudo automatizado com aprovacoes humanas em cada etapa.
 
@@ -289,7 +289,7 @@ Configuracao:
 ## Estrutura do Projeto
 
 ```
-itagmkt/
+timesmkt3/
 ├── prj/                             # Projetos (um por cliente/marca)
 │   └── <projeto>/
 │       ├── assets/                  # Fotos e midia da marca

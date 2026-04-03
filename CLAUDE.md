@@ -1,12 +1,12 @@
 ## Project Overview
 
-**ITAGMKT v4.2.6** — INEMA Time de Agentes de Marketing. AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
+**timesmkt3 v4.3.4** — INEMA Time de Agentes de Marketing. AI-powered Social Media Content Automation System built with Claude Code inside the Antigravity IDE.
 
 ---
 
 ## Versionamento
 
-**Padrão:** `ITAGMKT vMAJOR.RECURSO.BUG`
+**Padrão:** `timesmkt3 vMAJOR.RECURSO.BUG`
 
 | Campo | Quando incrementar |
 |---|---|
@@ -23,7 +23,7 @@
 - `v3.2.1` → Motion Director + brand visual context (RECURSO+1, BUG acumulado = 1, não zerou)
 - `v4.0.0` → pipeline 5 estágios, 6 agentes de plataforma, video quick/pro, publish genérico (MAJOR+1, tudo zera)
 
-**Versão atual:** `ITAGMKT v4.3.4`
+**Versão atual:** `timesmkt3 v4.3.4`
 
 Sempre atualizar a versão no topo deste arquivo e no `package.json` ao fazer uma alteração relevante.
 

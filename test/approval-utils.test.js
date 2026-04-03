@@ -7,7 +7,7 @@ const path = require('path');
 const { writeImageApproval, writeVideoApproval, formatStoryboardMessage } = require('../telegram/approval-utils');
 
 test('writeImageApproval and writeVideoApproval create approval files', () => {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt2-approval-'));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-approval-'));
   const outputDir = 'prj/demo/outputs/c0001-demo';
 
   writeImageApproval(tmpRoot, outputDir, true, 'ok');
@@ -23,7 +23,7 @@ test('writeImageApproval and writeVideoApproval create approval files', () => {
 });
 
 test('formatStoryboardMessage returns null when no scene plans exist', () => {
-  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt2-storyboard-'));
+  const tmpRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-storyboard-'));
   const msg = formatStoryboardMessage(tmpRoot, 'prj/demo/outputs/c0001-demo', (s) => s);
   assert.equal(msg, null);
 });

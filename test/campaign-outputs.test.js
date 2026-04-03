@@ -12,7 +12,7 @@ const {
 } = require('../telegram/campaign-outputs');
 
 test('findCampaign resolves exact and partial campaign names', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt2-campaign-search-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-campaign-search-'));
   fs.mkdirSync(path.join(root, 'prj', 'demo', 'outputs', 'c0015-pascoa2026'), { recursive: true });
   fs.mkdirSync(path.join(root, 'prj', 'demo', 'outputs', 'black-friday-2026'), { recursive: true });
 
@@ -22,7 +22,7 @@ test('findCampaign resolves exact and partial campaign names', () => {
 });
 
 test('findCampaignAcrossProjects and detectProjectFromText resolve project context', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt2-campaign-project-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-campaign-project-'));
   fs.mkdirSync(path.join(root, 'prj', 'alpha', 'outputs', 'c0001-demo'), { recursive: true });
   fs.mkdirSync(path.join(root, 'prj', 'beta', 'outputs', 'c0020-launch'), { recursive: true });
 
@@ -37,7 +37,7 @@ test('findCampaignAcrossProjects and detectProjectFromText resolve project conte
 });
 
 test('sendCampaignFiles ignores prompt artifacts and reports sent files', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt2-campaign-send-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-campaign-send-'));
   const outputDir = path.join(root, 'campaign');
   fs.mkdirSync(path.join(outputDir, 'ads'), { recursive: true });
   fs.mkdirSync(path.join(outputDir, 'copy'), { recursive: true });
