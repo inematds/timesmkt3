@@ -224,7 +224,7 @@ bot.command('help', async (ctx) => {
     `<b>Pipeline (5 etapas)</b>\n` +
     `/campanha &lt;nome&gt; [opcoes] — pipeline completo\n` +
     `/lote — ajuda de lotes\n` +
-    `/lotequick &lt;ativos|todos&gt; [qtd] fonte ... — batch quick\n` +
+    `/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte ... [modo ...] — batch quick\n` +
     `/rerun &lt;campanha&gt; &lt;etapas&gt; — reprocessar\n` +
     `/continue &lt;campanha&gt; — continuar de onde parou\n` +
     `/cancel — cancelar pipeline ativo\n` +
@@ -266,8 +266,9 @@ bot.command('help', async (ctx) => {
     `<code>/rerun c14 imagens api</code>\n` +
     `<code>/rerun c13 2,3</code>\n` +
     `<code>/lote</code>\n` +
-    `<code>/lotequick ativos 10 fonte solido #0D0D0D</code>\n` +
-    `Ajustes antes do <i>sim</i>: <code>fonte api</code>, <code>fonte pasta prj/inema/imgs</code>, <code>fonte screenshot https://site.com</code>\n\n` +
+    `<code>/lotequick ativos 10 fonte solido #0D0D0D modo enxuto</code>\n` +
+    `<code>/lotequick campanhas c2,c44,c45 fonte brand modo normal</code>\n` +
+    `Ajustes do lote: <code>fonte api</code>, <code>fonte pasta prj/inema/imgs</code>, <code>fonte screenshot https://site.com</code>, <code>modo enxuto</code>, <code>modo normal</code>\n\n` +
 
     `<b>Conversa</b>\n` +
     `/novochat — limpa historico\n` +
@@ -602,13 +603,17 @@ bot.command('lotequick', async (ctx) => {
   if (!raw) {
     return ctx.reply(
       '<b>/lotequick — Batch de vídeos quick</b>\n\n'
-      + 'Uso: <code>/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte &lt;tipo&gt;</code>\n\n'
+      + 'Uso: <code>/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte &lt;tipo&gt; [modo &lt;enxuto|normal&gt;]</code>\n\n'
       + 'Exemplos:\n'
-      + '<code>/lotequick ativos 10 fonte solido #0D0D0D</code>\n'
-      + '<code>/lotequick todos 5 fonte brand</code>\n'
-      + '<code>/lotequick campanhas c1,c2,c3 fonte solido #0D0D0D</code>\n'
-      + '<code>/lotequick c1,c2,c3 fonte brand</code>\n'
-      + '<code>/lotequick ativos fonte pasta prj/inema/imgs/lote_abril</code>',
+      + '<code>/lotequick ativos 10 fonte solido #0D0D0D modo enxuto</code>\n'
+      + '<code>/lotequick todos 5 fonte brand modo normal</code>\n'
+      + '<code>/lotequick campanhas c1,c2,c3 fonte solido #0D0D0D modo enxuto</code>\n'
+      + '<code>/lotequick c1,c2,c3 fonte brand modo normal</code>\n'
+      + '<code>/lotequick ativos fonte pasta prj/inema/imgs/lote_abril modo normal</code>\n\n'
+      + 'Regras:\n'
+      + '• <b>campanhas</b> e lista explícita respeitam os IDs informados, incluindo arquivadas\n'
+      + '• <b>modo enxuto</b> usa quick otimizado para lote\n'
+      + '• <b>modo normal</b> roda o quick completo',
       { parse_mode: 'HTML' },
     );
   }
@@ -725,23 +730,26 @@ bot.command('lote', async (ctx) => {
   await ctx.reply(
     '<b>Lotes</b>\n\n'
     + 'Comandos disponíveis:\n'
-    + '<code>/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte &lt;tipo&gt;</code>\n\n'
+    + '<code>/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte &lt;tipo&gt; [modo &lt;enxuto|normal&gt;]</code>\n\n'
     + 'Escopos:\n'
     + '• <b>ativos</b> — só campanhas não arquivadas\n'
     + '• <b>todos</b> — inclui arquivadas\n\n'
-    + '• <b>campanhas</b> — lista explícita\n\n'
+    + '• <b>campanhas</b> — lista explícita; respeita os IDs mesmo se estiverem arquivados\n\n'
     + 'Fontes:\n'
     + '• <code>fonte solido #0D0D0D</code>\n'
     + '• <code>fonte brand</code>\n'
     + '• <code>fonte api</code>\n'
     + '• <code>fonte free</code>\n'
     + '• <code>fonte pasta prj/inema/imgs/lote</code>\n\n'
+    + 'Modos:\n'
+    + '• <code>modo enxuto</code> — lote rápido, quick otimizado\n'
+    + '• <code>modo normal</code> — quick completo\n\n'
     + 'Exemplos:\n'
-    + '<code>/lotequick ativos 10 fonte solido #0D0D0D</code>\n'
-    + '<code>/lotequick todos 5 fonte brand</code>\n'
-    + '<code>/lotequick campanhas c1,c2,c3 fonte solido #0D0D0D</code>\n'
-    + '<code>/lotequick c1,c2,c3 fonte brand</code>\n'
-    + '<code>/lotequick ativos fonte pasta prj/inema/imgs/lote_abril</code>',
+    + '<code>/lotequick ativos 10 fonte solido #0D0D0D modo enxuto</code>\n'
+    + '<code>/lotequick todos 5 fonte brand modo normal</code>\n'
+    + '<code>/lotequick campanhas c1,c2,c3 fonte solido #0D0D0D modo enxuto</code>\n'
+    + '<code>/lotequick c1,c2,c3 fonte brand modo normal</code>\n'
+    + '<code>/lotequick ativos fonte pasta prj/inema/imgs/lote_abril modo normal</code>',
     { parse_mode: 'HTML' },
   );
 });

@@ -25,13 +25,20 @@ timesmkt3/
 ```json
 {
   "titulo": "Batch videos maes",
+  "batch_id": "tg_lotequick_1775305296801_4d0556",
+  "created_at": "2026-04-04T12:21:37.120Z",
+  "command_text": "/lotequick campanhas c2,c44 fonte solido #0D0D0D modo enxuto",
   "project_dir": "prj/inema",
-  "output_root": "prj/inema/outputs/imports/batch_maes",
-  "per_day": 3,
+  "scope": "campanhas",
+  "source_spec": "solido #0D0D0D",
+  "source_label": "sólido #0D0D0D",
+  "quick_mode": "enxuto",
+  "selected_campaigns": ["c0002-pascoa2026", "c0044-gestores_ia_lideranca"],
   "auto_approve_video": true,
   "cleanup_import": true,
   "defaults": {
     "targets": ["video_quick"],
+    "quick_mode": "enxuto",
     "image_source": "solid",
     "image_background_color": "#0D0D0D",
     "video_duration": 20,
@@ -57,9 +64,15 @@ timesmkt3/
 | Campo | Tipo | Obrigatório | Descrição |
 |---|---|---:|---|
 | `titulo` | string | não | Nome do lote |
+| `batch_id` | string | não | ID do lote, gerado automaticamente pelo bot |
+| `created_at` | string | não | Timestamp ISO de criação |
+| `command_text` | string | não | Comando original que gerou o lote |
 | `project_dir` | string | sim | Projeto base, ex: `prj/inema` |
-| `output_root` | string | não | Pasta base de saída. Default: `project_dir/outputs/imports/<nome-do-lote>` |
-| `per_day` | number | não | Limite de campanhas processadas por scan/dia |
+| `scope` | string | não | `ativos`, `todos` ou `campanhas` |
+| `source_spec` | string | não | Texto cru da fonte no comando |
+| `source_label` | string | não | Rótulo já interpretado da fonte |
+| `quick_mode` | string | não | `enxuto` ou `normal` |
+| `selected_campaigns` | array | não | Campanhas selecionadas no momento da criação |
 | `auto_approve_video` | boolean | não | Se `true`, autoaprova `video_pro` |
 | `cleanup_import` | boolean | não | Se `true`, remove a pasta do lote ao terminar |
 | `defaults` | object | não | Defaults aplicados às campanhas |
@@ -75,6 +88,7 @@ timesmkt3/
 | `output_name` | string | não | Nome da subpasta de saída |
 | `output_dir` | string | não | Sobrescreve a pasta final dessa campanha |
 | `targets` | array \| string | não | `ads`, `video_quick`, `video_pro`, `both` |
+| `quick_mode` | string | não | `enxuto` ou `normal` |
 | `image_source` | string | não | `brand`, `api`, `free`, `screenshot`, `folder`, `solid` |
 | `image_folder` | string | não | Pasta para `image_source: "folder"` |
 | `image_background_color` | string | não | Cor para `image_source: "solid"` |
@@ -91,8 +105,11 @@ timesmkt3/
 - `targets: "video_pro"` roda apenas o pro.
 - `targets: "both"` roda quick + pro.
 - `image_source: "solid"` aceita `image_background_color`; sem cor, o fallback é `#0D0D0D`.
-- O worker copia os artefatos base da campanha original (`creative/`, `copy/`, `research_results.json`) para a nova pasta de saída antes de gerar.
-- Quando um vídeo final é gerado, ele também é copiado para a pasta agregada `<output_root>/videos/`.
+- `quick_mode: "enxuto"` usa o quick otimizado para lote.
+- `quick_mode: "normal"` usa o fluxo normal do quick.
+- No `solid`, o batch força `ad_creative_designer` antes do `video_quick` para gerar slides tipográficos em `ads/`; o quick usa esses PNGs.
+- O processamento roda na campanha original em `project_dir/outputs/<campanha>`.
+- Quando um vídeo final é gerado, ele também é copiado para a pasta agregada `imports/<batch>/videos/`.
 - A cópia agregada não remove o arquivo original da campanha.
 
 ---

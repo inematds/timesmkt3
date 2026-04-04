@@ -353,6 +353,8 @@ timesmkt3/
 | `/modos [etapa] [humano\|agente\|auto]` | Configura modos de aprovacao |
 | `/rerun <campanha> [stage]` | Reprocessa stages (mostra config antes de rodar) |
 | `/aprovar` | Re-verifica aprovacoes pendentes |
+| `/lote` | Ajuda de lotes |
+| `/lotequick <ativos\|todos\|campanhas ...> [qtd] fonte <tipo> [modo <enxuto\|normal>]` | Batch quick |
 
 ### Painel de Briefing
 
@@ -388,6 +390,34 @@ Digite o comando para alterar (ex: `pro`, `narrador bella`, `modelo flux`). `sim
 /rerun c0038 3 pro cleanplan    # limpar planos e refazer
 /rerun c0038 3 pro cleanall     # limpar tudo (plan+img+audio)
 ```
+
+### /lotequick — Batch Quick
+
+Comando:
+
+```text
+/lotequick <ativos|todos|campanhas ...> [qtd] fonte <tipo> [modo <enxuto|normal>]
+```
+
+Exemplos:
+
+```text
+/lotequick ativos 10 fonte solido #0D0D0D modo enxuto
+/lotequick todos 5 fonte brand modo normal
+/lotequick campanhas c2,c44,c45 fonte solido #0D0D0D modo enxuto
+/lotequick c2,c44,c45 fonte brand modo normal
+```
+
+Regras:
+
+- `ativos` usa apenas campanhas não arquivadas
+- `todos` inclui arquivadas
+- `campanhas ...` e lista explícita respeitam os IDs informados, mesmo se estiverem arquivados
+- `fonte solido #0D0D0D` gera slides tipográficos via `ad_creative_designer`; depois o `video_quick` usa esses PNGs
+- `modo enxuto` usa quick otimizado para lote
+- `modo normal` usa o quick completo
+- O lote grava manifesto e estado em `prj/<projeto>/imports/<batch>/`
+- Os vídeos finais continuam na campanha original e também são copiados para `imports/<batch>/videos/`
 
 Flags: `cleanplan`, `cleanimg`, `cleanaudio`, `cleanall`
 
@@ -518,6 +548,18 @@ Para acompanhar localmente:
 npx pm2 logs timesmkt3-bot --lines 100
 npx pm2 logs timesmkt3-worker --lines 100
 ```
+
+Teste do lote quick:
+
+```text
+/lotequick campanhas c2,c44,c45 fonte solido #0D0D0D modo enxuto
+```
+
+Validar:
+- o bot mostra `Modo: enxuto`
+- campanhas explícitas são respeitadas
+- no `solid`, o `Ad Creative Designer` roda antes do `Video Quick`
+- o manifesto do lote é salvo em `imports/` com `command_text`, `quick_mode`, `source_spec` e `selected_campaigns`
 
 ### 5.1 Timeout de aprovacao e retomada
 
