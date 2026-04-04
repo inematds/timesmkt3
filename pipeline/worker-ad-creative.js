@@ -348,6 +348,7 @@ CRITICAL IMAGE RULES:
 - Screenshots show the real product interface — prioritize them
 - Combine with brand photos for variety
 - Apply CSS overlays, gradients, blur for text readability
+- Screenshots MUST keep their full proportions visible: use object-fit: contain, object-position: center, no CSS zoom, no transform: scale(), no crop masks
 - BANNER images (marked [banner]): use object-fit: contain, never cover`;
     } else {
       const brandAssets = getProjectAssets(project_dir);
@@ -480,16 +481,16 @@ MULTI-PIECE DIVERSITY (CRITICAL — when generating multiple carousels or storie
         const isStory = f.includes('story') || f.includes('reel');
 
         if (isCarousel && (ratio < 0.85 || ratio > 1.15)) {
-          log(output_dir, 'ad_creative_designer', `WARN: ${f} is ${dims.width}x${dims.height} (ratio ${dims.ratio}) — expected 1:1 for carousel. Cropping...`);
+          log(output_dir, 'ad_creative_designer', `WARN: ${f} is ${dims.width}x${dims.height} (ratio ${dims.ratio}) — expected 1:1 for carousel. Padding without crop...`);
           const fullPath = path.join(absAdsDir, f);
           const tmpPath = fullPath + '.tmp.png';
           try {
-            execFileSync('ffmpeg', ['-y', '-i', fullPath, '-vf', 'crop=min(iw\\,ih):min(iw\\,ih)', tmpPath],
+            execFileSync('ffmpeg', ['-y', '-i', fullPath, '-vf', 'scale=1080:1080:force_original_aspect_ratio=decrease,pad=1080:1080:(ow-iw)/2:(oh-ih)/2:color=black', tmpPath],
               { stdio: 'pipe', timeout: 15000 });
             fs.renameSync(tmpPath, fullPath);
-            log(output_dir, 'ad_creative_designer', `Cropped ${f} to 1:1`);
+            log(output_dir, 'ad_creative_designer', `Padded ${f} to 1:1 without distortion`);
           } catch (e) {
-            log(output_dir, 'ad_creative_designer', `Failed to crop ${f}: ${e.message.slice(0, 100)}`);
+            log(output_dir, 'ad_creative_designer', `Failed to pad ${f}: ${e.message.slice(0, 100)}`);
             try { fs.unlinkSync(tmpPath); } catch {}
           }
         }

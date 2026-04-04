@@ -5,6 +5,34 @@ const { captureScreenshots, extractUrlsFromFiles } = require('./capture-screensh
 const { getEnv, hasEnv } = require('../config/env');
 const { writeVideoApprovalTimeout } = require('../telegram/approval-utils');
 
+function attachExistingQuickNarration(projectRoot, output_dir, task_name, idx, log = () => {}) {
+  let planPath = path.resolve(projectRoot, output_dir, 'video', `${task_name}_video_${idx}_scene_plan.json`);
+  if (!fs.existsSync(planPath)) planPath = path.resolve(projectRoot, output_dir, 'video', `video_${idx}_scene_plan.json`);
+  if (!fs.existsSync(planPath)) return false;
+
+  let plan;
+  try {
+    plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+  } catch {
+    return false;
+  }
+
+  const currentNarration = plan.narration_file ? path.resolve(projectRoot, plan.narration_file) : null;
+  if (currentNarration && fs.existsSync(currentNarration)) return false;
+
+  const candidates = [
+    `${output_dir}/audio/${task_name}_quick_${idx}_narration.mp3`,
+    `${output_dir}/audio/${task_name}_quick_narration.mp3`,
+  ];
+  const reusable = candidates.find((relPath) => fs.existsSync(path.resolve(projectRoot, relPath)));
+  if (!reusable) return false;
+
+  plan.narration_file = reusable;
+  fs.writeFileSync(planPath, JSON.stringify(plan, null, 2));
+  log(output_dir, 'video_quick', `Reusing existing narration for video ${idx}: ${reusable}`);
+  return true;
+}
+
 function createWorkerVideoHandlers({
   projectRoot,
   imageProviderName,
@@ -198,6 +226,7 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
     for (let i = 1; i <= video_count; i++) {
       const idx = String(i).padStart(2, '0');
+      const reusedNarration = attachExistingQuickNarration(projectRoot, output_dir, task_name, idx, log);
       let planPath = path.resolve(projectRoot, output_dir, 'video', `${task_name}_video_${idx}_scene_plan.json`);
       if (!fs.existsSync(planPath)) planPath = path.resolve(projectRoot, output_dir, 'video', `video_${idx}_scene_plan.json`);
       if (!fs.existsSync(planPath)) {
@@ -212,8 +241,24 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       if (job.data.image_bg_mode) {
         try {
           const planData = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+          const hasNarration = !!(planData.narration_file && fs.existsSync(path.resolve(projectRoot, planData.narration_file)));
+          if (!hasNarration && !reusedNarration) {
+            log(output_dir, 'video_quick', `Missing narration for video ${idx}; stopping quick render.`);
+            process.stdout.write(`[VIDEO_QUICK_AUDIO_MISSING] ${output_dir} video_${idx}\n`);
+            return { status: 'failed', reason: `missing narration for quick video ${idx}` };
+          }
           planData.image_bg_mode = job.data.image_bg_mode;
           fs.writeFileSync(planPath, JSON.stringify(planData, null, 2));
+        } catch {}
+      } else {
+        try {
+          const planData = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+          const hasNarration = !!(planData.narration_file && fs.existsSync(path.resolve(projectRoot, planData.narration_file)));
+          if (!hasNarration && !reusedNarration) {
+            log(output_dir, 'video_quick', `Missing narration for video ${idx}; stopping quick render.`);
+            process.stdout.write(`[VIDEO_QUICK_AUDIO_MISSING] ${output_dir} video_${idx}\n`);
+            return { status: 'failed', reason: `missing narration for quick video ${idx}` };
+          }
         } catch {}
       }
 
@@ -627,4 +672,4 @@ After saving all files, print exactly: [MOTION_PLAN_DONE] ${outputDir}`;
   };
 }
 
-module.exports = { createWorkerVideoHandlers };
+module.exports = { createWorkerVideoHandlers, attachExistingQuickNarration };

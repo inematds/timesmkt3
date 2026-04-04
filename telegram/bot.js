@@ -203,7 +203,8 @@ bot.command('help', async (ctx) => {
     `<code>/continue c16 screenshot</code> — com capturas do site\n` +
     `<code>/rerun c15 video pro</code>\n` +
     `<code>/rerun c14 imagens api</code>\n` +
-    `<code>/rerun c13 2,3</code>\n\n` +
+    `<code>/rerun c13 2,3</code>\n` +
+    `Ajustes antes do <i>sim</i>: <code>fonte api</code>, <code>fonte pasta prj/inema/imgs</code>, <code>fonte screenshot https://site.com</code>\n\n` +
 
     `<b>Conversa</b>\n` +
     `/novochat — limpa historico\n` +

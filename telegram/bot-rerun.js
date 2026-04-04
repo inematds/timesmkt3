@@ -2,6 +2,15 @@ const fs = require('fs');
 const path = require('path');
 const { getEnv } = require('../config/env');
 
+function normalizeProjectFolder(projectDir, folderPath) {
+  const raw = String(folderPath || '').trim().replace(/\\/g, '/');
+  if (!raw) return null;
+  if (raw.startsWith('prj/')) return raw;
+  if (raw.startsWith('/')) return raw;
+  if (raw.startsWith('imgs/') || raw.startsWith('assets/')) return `${projectDir}/${raw}`;
+  return `${projectDir}/imgs/${raw.replace(/^\.?\//, '')}`;
+}
+
 function registerRerunCommands(bot, deps) {
   const {
     projectRoot,
@@ -254,8 +263,8 @@ function registerRerunCommands(bot, deps) {
     let origPayload = {};
     try { origPayload = JSON.parse(fs.readFileSync(origPayloadPath, 'utf-8')); } catch {}
     let imageSource = origPayload.image_source || 'brand';
-    let payloadImageFolder = null;
-    const screenshotUrls = [];
+    let payloadImageFolder = origPayload.image_folder || null;
+    const screenshotUrls = Array.isArray(origPayload.screenshot_urls) ? [...origPayload.screenshot_urls] : [];
     const cleanFlags = { plan: false, img: false, audio: false };
 
     for (let i = 0; i < allTokens.length; i += 1) {
@@ -280,12 +289,14 @@ function registerRerunCommands(bot, deps) {
       if (token === 'screenshot' || token === 'screenshots' || token === 'captura' || token === 'capturas') {
         imageSource = 'screenshot'; continue;
       }
-      if (token === 'api') { imageSource = 'api'; continue; }
-      if (token === 'free' || token === 'gratis' || token === 'stock') { imageSource = 'free'; continue; }
+      if (token === 'api') { imageSource = 'api'; payloadImageFolder = null; screenshotUrls.length = 0; continue; }
+      if (token === 'brand' || token === 'marca') { imageSource = 'brand'; payloadImageFolder = null; screenshotUrls.length = 0; continue; }
+      if (token === 'free' || token === 'gratis' || token === 'stock') { imageSource = 'free'; payloadImageFolder = null; screenshotUrls.length = 0; continue; }
       if (token === 'pasta' || token === 'folder') {
         imageSource = 'folder';
+        screenshotUrls.length = 0;
         if (next && !resolveStageAlias(next) && !['quick', 'pro', 'screenshot', 'api', 'free'].includes(next)) {
-          payloadImageFolder = next;
+          payloadImageFolder = normalizeProjectFolder(projectDir, next);
           i += 1;
         }
         continue;
@@ -373,4 +384,4 @@ function registerRerunCommands(bot, deps) {
   });
 }
 
-module.exports = { registerRerunCommands };
+module.exports = { registerRerunCommands, normalizeProjectFolder };

@@ -149,6 +149,13 @@ Be concise and helpful. You have full access to the codebase.`;
             });
           }
         }
+
+        if (text.includes('[VIDEO_QUICK_AUDIO_MISSING]')) {
+          const match = text.match(/\[VIDEO_QUICK_AUDIO_MISSING\]\s*(\S+)\s+(\S+)/);
+          if (match) {
+            ctx.reply(`⚠️ Video Quick parou por falta de narração reaproveitável (${match[2]}). Refaça a TTS ou gere novo áudio antes do rerun.`);
+          }
+        }
       });
 
       worker.stderr.on('data', (data) => {
@@ -297,6 +304,17 @@ Be concise and helpful. You have full access to the codebase.`;
               render_start: '🎬 Video Pro: renderizando vídeo final...',
             };
             bot.api.sendMessage(chatId, labels[phase] || `🎬 Video Pro: ${phase}`).catch(() => {});
+          }
+        }
+
+        if (text.includes('[VIDEO_QUICK_AUDIO_MISSING]')) {
+          const match = text.match(/\[VIDEO_QUICK_AUDIO_MISSING\]\s*(\S+)\s+(\S+)/);
+          if (match) {
+            bot.api.sendMessage(
+              chatId,
+              `⚠️ <b>Video Quick parado</b>\nSem narração reaproveitável para <code>${match[2]}</code>.\nRefaça a TTS ou gere novo áudio antes do rerun.`,
+              { parse_mode: 'HTML' },
+            ).catch(() => {});
           }
         }
 

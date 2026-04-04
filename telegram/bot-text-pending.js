@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const { normalizeProjectFolder } = require('./bot-rerun');
 
 function createPendingTextHandlers(deps) {
   const {
@@ -18,6 +19,40 @@ function createPendingTextHandlers(deps) {
     runPipelineV3,
     env = process.env,
   } = deps;
+
+  const sourceLabels = {
+    brand: 'assets da marca',
+    api: 'IA (API)',
+    free: 'banco grátis',
+    screenshot: 'screenshots',
+    folder: 'pasta',
+    pasta: 'pasta',
+  };
+
+  function normalizeImageSource(raw) {
+    const lower = String(raw || '').trim().toLowerCase();
+    const aliases = { marca: 'brand', gratis: 'free', stock: 'free', captura: 'screenshot', capturas: 'screenshot', pasta: 'folder' };
+    return aliases[lower] || lower || 'brand';
+  }
+
+  function describePendingRerun(payload, rerunStages) {
+    const stageLabels = { 1: 'Brief', 2: 'Imagens', 3: 'Vídeo', 4: 'Plataformas', 5: 'Distribuição' };
+    const stageText = rerunStages.map((n) => stageLabels[n] || `Etapa ${n}`).join(', ');
+    const source = normalizeImageSource(payload.image_source);
+    const lines = [
+      `Reprocessamento: <b>${payload.task_name}</b>`,
+      `Etapas: ${stageText}`,
+      `Fonte de imagens: <b>${sourceLabels[source] || source}</b>`,
+    ];
+    if (source === 'folder' && payload.image_folder) {
+      lines.push(`Pasta: <code>${payload.image_folder}</code>`);
+    }
+    if (source === 'screenshot' && Array.isArray(payload.screenshot_urls) && payload.screenshot_urls.length > 0) {
+      lines.push(`URLs: ${payload.screenshot_urls.join(', ')}`);
+    }
+    lines.push('Responda <b>sim</b> para confirmar, <b>não</b> para cancelar, ou ajuste com <code>fonte pasta ...</code>, <code>fonte screenshot ...</code>, <code>fonte api</code>.');
+    return lines.join('\n');
+  }
 
   async function handlePendingImageError(ctx, chatId, s, text) {
     if (!s.pendingImageError) return false;
@@ -151,6 +186,47 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
       session.clearPendingRerun(chatId);
       await ctx.reply('Reprocessamento cancelado.');
       return true;
+    }
+
+    const rerunPayload = s.pendingRerun.payload;
+    const sourceMatch = text.match(/^fonte\s+(brand|marca|api|free|gratis|stock|screenshot|captura|capturas|pasta|folder)(?:\s+(.+))?$/i);
+    if (sourceMatch) {
+      const nextSource = normalizeImageSource(sourceMatch[1]);
+      const extra = (sourceMatch[2] || '').trim();
+      rerunPayload.image_source = nextSource;
+
+      if (nextSource === 'folder') {
+        if (!extra) {
+          await ctx.reply('Informe a pasta. Ex: <code>fonte pasta prj/inema/imgs</code>', { parse_mode: 'HTML' });
+          return true;
+        }
+        rerunPayload.image_folder = normalizeProjectFolder(rerunPayload.project_dir || s.projectDir, extra);
+        rerunPayload.screenshot_urls = [];
+      } else if (nextSource === 'screenshot') {
+        rerunPayload.image_folder = null;
+        rerunPayload.screenshot_urls = extra
+          ? extra.split(/[\s,]+/).filter(Boolean).map((url) => (url.startsWith('http') ? url : `https://${url}`))
+          : (rerunPayload.screenshot_urls || []);
+      } else {
+        rerunPayload.image_folder = null;
+        rerunPayload.screenshot_urls = [];
+      }
+
+      await ctx.reply(`✅ Fonte ajustada para <b>${sourceLabels[nextSource] || nextSource}</b>.`, { parse_mode: 'HTML' });
+      await ctx.reply(describePendingRerun(rerunPayload, s.pendingRerun.stages), { parse_mode: 'HTML' });
+      return true;
+    }
+
+    if ((lower.match(/^https?:\/\//) || lower.includes('.')) && !isConfirm) {
+      const urls = text.split(/[\s,]+/).filter(Boolean).filter((token) => /^https?:\/\//i.test(token) || /\.\w{2,}(\/|$)/.test(token));
+      if (urls.length > 0) {
+        rerunPayload.image_source = 'screenshot';
+        rerunPayload.image_folder = null;
+        rerunPayload.screenshot_urls = urls.map((url) => (url.startsWith('http') ? url : `https://${url}`));
+        await ctx.reply('✅ URLs de screenshot atualizadas.', { parse_mode: 'HTML' });
+        await ctx.reply(describePendingRerun(rerunPayload, s.pendingRerun.stages), { parse_mode: 'HTML' });
+        return true;
+      }
     }
 
     if (!isConfirm) return false;

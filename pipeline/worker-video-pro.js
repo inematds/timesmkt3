@@ -76,6 +76,69 @@ function createWorkerVideoProHandler({
       const preferred = rawPortrait.length > 0 ? rawPortrait : (portrait.length > 0 ? portrait : fallbackAssets);
       return preferred[sceneIndex % preferred.length]?.path || fallbackAssets[sceneIndex % fallbackAssets.length]?.path || null;
     };
+    const buildFallbackPhotographyPlan = (narrationTimings) => {
+      const fallbackAssets = collectFallbackVisualAssets();
+      const maxAudioDuration = narrationTimings.length > 0
+        ? Math.max(...narrationTimings.map((timing) => timing.audioDuration || 0))
+        : (job.data.video_duration || 60);
+      const totalDuration = Math.max(Math.ceil(maxAudioDuration) + 3, job.data.video_duration || 60);
+      const shots = [];
+      const shotCount = Math.max(video_count * 6, 8);
+      const baseDuration = Math.max(3, parseFloat((totalDuration / shotCount).toFixed(1)));
+      let cursor = 0;
+
+      for (let index = 0; index < shotCount; index += 1) {
+        const isLast = index === shotCount - 1;
+        const duration = isLast ? Math.max(3, parseFloat((totalDuration - cursor).toFixed(1))) : baseDuration;
+        const imagePath = pickFallbackAssetForScene(fallbackAssets, index);
+        shots.push({
+          timing: `${cursor.toFixed(1)}s-${(cursor + duration).toFixed(1)}s`,
+          start_s: parseFloat(cursor.toFixed(1)),
+          end_s: parseFloat((cursor + duration).toFixed(1)),
+          duration_s: duration,
+          framing: index === 0 ? 'close-up' : index % 3 === 0 ? 'wide-shot' : 'medium-shot',
+          motion: ['push-in', 'drift', 'ken-burns-in', 'pan-right'][index % 4],
+          image: imagePath,
+          image_has_text: !!(imagePath && /(_post|_stories|carousel_|oficial_|logo_|instagram|facebook|_ad\.|banner|calendar)/i.test(imagePath)),
+          face_position: 'center',
+          text_overlay: isLast ? 'inema.club' : null,
+          text_position: 'top',
+          image_reason: imagePath ? 'Fallback local após timeout do Photography Director' : 'Sem asset fallback disponível',
+        });
+        cursor += duration;
+      }
+
+      return {
+        campaign_id: task_name,
+        generated_at: new Date().toISOString().slice(0, 10),
+        style_preset: 'corporate_clean',
+        formats: ['9:16'],
+        color_palette: {
+          primary: '#0099FF',
+          background: '#0D0D0D',
+          accent: '#00FF88',
+          warning: '#FF6B00',
+          text: '#FFFFFF',
+        },
+        typography: {
+          headline_font: 'Lora',
+          body_font: 'Inter',
+        },
+        sections: [
+          {
+            name: 'Fallback Coverage',
+            start_s: 0,
+            end_s: totalDuration,
+            mood: 'executivo objetivo',
+            default_framing: 'medium-shot',
+            default_motion: 'push-in',
+            overlay: 'dark',
+            overlay_opacity: 0.45,
+          },
+        ],
+        shots,
+      };
+    };
 
     const vf = (idx, suffix) => `${task_name}_video_${idx}${suffix}`;
     const vfFind = (idx, suffix) => {
@@ -526,8 +589,15 @@ Output ONLY the JSON file. Do NOT create scene plans or render anything.`;
       }
 
       const photoTimeout = photoQuality === 'premium' ? 600000 : 300000;
-      await runClaude(photoDirPrompt, 'video_pro', output_dir, photoTimeout, { model: photoModel });
-      log(output_dir, 'video_pro', `Photography plan created (${photoLabel}).`);
+      try {
+        await runClaude(photoDirPrompt, 'video_pro', output_dir, photoTimeout, { model: photoModel });
+        log(output_dir, 'video_pro', `Photography plan created (${photoLabel}).`);
+      } catch (error) {
+        const fallbackPlan = buildFallbackPhotographyPlan(narrationTimings);
+        fs.writeFileSync(photoplanPath, JSON.stringify(fallbackPlan, null, 2), 'utf-8');
+        log(output_dir, 'video_pro', `Photography Director timed out — using fallback plan: ${error.message.slice(0, 200)}`);
+        log(output_dir, 'video_pro', 'Photography plan created via fallback assets.');
+      }
     } else {
       log(output_dir, 'video_pro', 'Photography plan already exists, skipping.');
     }

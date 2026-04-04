@@ -384,11 +384,28 @@ Digite o comando para alterar (ex: `pro`, `narrador bella`, `modelo flux`). `sim
 ```bash
 /rerun c0038 3 pro              # refazer video pro
 /rerun c0038 2 api              # refazer imagens com API
+/rerun c0038 imagens api        # mesmo caso, usando alias
 /rerun c0038 3 pro cleanplan    # limpar planos e refazer
 /rerun c0038 3 pro cleanall     # limpar tudo (plan+img+audio)
 ```
 
 Flags: `cleanplan`, `cleanimg`, `cleanaudio`, `cleanall`
+
+Tambem e possivel ajustar a fonte antes de confirmar com `sim`:
+
+```text
+/rerun c0038 imagens
+fonte api
+sim
+```
+
+Outros exemplos:
+
+```text
+fonte pasta prj/inema/imgs/site
+fonte screenshot https://inema.com.br https://app.inema.club
+fonte brand
+```
 
 ---
 
@@ -562,6 +579,15 @@ npm run media:status
 | Texto sobre rosto | Seguir regras de posicionamento (analisar imagem antes) |
 | Instagram token expirado | Renovar a cada 60 dias |
 | Aprovacao expirou | Retomar com `/continue CAMPANHA` ou `/rerun CAMPANHA ETAPA` |
+
+---
+
+## Roadmap v5
+
+- Fila multi-campanha por chat no Telegram: permitir colocar varias campanhas em sequencia sem bloquear o mesmo chat por `runningTask`.
+- Status por campanha: `/status` listando mais de uma campanha ativa ou enfileirada no mesmo chat.
+- Aprovações por campanha: respostas de aprovacao, `/continue`, `/rerun` e `/cancel` sempre vinculadas explicitamente a uma campanha, sem confundir contextos.
+- Publicacao em fila de producao para clips `yt-pub-lives`: permitir enfileirar clips para processamento e publicacao ordenada nesse destino.
 
 ---
 

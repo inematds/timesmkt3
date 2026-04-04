@@ -218,3 +218,86 @@ test('handlePendingCampaign updates approval mode and refreshes confirmation', a
   assert.equal(confirmations.length, 1);
   assert.match(ctx.replies[0].text, /aprovações definidas como/);
 });
+
+test('handlePendingRerun lets user change image folder before confirmation', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-text-'));
+  const session = createSessionDouble();
+  const ctx = createCtx();
+  const chatId = '880';
+  const s = session.get(chatId);
+  s.pendingRerun = {
+    campaignFolder: 'c0043-campanha',
+    stages: [2],
+    payload: {
+      task_name: 'c0043-campanha',
+      project_dir: 'prj/inema',
+      image_source: 'brand',
+      image_folder: null,
+      screenshot_urls: [],
+    },
+  };
+
+  const { handlePendingRerun } = createHandlers(projectRoot, session);
+  const handled = await handlePendingRerun(ctx, chatId, s, 'fonte pasta prj/inema/imgs/site');
+
+  assert.equal(handled, true);
+  assert.equal(s.pendingRerun.payload.image_source, 'folder');
+  assert.equal(s.pendingRerun.payload.image_folder, 'prj/inema/imgs/site');
+  assert.deepEqual(s.pendingRerun.payload.screenshot_urls, []);
+  assert.match(ctx.replies[0].text, /Fonte ajustada para/);
+  assert.match(ctx.replies[1].text, /prj\/inema\/imgs\/site/);
+});
+
+test('handlePendingRerun lets user change screenshot urls before confirmation', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-text-'));
+  const session = createSessionDouble();
+  const ctx = createCtx();
+  const chatId = '881';
+  const s = session.get(chatId);
+  s.pendingRerun = {
+    campaignFolder: 'c0044-campanha',
+    stages: [2],
+    payload: {
+      task_name: 'c0044-campanha',
+      project_dir: 'prj/inema',
+      image_source: 'brand',
+      image_folder: null,
+      screenshot_urls: [],
+    },
+  };
+
+  const { handlePendingRerun } = createHandlers(projectRoot, session);
+  const handled = await handlePendingRerun(ctx, chatId, s, 'fonte screenshot inema.com.br https://inema.app/demo');
+
+  assert.equal(handled, true);
+  assert.equal(s.pendingRerun.payload.image_source, 'screenshot');
+  assert.equal(s.pendingRerun.payload.image_folder, null);
+  assert.deepEqual(s.pendingRerun.payload.screenshot_urls, ['https://inema.com.br', 'https://inema.app/demo']);
+  assert.match(ctx.replies[1].text, /inema\.com\.br/);
+});
+
+test('handlePendingRerun resolves short folder paths under current project', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-text-'));
+  const session = createSessionDouble();
+  const ctx = createCtx();
+  const chatId = '882';
+  const s = session.get(chatId);
+  s.projectDir = 'prj/inema';
+  s.pendingRerun = {
+    campaignFolder: 'c0045-campanha',
+    stages: [2],
+    payload: {
+      task_name: 'c0045-campanha',
+      project_dir: 'prj/inema',
+      image_source: 'brand',
+      image_folder: null,
+      screenshot_urls: [],
+    },
+  };
+
+  const { handlePendingRerun } = createHandlers(projectRoot, session);
+  const handled = await handlePendingRerun(ctx, chatId, s, 'fonte pasta imgs/novo_album');
+
+  assert.equal(handled, true);
+  assert.equal(s.pendingRerun.payload.image_folder, 'prj/inema/imgs/novo_album');
+});
