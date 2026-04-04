@@ -141,6 +141,18 @@ function clearPendingImageError(chatId) {
   debouncedSave();
 }
 
+function setPendingLote(chatId, data) {
+  const s = get(chatId);
+  s.pendingLote = data;
+  debouncedSave();
+}
+
+function clearPendingLote(chatId) {
+  const s = get(chatId);
+  s.pendingLote = null;
+  debouncedSave();
+}
+
 function setPendingCampaign(chatId, payload) {
   const s = get(chatId);
   s.pendingCampaign = payload;
@@ -213,6 +225,7 @@ module.exports = {
   get, setProject, setRunningTask, clearRunningTask,
   addToHistory, getHistory, clearHistory,
   setPhotoTarget,
+  setPendingLote, clearPendingLote,
   setPendingCampaign, clearPendingCampaign,
   setPendingRerun, clearPendingRerun,
   setPendingVideoApproval, clearPendingVideoApproval,

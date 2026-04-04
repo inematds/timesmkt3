@@ -14,8 +14,10 @@ test('worker asset helpers normalize aliases and provider preference', () => {
     },
   });
 
-  assert.deepEqual(helpers.resolveImageSource('marca'), { source: 'brand', folder: null });
-  assert.deepEqual(helpers.resolveImageSource('pasta', 'tmp/assets'), { source: 'folder', folder: 'tmp/assets' });
+  assert.deepEqual(helpers.resolveImageSource('marca'), { source: 'brand', folder: null, color: null });
+  assert.deepEqual(helpers.resolveImageSource('pasta', 'tmp/assets'), { source: 'folder', folder: 'tmp/assets', color: null });
+  assert.deepEqual(helpers.resolveImageSource('solido'), { source: 'solid', folder: null, color: '#0D0D0D' });
+  assert.deepEqual(helpers.resolveImageSource('solido ff6600'), { source: 'solid', folder: null, color: '#ff6600' });
   assert.equal(helpers.getFreeImageProvider().id, 'pexels');
 });
 

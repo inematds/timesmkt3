@@ -74,6 +74,14 @@ function distributeSceneDurations(scenes, totalAudioDuration, holdLastSecs = 3) 
   });
 }
 
+function resolveSceneBgColor(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return '0x0D0D0D';
+  if (/^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) return `0x${value.slice(1)}`;
+  if (/^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) return `0x${value}`;
+  return value;
+}
+
 /**
  * Generates an ASS subtitle file for professional text overlay.
  * Uses Montserrat Black via libass — full UTF-8 support, word wrap, outline.
@@ -395,7 +403,7 @@ function renderVideo(scenePlanPath, outputPath) {
         // No image — solid dark background
         ffArgs = [
           '-f', 'lavfi',
-          '-i', `color=c=0x0D0D0D:size=${vidW}x${vidH}:rate=${fps}`,
+          '-i', `color=c=${resolveSceneBgColor(scene.background_color)}:size=${vidW}x${vidH}:rate=${fps}`,
           '-t', String(duration),
           '-vf', vf,
           '-c:v', 'libx264',

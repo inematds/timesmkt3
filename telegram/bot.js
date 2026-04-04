@@ -8,6 +8,7 @@
  */
 
 const path = require('path');
+const crypto = require('crypto');
 const { getEnv } = require('../config/env');
 
 const { Bot, InputFile } = require('grammy');
@@ -24,7 +25,6 @@ const { resolveStageAlias, buildPayload, buildConfigTable, showCampaignConfirmat
 const {
   createScanPendingApprovals,
   registerOperationalCommands,
-  resumeInProgressCampaigns,
 } = require('./bot-operations');
 const { startContinuousMonitor } = require('./bot-monitor');
 const { createBotRuntime } = require('./bot-runtime');
@@ -38,10 +38,12 @@ const {
   findCampaignAcrossProjects,
 } = require('./campaign-outputs');
 const { createV3Flow } = require('./v3-flow');
+const { IMPORTS_DIR, scanBatch } = require('../scripts/campaign-import-worker');
 const {
   readChatContext,
   writeImageApproval,
   writeVideoApproval,
+  formatStoryboardMessage,
   sendImageApprovalRequest: sendImageApprovalRequestBase,
   sendVideoApprovalRequest: sendVideoApprovalRequestBase,
   scanPendingApprovals: scanPendingApprovalsBase,
@@ -74,6 +76,7 @@ const sendVideoApprovalRequest = (_ctx, chatId, outputDir) => sendVideoApprovalR
 const monitoredSignals = new Set();
 
 const { enqueueStage: _enqueueStage, STAGES } = require('../pipeline/orchestrator');
+const { pipelineQueue } = require('../pipeline/queues');
 
 const bot = new Bot(config.botToken);
 const { sendCampaignReport, sendCampaignFiles } = createCampaignOutputHandlers({
@@ -112,6 +115,62 @@ registerRerunCommands(bot, {
 });
 
 const BOT_ACK = 'inemamkt >';
+
+function listProjectCampaignFolders(projectDir, { includeArchived = false } = {}) {
+  const outputsDir = path.join(PROJECT_ROOT, projectDir, 'outputs');
+  if (!fs.existsSync(outputsDir)) return [];
+  return fs.readdirSync(outputsDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name)
+    .filter((name) => fs.existsSync(path.join(outputsDir, name, 'creative', 'creative_brief.json')))
+    .filter((name) => includeArchived || !fs.existsSync(path.join(outputsDir, name, 'archived.json')))
+    .sort()
+    .reverse();
+}
+
+function parseBatchImageSource(raw) {
+  const input = String(raw || 'brand').trim();
+  const solidMatch = input.match(/^(solido|solid)(?:\s+(.+))?$/i);
+  if (solidMatch) {
+    return {
+      image_source: 'solid',
+      image_background_color: solidMatch[2] || '#0D0D0D',
+      image_folder: null,
+    };
+  }
+
+  const folderMatch = input.match(/^(pasta|folder)\s+(.+)$/i);
+  if (folderMatch) {
+    return {
+      image_source: 'folder',
+      image_folder: folderMatch[2].trim(),
+      image_background_color: null,
+    };
+  }
+
+  const aliases = { marca: 'brand', gratis: 'free', captura: 'screenshot' };
+  const source = aliases[input.toLowerCase()] || input.toLowerCase() || 'brand';
+  return {
+    image_source: source,
+    image_folder: null,
+    image_background_color: null,
+  };
+}
+
+function parseBatchQuickMode(raw) {
+  const input = String(raw || '').trim().toLowerCase();
+  if (!input) return 'enxuto';
+  if (['enxuto', 'enxuta'].includes(input)) return 'enxuto';
+  if (input === 'normal') return 'normal';
+  return 'enxuto';
+}
+
+function parseExplicitCampaigns(raw) {
+  return String(raw || '')
+    .split(/[,\s]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
 
 // ── Auth middleware ──────────────────────────────────────────────────────────
 
@@ -164,6 +223,8 @@ bot.command('help', async (ctx) => {
 
     `<b>Pipeline (5 etapas)</b>\n` +
     `/campanha &lt;nome&gt; [opcoes] — pipeline completo\n` +
+    `/lote — ajuda de lotes\n` +
+    `/lotequick &lt;ativos|todos&gt; [qtd] fonte ... — batch quick\n` +
     `/rerun &lt;campanha&gt; &lt;etapas&gt; — reprocessar\n` +
     `/continue &lt;campanha&gt; — continuar de onde parou\n` +
     `/cancel — cancelar pipeline ativo\n` +
@@ -204,6 +265,8 @@ bot.command('help', async (ctx) => {
     `<code>/rerun c15 video pro</code>\n` +
     `<code>/rerun c14 imagens api</code>\n` +
     `<code>/rerun c13 2,3</code>\n` +
+    `<code>/lote</code>\n` +
+    `<code>/lotequick ativos 10 fonte solido #0D0D0D</code>\n` +
     `Ajustes antes do <i>sim</i>: <code>fonte api</code>, <code>fonte pasta prj/inema/imgs</code>, <code>fonte screenshot https://site.com</code>\n\n` +
 
     `<b>Conversa</b>\n` +
@@ -534,6 +597,155 @@ bot.command('outputs', async (ctx) => {
   );
 });
 
+bot.command('lotequick', async (ctx) => {
+  const raw = ctx.match?.trim() || '';
+  if (!raw) {
+    return ctx.reply(
+      '<b>/lotequick — Batch de vídeos quick</b>\n\n'
+      + 'Uso: <code>/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte &lt;tipo&gt;</code>\n\n'
+      + 'Exemplos:\n'
+      + '<code>/lotequick ativos 10 fonte solido #0D0D0D</code>\n'
+      + '<code>/lotequick todos 5 fonte brand</code>\n'
+      + '<code>/lotequick campanhas c1,c2,c3 fonte solido #0D0D0D</code>\n'
+      + '<code>/lotequick c1,c2,c3 fonte brand</code>\n'
+      + '<code>/lotequick ativos fonte pasta prj/inema/imgs/lote_abril</code>',
+      { parse_mode: 'HTML' },
+    );
+  }
+
+  const chatId = String(ctx.chat.id);
+  const s = session.get(chatId);
+  const forceNew = /\bnew\b/i.test(raw);
+  const rawNoNew = raw.replace(/\bnew\b/gi, '').trim();
+  const modeMatch = rawNoNew.match(/\bmodo\s+(enxuto|enxuta|normal)\b/i) || rawNoNew.match(/\b(enxuto|enxuta|normal)\b\s*$/i);
+  const quickMode = parseBatchQuickMode(modeMatch?.[1] || '');
+  const rawClean = modeMatch
+    ? `${rawNoNew.slice(0, modeMatch.index).trim()} ${rawNoNew.slice(modeMatch.index + modeMatch[0].length).trim()}`.trim()
+    : rawNoNew;
+  const fonteMatch = rawClean.match(/\bfonte\b\s+(.+)$/i);
+  const sourceSpec = fonteMatch ? fonteMatch[1].trim() : 'brand';
+  const selectorRaw = fonteMatch ? rawClean.slice(0, fonteMatch.index).trim() : rawClean;
+  const parts = selectorRaw.split(/\s+/).filter(Boolean);
+
+  let scope = 'ativos';
+  let explicitCampaigns = [];
+  let cursor = 0;
+
+  const isScopeWord = /^(ativos|ativo|todos|all|campanhas)$/i.test(parts[0] || '');
+  const nextLooksCampaigns = parts[1] && /[a-z0-9]/.test(parts[1]) && !/^\d+$/.test(parts[1]);
+
+  if (/^(ativos|ativo)$/i.test(parts[0] || '') && !nextLooksCampaigns) {
+    scope = 'ativos';
+    cursor = 1;
+  } else if (/^(todos|all)$/i.test(parts[0] || '') && !nextLooksCampaigns) {
+    scope = 'todos';
+    cursor = 1;
+  } else if (/^campanhas$/i.test(parts[0] || '')) {
+    scope = 'campanhas';
+    explicitCampaigns = parseExplicitCampaigns(parts.slice(1).join(' '));
+    cursor = parts.length;
+  } else {
+    // Direct list (with or without scope prefix): /lotequick c1,c2 or /lotequick todos c1,c2
+    scope = 'campanhas';
+    const listStart = isScopeWord ? 1 : 0;
+    explicitCampaigns = parseExplicitCampaigns(parts.slice(listStart).join(' '));
+    cursor = parts.length;
+  }
+
+  let quantity = null;
+  if ((scope === 'ativos' || scope === 'todos') && /^\d+$/.test(parts[cursor] || '')) {
+    quantity = Number(parts[cursor]);
+    cursor += 1;
+  }
+
+  const includeArchived = scope === 'todos' || scope === 'campanhas';
+  const allCampaigns = listProjectCampaignFolders(s.projectDir, { includeArchived });
+  let selected = [];
+  if (scope === 'campanhas') {
+    selected = explicitCampaigns
+      .map((query) => {
+        const lower = query.toLowerCase();
+        // Normalize cN → c000N for matching (e.g. c1 → c0001, c45 → c0045)
+        const padded = lower.replace(/^c(\d+)$/, (_, n) => `c${n.padStart(4, '0')}`);
+        return allCampaigns.find((name) => {
+          const n = name.toLowerCase();
+          return n === lower || n === padded || n.startsWith(padded) || n.includes(lower);
+        }) || null;
+      })
+      .filter(Boolean);
+  } else {
+    selected = quantity ? allCampaigns.slice(0, quantity) : allCampaigns;
+  }
+
+  if (selected.length === 0) {
+    const label = scope === 'campanhas'
+      ? 'da lista'
+      : scope === 'todos'
+        ? 'no projeto'
+        : 'ativa';
+    return ctx.reply(`Nenhuma campanha ${label} encontrada em <code>${s.projectDir}</code>.`, { parse_mode: 'HTML' });
+  }
+
+  const imageConfig = parseBatchImageSource(sourceSpec);
+  const sourceLabel = imageConfig.image_source === 'solid'
+    ? `sólido ${imageConfig.image_background_color}`
+    : imageConfig.image_source === 'folder'
+      ? `pasta ${imageConfig.image_folder}`
+      : imageConfig.image_source;
+
+  session.setPendingLote(chatId, {
+    projectDir: s.projectDir,
+    scope,
+    selected,
+    imageConfig,
+    sourceLabel,
+    quickMode,
+    sourceSpec,
+    commandText: raw,
+    forceNew,
+  });
+
+  const preview = selected.slice(0, 10).map((name) => `• <code>${name}</code>`).join('\n');
+  const more = selected.length > 10 ? `\n<i>...e mais ${selected.length - 10}</i>` : '';
+
+  await ctx.reply(
+    `<b>Lote quick — confirmação</b>\n\n`
+    + `Projeto: <code>${s.projectDir}</code>\n`
+    + `Escopo: <b>${scope}</b>\n`
+    + `Campanhas: <b>${selected.length}</b>\n`
+    + `Fonte de imagem: <b>${sourceLabel}</b>\n\n`
+    + `Modo: <b>${quickMode}</b>\n\n`
+    + `${preview}${more}\n\n`
+    + `Responda <b>sim</b> para iniciar ou <b>não</b> para cancelar.`,
+    { parse_mode: 'HTML' },
+  );
+});
+
+bot.command('lote', async (ctx) => {
+  await ctx.reply(
+    '<b>Lotes</b>\n\n'
+    + 'Comandos disponíveis:\n'
+    + '<code>/lotequick &lt;ativos|todos|campanhas ...&gt; [qtd] fonte &lt;tipo&gt;</code>\n\n'
+    + 'Escopos:\n'
+    + '• <b>ativos</b> — só campanhas não arquivadas\n'
+    + '• <b>todos</b> — inclui arquivadas\n\n'
+    + '• <b>campanhas</b> — lista explícita\n\n'
+    + 'Fontes:\n'
+    + '• <code>fonte solido #0D0D0D</code>\n'
+    + '• <code>fonte brand</code>\n'
+    + '• <code>fonte api</code>\n'
+    + '• <code>fonte free</code>\n'
+    + '• <code>fonte pasta prj/inema/imgs/lote</code>\n\n'
+    + 'Exemplos:\n'
+    + '<code>/lotequick ativos 10 fonte solido #0D0D0D</code>\n'
+    + '<code>/lotequick todos 5 fonte brand</code>\n'
+    + '<code>/lotequick campanhas c1,c2,c3 fonte solido #0D0D0D</code>\n'
+    + '<code>/lotequick c1,c2,c3 fonte brand</code>\n'
+    + '<code>/lotequick ativos fonte pasta prj/inema/imgs/lote_abril</code>',
+    { parse_mode: 'HTML' },
+  );
+});
+
 // ── /relatorio <campanha> ────────────────────────────────────────────────────
 // Send the Publish MD summary + list of available files for download
 
@@ -576,6 +788,18 @@ bot.command('cancel', async (ctx) => {
   }
 
   const taskName = s.runningTask.taskName;
+  const outputDir = s.runningTask.outputDir;
+
+  // Archive campaign so it won't be resumed on restart
+  if (outputDir) {
+    try {
+      const campDir = path.join(PROJECT_ROOT, outputDir);
+      fs.writeFileSync(
+        path.join(campDir, 'archived.json'),
+        JSON.stringify({ archived: true, reason: 'user cancel', at: new Date().toISOString() }, null, 2),
+      );
+    } catch {}
+  }
 
   // Kill worker processes
   try {
@@ -596,6 +820,7 @@ bot.command('cancel', async (ctx) => {
   session.clearPendingCampaign(chatId);
   session.clearPendingRerun(chatId);
   session.clearPendingImageError(chatId);
+  session.clearPendingLote(chatId);
 
   await ctx.reply(`Pipeline <b>${taskName}</b> cancelado.`, { parse_mode: 'HTML' });
 });
@@ -888,6 +1113,8 @@ bot.on('message:text', async (ctx) => {
 
   if (await handlePendingRerun(ctx, chatId, s, text)) return;
 
+  if (await handlePendingLote(ctx, chatId, s, text)) return;
+
   if (await handlePendingCampaign(ctx, chatId, s, text)) return;
 
   // ── Detect rerun intent in free text ─────────────────────────────────
@@ -1083,7 +1310,7 @@ async function sendStageApprovalRequest(ctx, chatId, stage) {
     );
   } else if (stage === 3) {
     // Video done — show storyboard and ask about platforms
-    const msg = formatStoryboardMessage(path.join(PROJECT_ROOT, outputDir));
+    const msg = formatStoryboardMessage(PROJECT_ROOT, outputDir, escapeHtml);
     if (msg) {
       await ctx.reply(msg, { parse_mode: 'HTML' });
     }
@@ -1190,6 +1417,7 @@ const {
   handlePendingVideoApproval,
   handlePendingRerun,
   handlePendingCampaign,
+  handlePendingLote,
 } = createPendingTextHandlers({
   projectRoot: PROJECT_ROOT,
   session,
@@ -1274,11 +1502,15 @@ process.on('unhandledRejection', (err) => {
   }
 });
 
-bot.start({
+bot.start({ drop_pending_updates: true,
   onStart: async (botInfo) => {
     console.log(`Bot @${botInfo.username} rodando (long-polling)`);
     console.log(`Projeto padrao: ${session.DEFAULT_PROJECT}`);
     console.log('Ctrl+C para parar.\n');
+
+    // Clear any leftover jobs from previous runs
+    await pipelineQueue.obliterate({ force: true }).catch((err) => console.error('[startup] Failed to clear queue:', err.message));
+    console.log('[startup] Queue cleared.');
 
     // Check for existing workers (no longer killing them — they may be valid)
     if (isWorkerRunning()) {
@@ -1286,18 +1518,6 @@ bot.start({
     } else {
       console.log('No worker running — will spawn on demand.');
     }
-
-    // Scan for pending approvals left over from before restart
-    await scanPendingApprovals(null, null);
-
-    // Signal tracker — uses module-level monitoredSignals (cleared by /rerun)
-
-    // Resume in-progress campaigns and pre-populate monitoredSignals
-    await resumeInProgressCampaigns({
-      projectRoot: PROJECT_ROOT,
-      session,
-      readChatContext,
-    }, monitoredSignals);
 
     startContinuousMonitor({
       bot,

@@ -33,10 +33,16 @@ function createWorkerVideoProHandler({
       video_count = 1, video_briefs = [],
       image_source: rawImageSource = 'brand',
       image_folder = null,
+      image_background_color = null,
     } = job.data;
-    const { source: image_source, folder: imageFolder } = resolveImageSource(rawImageSource, image_folder);
+    const { source: image_source, folder: imageFolder, color: solidBackgroundColor } = resolveImageSource(
+      rawImageSource,
+      image_folder,
+      image_background_color,
+    );
     const absVideoDir = path.resolve(projectRoot, output_dir, 'video');
     const collectFallbackVisualAssets = () => {
+      if (image_source === 'solid') return [];
       const seen = new Set();
       const assets = [];
       const addAssets = (items) => {
@@ -104,6 +110,7 @@ function createWorkerVideoProHandler({
           text_overlay: isLast ? 'inema.club' : null,
           text_position: 'top',
           image_reason: imagePath ? 'Fallback local após timeout do Photography Director' : 'Sem asset fallback disponível',
+          background_color: !imagePath ? (solidBackgroundColor || '#0D0D0D') : undefined,
         });
         cursor += duration;
       }
@@ -302,6 +309,15 @@ REUSE STRATEGY (with ${combinedAssets.length} images for 30-50 cuts):
 - Maximum 5 uses per image
 - Never assign same image to 2 CONSECUTIVE cuts`;
       log(output_dir, 'video_pro', `Screenshots captured: ${screenshotAssets.length}, brand: ${brandAssets.length}`);
+    } else if (image_source === 'solid') {
+      imageSourceSection = `
+SOLID BACKGROUND ONLY
+- Do not use image assets in any cut
+- Set "image": null in every cut
+- Set "image_prompt": null in every cut
+- Set "background_color": "${solidBackgroundColor || '#0D0D0D'}" in every cut
+- Use motion, transitions, typography, particles, overlays, and composition changes to create variation
+- The video must feel premium and kinetic even without photography`;
     } else {
       const brandAssets = getProjectAssets(project_dir);
       const assetList = formatAssetList(brandAssets);
@@ -840,6 +856,35 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
     await runClaude(scenePlanPrompt, 'video_pro', output_dir, sceneTimeout, { model: sceneModel });
     await job.extendLock(job.token, 900000).catch(() => {});
 
+    if (image_source === 'solid') {
+      for (let i = 1; i <= video_count; i++) {
+        const idx = String(i).padStart(2, '0');
+        const planPath = vfFind(idx, '_scene_plan_motion.json');
+        if (!fs.existsSync(planPath)) continue;
+        try {
+          const plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+          let changed = false;
+          for (const scene of plan.scenes || []) {
+            if (scene.image !== null) {
+              scene.image = null;
+              changed = true;
+            }
+            if (scene.image_prompt !== null) {
+              scene.image_prompt = null;
+              changed = true;
+            }
+            if (!scene.background_color) {
+              scene.background_color = solidBackgroundColor || '#0D0D0D';
+              changed = true;
+            }
+          }
+          if (changed) fs.writeFileSync(planPath, JSON.stringify(plan, null, 2));
+        } catch (e) {
+          log(output_dir, 'video_pro', `Could not normalize solid background plan ${idx}: ${e.message}`);
+        }
+      }
+    }
+
     process.stdout.write(`[VIDEO_PRO_PROGRESS] ${output_dir} plan_ready\n`);
     const wantDraft = job.data.video_draft === true;
     if (wantDraft) {
@@ -856,7 +901,9 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
           draftPlan.scenes.forEach((scene, si) => {
             if (!scene.image || !fs.existsSync(scene.image)) {
               scene.image = null;
-              scene.background_color = brandColors[si % brandColors.length];
+              scene.background_color = scene.background_color || (image_source === 'solid'
+                ? (solidBackgroundColor || '#0D0D0D')
+                : brandColors[si % brandColors.length]);
             }
           });
           const draftPlanPath = path.resolve(projectRoot, output_dir, 'video', vf(idx, '_draft.json'));

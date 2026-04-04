@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { normalizeProjectFolder } = require('./bot-rerun');
+const { scanBatch } = require('../scripts/campaign-import-worker');
 
 function createPendingTextHandlers(deps) {
   const {
@@ -27,10 +29,12 @@ function createPendingTextHandlers(deps) {
     screenshot: 'screenshots',
     folder: 'pasta',
     pasta: 'pasta',
+    solid: 'fundo sólido',
   };
 
   function normalizeImageSource(raw) {
     const lower = String(raw || '').trim().toLowerCase();
+    if (/^(solido|solid)\b/.test(lower)) return 'solid';
     const aliases = { marca: 'brand', gratis: 'free', stock: 'free', captura: 'screenshot', capturas: 'screenshot', pasta: 'folder' };
     return aliases[lower] || lower || 'brand';
   }
@@ -47,10 +51,13 @@ function createPendingTextHandlers(deps) {
     if (source === 'folder' && payload.image_folder) {
       lines.push(`Pasta: <code>${payload.image_folder}</code>`);
     }
+    if (source === 'solid' && payload.image_background_color) {
+      lines.push(`Cor: <code>${payload.image_background_color}</code>`);
+    }
     if (source === 'screenshot' && Array.isArray(payload.screenshot_urls) && payload.screenshot_urls.length > 0) {
       lines.push(`URLs: ${payload.screenshot_urls.join(', ')}`);
     }
-    lines.push('Responda <b>sim</b> para confirmar, <b>não</b> para cancelar, ou ajuste com <code>fonte pasta ...</code>, <code>fonte screenshot ...</code>, <code>fonte api</code>.');
+    lines.push('Responda <b>sim</b> para confirmar, <b>não</b> para cancelar, ou ajuste com <code>fonte pasta ...</code>, <code>fonte screenshot ...</code>, <code>fonte api</code>, <code>fonte solido #111111</code>.');
     return lines.join('\n');
   }
 
@@ -66,10 +73,11 @@ function createPendingTextHandlers(deps) {
     if (/^(avan[çc]|avanc|continuar|sem imagem)/.test(lower)) action = 'advance';
     else if (/^(tentar|retry|repetir|novamente)/.test(lower)) action = 'retry';
     else if (/^(cancel|cancelar|nao|não|para)/.test(lower)) action = 'cancel';
-    else if (/^(outra|trocar|mudar|fonte|source)/.test(lower) || /^(api|free|gratis|brand|marca|folder|pasta)/.test(lower)) {
+    else if (/^(outra|trocar|mudar|fonte|source)/.test(lower) || /^(api|free|gratis|brand|marca|folder|pasta|solido|solid)/.test(lower)) {
       if (/api/.test(lower)) newSource = 'api';
       else if (/free|gratis|stock/.test(lower)) newSource = 'free';
       else if (/brand|marca/.test(lower)) newSource = 'brand';
+      else if (/solido|solid/.test(lower)) newSource = 'solid';
       else if (/folder|pasta/.test(lower)) {
         newSource = 'folder';
         const folderMatch = text.match(/(?:folder|pasta)\s+(\S+)/i);
@@ -85,9 +93,14 @@ function createPendingTextHandlers(deps) {
       if (newSource && !action) {
         action = 'change_source';
         fs.mkdirSync(path.dirname(decisionPath), { recursive: true });
-        fs.writeFileSync(decisionPath, JSON.stringify({ action, image_source: newSource, ts: Date.now() }));
+        const payload = { action, image_source: newSource, ts: Date.now() };
+        if (newSource === 'solid') {
+          const colorMatch = text.match(/(?:solido|solid)\s+([#a-z0-9]+)/i);
+          payload.image_background_color = colorMatch ? colorMatch[1] : '#0D0D0D';
+        }
+        fs.writeFileSync(decisionPath, JSON.stringify(payload));
         session.clearPendingImageError(chatId);
-        const sourceLabels = { api: 'IA (API)', free: 'banco grátis', brand: 'assets da marca', folder: 'pasta' };
+        const sourceLabels = { api: 'IA (API)', free: 'banco grátis', brand: 'assets da marca', folder: 'pasta', solid: 'fundo sólido' };
         await ctx.reply(`🔄 Trocando fonte de imagens para: <b>${sourceLabels[newSource]}</b>`, { parse_mode: 'HTML' });
         return true;
       }
@@ -107,7 +120,7 @@ function createPendingTextHandlers(deps) {
     }
 
     await ctx.reply(
-      'Responda:\n• <b>avançar</b> — continuar sem imagens (CSS)\n• <b>tentar novamente</b> — repetir a geração\n• <b>outra fonte</b> — trocar: api, free, brand, pasta xxx\n• <b>cancelar</b>',
+      'Responda:\n• <b>avançar</b> — continuar sem imagens (CSS)\n• <b>tentar novamente</b> — repetir a geração\n• <b>outra fonte</b> — trocar: api, free, brand, pasta xxx, solido #111111\n• <b>cancelar</b>',
       { parse_mode: 'HTML' },
     );
     return true;
@@ -189,7 +202,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
     }
 
     const rerunPayload = s.pendingRerun.payload;
-    const sourceMatch = text.match(/^fonte\s+(brand|marca|api|free|gratis|stock|screenshot|captura|capturas|pasta|folder)(?:\s+(.+))?$/i);
+    const sourceMatch = text.match(/^fonte\s+(brand|marca|api|free|gratis|stock|screenshot|captura|capturas|pasta|folder|solido|solid)(?:\s+(.+))?$/i);
     if (sourceMatch) {
       const nextSource = normalizeImageSource(sourceMatch[1]);
       const extra = (sourceMatch[2] || '').trim();
@@ -201,14 +214,21 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
           return true;
         }
         rerunPayload.image_folder = normalizeProjectFolder(rerunPayload.project_dir || s.projectDir, extra);
+        rerunPayload.image_background_color = null;
         rerunPayload.screenshot_urls = [];
       } else if (nextSource === 'screenshot') {
         rerunPayload.image_folder = null;
+        rerunPayload.image_background_color = null;
         rerunPayload.screenshot_urls = extra
           ? extra.split(/[\s,]+/).filter(Boolean).map((url) => (url.startsWith('http') ? url : `https://${url}`))
           : (rerunPayload.screenshot_urls || []);
+      } else if (nextSource === 'solid') {
+        rerunPayload.image_folder = null;
+        rerunPayload.screenshot_urls = [];
+        rerunPayload.image_background_color = extra || '#0D0D0D';
       } else {
         rerunPayload.image_folder = null;
+        rerunPayload.image_background_color = null;
         rerunPayload.screenshot_urls = [];
       }
 
@@ -555,11 +575,110 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
     return false;
   }
 
+  async function handlePendingLote(ctx, chatId, s, text) {
+    if (!s.pendingLote) return false;
+
+    const lower = text.toLowerCase().trim();
+    const isConfirm = /^(sim|s|yes|ok|confirma|confirmar)$/.test(lower);
+    const isCancel = /^(n[aã]o|nao|n|cancel|cancelar|não)$/.test(lower);
+
+    if (!isConfirm && !isCancel) return false;
+
+    if (isCancel) {
+      session.clearPendingLote(chatId);
+      await ctx.reply('Lote cancelado.');
+      return true;
+    }
+
+    const { projectDir, selected, imageConfig, sourceLabel, quickMode, sourceSpec, commandText, scope, forceNew } = s.pendingLote;
+    session.clearPendingLote(chatId);
+
+    const batchId = `tg_lotequick_${Date.now()}_${crypto.randomUUID().slice(0, 6)}`;
+    const batchDir = path.join(projectRoot, projectDir, 'imports', batchId);
+    fs.mkdirSync(batchDir, { recursive: true });
+
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const manifest = {
+      titulo: `Lote Quick ${projectDir.split('/').pop()} ${dateStr}`,
+      batch_id: batchId,
+      created_at: now.toISOString(),
+      command_text: commandText,
+      project_dir: projectDir,
+      scope,
+      source_spec: sourceSpec,
+      source_label: sourceLabel,
+      quick_mode: quickMode,
+      selected_campaigns: selected,
+      clips: [],
+      defaults: {
+        targets: ['video_quick'],
+        quick_mode: quickMode,
+        ...imageConfig,
+        platform_targets: ['instagram'],
+        narrator: 'rachel',
+        video_duration: 20,
+      },
+      campaigns: selected,
+      force_new_plan: forceNew === true,
+    };
+    fs.writeFileSync(path.join(batchDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+
+    await ctx.reply(
+      `<b>Lote quick iniciado</b>\n`
+      + `Campanhas: <b>${selected.length}</b>\n`
+      + `Fonte: <b>${sourceLabel}</b>\n`
+      + `Modo: <b>${quickMode}</b>\n`
+      + `Saída: <code>${projectDir}/imports/${batchId}/videos/</code>`,
+      { parse_mode: 'HTML' },
+    );
+
+    const escHtml = (str) => String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    try {
+      const result = await scanBatch(batchDir, {
+        keepGoing: true,
+        onProgress: async ({ status, campaign_id, index, total, error }) => {
+          if (status === 'starting') {
+            await ctx.reply(
+              `▶️ <b>${index}/${total}</b> — <code>${campaign_id}</code>`,
+              { parse_mode: 'HTML' },
+            ).catch(() => {});
+          } else if (status === 'done') {
+            await ctx.reply(
+              `✅ <b>${index}/${total}</b> — <code>${campaign_id}</code> concluída`,
+              { parse_mode: 'HTML' },
+            ).catch(() => {});
+          } else if (status === 'failed') {
+            await ctx.reply(
+              `❌ <b>${index}/${total}</b> — <code>${campaign_id}</code> falhou: ${escHtml(error)}`,
+              { parse_mode: 'HTML' },
+            ).catch(() => {});
+          }
+        },
+      });
+      const success = (result.detalhes || []).filter((item) => item.ok);
+      const failed = (result.detalhes || []).filter((item) => item.ok === false);
+      const lines = [
+        `<b>Lote concluído</b> — ${success.length}/${result.total} OK`,
+      ];
+      if (failed.length > 0) {
+        lines.push(`Falhas: <code>${failed.map((item) => item.campaign_id).join(', ')}</code>`);
+      }
+      await ctx.reply(lines.join('\n'), { parse_mode: 'HTML' });
+    } catch (err) {
+      await ctx.reply(`Falha no lote: <code>${escHtml(err.message)}</code>`, { parse_mode: 'HTML' });
+    }
+
+    return true;
+  }
+
   return {
     handlePendingImageError,
     handlePendingVideoApproval,
     handlePendingRerun,
     handlePendingCampaign,
+    handlePendingLote,
   };
 }
 

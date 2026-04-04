@@ -122,9 +122,18 @@ function createWorkerVideoHandlers({
       task_name, task_date, output_dir, project_dir,
       language, campaign_brief,
       video_count = 1,
+      quick_mode = 'normal',
+      video_audio = 'narration',
+      existing_narration_file = null,
+      image_source: rawImageSource = 'brand',
+      image_background_color = null,
     } = job.data;
+    const quickModel = quick_mode === 'enxuto' ? 'haiku' : 'sonnet';
+    const solidBackgroundColor = rawImageSource === 'solid' ? (image_background_color || '#0D0D0D') : null;
+    const image_source = rawImageSource;
     const absVideoDir = path.resolve(projectRoot, output_dir, 'video');
     fs.mkdirSync(absVideoDir, { recursive: true });
+    log(output_dir, 'video_quick', `Quick mode: ${quick_mode} | Claude model: ${quickModel}`);
 
     if (job.data.skip_completed) {
       const videoDir = path.resolve(projectRoot, output_dir, 'video');
@@ -267,7 +276,7 @@ TYPOGRAPHY — MAGAZINE HEADLINE AT TOP (CRITICAL):
 
 After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
-    await runClaude(prompt, 'video_quick', output_dir, 600000);
+    await runClaude(prompt, 'video_quick', output_dir, 600000, { model: quickModel });
 
     const approvalPath = path.resolve(projectRoot, output_dir, 'video', 'approved.json');
     const rejectedPath = path.resolve(projectRoot, output_dir, 'video', 'rejected.json');
@@ -292,16 +301,32 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
     for (let i = 1; i <= video_count; i++) {
       const idx = String(i).padStart(2, '0');
-      const narrationStatus = ensureQuickNarration({
-        projectRoot,
-        output_dir,
-        task_name,
-        idx,
-        narrator: job.data.narrator || 'rachel',
-        log,
-      });
-      const planPath = narrationStatus.planPath;
-      if (!planPath || !fs.existsSync(planPath)) {
+      const explicitNarration = existing_narration_file
+        ? path.resolve(projectRoot, existing_narration_file)
+        : null;
+      const planPath = path.resolve(projectRoot, output_dir, 'video', `${task_name}_video_${idx}_scene_plan.json`);
+      if (explicitNarration && fs.existsSync(planPath) && fs.existsSync(explicitNarration)) {
+        try {
+          const planData = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+          planData.narration_file = path.relative(projectRoot, explicitNarration).replace(/\\/g, '/');
+          fs.writeFileSync(planPath, JSON.stringify(planData, null, 2));
+          log(output_dir, 'video_quick', `Reused existing narration for video ${idx}: ${planData.narration_file}`);
+        } catch (err) {
+          log(output_dir, 'video_quick', `Could not attach existing narration for video ${idx}: ${err.message}`);
+        }
+      }
+      const narrationStatus = video_audio === 'none'
+        ? { ok: true, reason: 'silent_mode', planPath: explicitNarration ? planPath : null }
+        : ensureQuickNarration({
+            projectRoot,
+            output_dir,
+            task_name,
+            idx,
+            narrator: job.data.narrator || 'rachel',
+            log,
+          });
+      const effectivePlanPath = narrationStatus.planPath || planPath;
+      if (!effectivePlanPath || !fs.existsSync(effectivePlanPath)) {
         log(output_dir, 'video_quick', `Scene plan not found: video_${idx}, skipping.`);
         continue;
       }
@@ -310,6 +335,9 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
         log(output_dir, 'video_quick', `Missing narration for video ${idx}; stopping quick render (${narrationStatus.reason}).`);
         process.stdout.write(`[VIDEO_QUICK_AUDIO_MISSING] ${output_dir} video_${idx}\n`);
         return { status: 'failed', reason: `missing narration for quick video ${idx}: ${narrationStatus.reason}` };
+      }
+      if (video_audio === 'none') {
+        log(output_dir, 'video_quick', `Silent quick mode enabled for video ${idx}.`);
       }
 
       const ts = videoTimestamp();
@@ -354,8 +382,13 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       video_count = 1, video_briefs = [],
       image_source: rawImageSource = 'brand',
       image_folder = null,
+      image_background_color = null,
     } = job.data;
-    const { source: image_source, folder: imageFolder } = resolveImageSource(rawImageSource, image_folder);
+    const { source: image_source, folder: imageFolder, color: solidBackgroundColor } = resolveImageSource(
+      rawImageSource,
+      image_folder,
+      image_background_color,
+    );
     const absVideoDir = path.resolve(projectRoot, output_dir, 'video');
     fs.mkdirSync(absVideoDir, { recursive: true });
 
@@ -488,6 +521,15 @@ IMAGE ANALYSIS RULES:
 - Read orientation: portrait images best for 1080x1920
 - Never assign the same image to two scenes
 - BANNER images (marked [banner]): set "image_type": "banner"`;
+    } else if (image_source === 'solid') {
+      imageSourceSection = `
+STEP 2 — Image source: SOLID BACKGROUND ONLY
+- Do not use image assets in any scene
+- Set "image": null in every scene
+- Set "image_prompt": null in every scene
+- Set "background_color": "${solidBackgroundColor || '#0D0D0D'}" in every scene
+- Build the visual only with typography, motion, transitions, overlays, and background color
+- Vary rhythm, text animation, and overlays between scenes so the video does not feel static`;
     } else {
       const brandAssets = getProjectAssets(project_dir);
       const assetList = formatAssetList(brandAssets);
@@ -546,6 +588,7 @@ STEP 4 — For EACH video, create a scene plan JSON and save to ${output_dir}/vi
       "image_type": "raw",
       "image_crop_focus": "center-top",
       "image_prompt": "concise English visual description for this scene (max 200 chars) — only when image_source is api",
+      "background_color": "${solidBackgroundColor || '#0D0D0D'}",
       "text_overlay": "Max 6 words here",
       "narration": "This scene's narration line"
     }
@@ -567,6 +610,35 @@ IMPORTANT: ONLY generate scene plans and audio. Do NOT run render-video-ffmpeg.j
 After saving all scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
     await runClaude(prompt, 'video_ad_specialist', output_dir, 900000);
+
+    if (image_source === 'solid') {
+      for (let i = 1; i <= video_count; i++) {
+        const idx = String(i).padStart(2, '0');
+        const planPath = path.resolve(projectRoot, output_dir, 'video', `video_${idx}_scene_plan.json`);
+        if (!fs.existsSync(planPath)) continue;
+        try {
+          const plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+          let changed = false;
+          for (const scene of plan.scenes || []) {
+            if (scene.image !== null) {
+              scene.image = null;
+              changed = true;
+            }
+            if (scene.image_prompt !== null) {
+              scene.image_prompt = null;
+              changed = true;
+            }
+            if (!scene.background_color) {
+              scene.background_color = solidBackgroundColor || '#0D0D0D';
+              changed = true;
+            }
+          }
+          if (changed) fs.writeFileSync(planPath, JSON.stringify(plan, null, 2), 'utf-8');
+        } catch (e) {
+          log(output_dir, 'video_ad_specialist', `Could not normalize solid background plan ${idx}: ${e.message}`);
+        }
+      }
+    }
 
     if (image_source === 'api') {
       const jobProvider = job.data.image_provider || imageProviderName;

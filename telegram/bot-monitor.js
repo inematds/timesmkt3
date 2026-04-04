@@ -28,6 +28,7 @@ function startContinuousMonitor(deps) {
 
       for (const campaign of fs.readdirSync(outRoot)) {
         const campDir = path.join(outRoot, campaign);
+        if (fs.existsSync(path.join(campDir, 'archived.json'))) continue;
         const relDir = `prj/${prj}/outputs/${campaign}`;
         const chatContext = readChatContext(campDir);
         if (!chatContext?.chatId) continue;

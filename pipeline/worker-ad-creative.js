@@ -350,6 +350,18 @@ CRITICAL IMAGE RULES:
 - Apply CSS overlays, gradients, blur for text readability
 - Screenshots MUST keep their full proportions visible: use object-fit: contain, object-position: center, no CSS zoom, no transform: scale(), no crop masks
 - BANNER images (marked [banner]): use object-fit: contain, never cover`;
+    } else if (image_source === 'solid') {
+      const bgColor = job.data.image_background_color || '#0D0D0D';
+      imageSourceSection = `
+STEP 2 — Image source: SOLID BACKGROUND (CSS-only — no images)
+- Background color: ${bgColor}
+- No <img> tags — pure HTML/CSS visual design
+- Use bold typography as the hero element: large headlines, strong font weights (700-900)
+- Create visual hierarchy with font size contrast (e.g. 120px headline + 36px subtext)
+- Use accent colors from the brand palette for highlights, underlines, or text color
+- Add subtle CSS elements for depth: thin horizontal lines, letter-spacing, text gradients (background-clip: text)
+- Each slide must feel distinct: vary layout (centered, left-aligned, split), font size, and accent color
+- No solid color boxes masquerading as images — design must be typographic and intentional`;
     } else {
       const brandAssets = getProjectAssets(project_dir);
       const assetList = formatAssetList(brandAssets);

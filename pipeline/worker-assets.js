@@ -4,11 +4,34 @@ const { execFileSync } = require('child_process');
 
 function createWorkerAssetHelpers({ projectRoot, freeImageProviderEnv = 'pexels', env = process.env }) {
   const FREE_IMAGE_PROVIDER = (freeImageProviderEnv || 'pexels').toLowerCase();
+  const DEFAULT_SOLID_BG = '#0D0D0D';
 
-  function resolveImageSource(imageSource, imageFolder) {
+  function normalizeSolidColor(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return DEFAULT_SOLID_BG;
+    if (/^[0-9a-f]{3}$/i.test(value) || /^[0-9a-f]{6}([0-9a-f]{2})?$/i.test(value)) return `#${value}`;
+    return value;
+  }
+
+  function resolveImageSource(imageSource, imageFolder, imageBackgroundColor) {
+    const raw = String(imageSource || '').trim();
+    const solidMatch = raw.match(/^(solido|solid)(?:[:\s]+(.+))?$/i);
+    if (solidMatch) {
+      return {
+        source: 'solid',
+        folder: null,
+        color: normalizeSolidColor(imageBackgroundColor || solidMatch[2]),
+      };
+    }
+
     const aliases = { marca: 'brand', pasta: 'folder', gratis: 'free', captura: 'screenshot', capturas: 'screenshot' };
-    const source = aliases[imageSource] || imageSource || 'brand';
-    return { source, folder: source === 'folder' ? imageFolder : null };
+    const normalized = raw.toLowerCase();
+    const source = aliases[normalized] || normalized || 'brand';
+    return {
+      source,
+      folder: source === 'folder' ? imageFolder : null,
+      color: source === 'solid' ? normalizeSolidColor(imageBackgroundColor) : null,
+    };
   }
 
   function getFreeImageProvider() {
@@ -146,6 +169,7 @@ function createWorkerAssetHelpers({ projectRoot, freeImageProviderEnv = 'pexels'
 
   return {
     resolveImageSource,
+    normalizeSolidColor,
     getFreeImageProvider,
     getFolderAssets,
     detectImageType,

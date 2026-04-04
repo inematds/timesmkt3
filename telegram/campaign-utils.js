@@ -27,6 +27,7 @@ function buildPayload(taskName, opts, projectDir, today, env = process.env) {
     image_formats: ['carousel_1080x1080', 'story_1080x1920'],
     video_count: parseInt(opts.videos || '1', 10),
     image_source: opts['img-source'] || 'brand',
+    image_background_color: opts['img-bg-color'] || null,
     screenshot_urls: opts['screenshot-urls'] ? opts['screenshot-urls'].split(',').map(u => u.trim()) : [],
     image_model: opts['img-model'] || env.KIE_DEFAULT_MODEL || (env.IMAGE_PROVIDER === 'pollinations' ? 'flux' : 'z-image'),
     use_brand_overlay: opts['brand-overlay'] !== 'false',
@@ -63,10 +64,12 @@ function buildConfigTable(payload, title, env = process.env) {
   const approvalLabel = approvalAll.length > 0 && approvalAll.every(v => v === approvalAll[0]) ? approvalAll[0] : 'misto';
   const sourceLabel = imageSource === 'folder' && payload.image_folder
     ? `folder ${payload.image_folder}`
+    : imageSource === 'solid'
+      ? `solid ${payload.image_background_color || '#0D0D0D'}`
     : imageSource;
 
   const rows = [
-    { setting: 'Fonte imgs', current: sourceLabel, def: DEFAULTS.image_source, opts: 'brand / api / free / screenshot / folder xxx' },
+    { setting: 'Fonte imgs', current: sourceLabel, def: DEFAULTS.image_source, opts: 'brand / api / free / screenshot / folder xxx / solid [cor]' },
     { setting: 'Quick', current: vQuick ? 'sim' : 'nao', def: 'sim', opts: 'sim / sem quick' },
     { setting: 'Pro', current: vPro ? 'sim' : 'nao', def: 'nao', opts: 'pro' },
     { setting: 'Narrador', current: payload.narrator || 'rachel', def: DEFAULTS.narrator, opts: 'rachel / bella / domi / antoni / josh / arnold' },
@@ -169,6 +172,7 @@ Return a JSON object with these fields:
   "video_quick": true,
   "video_pro": false,
   "image_source": "brand",
+  "image_background_color": null,
   "image_model": "${env.KIE_DEFAULT_MODEL || 'z-image'}",
   "approval_modes": {
     "stage1": "auto",
@@ -188,7 +192,8 @@ Rules:
 - video_count: how many videos requested (default 1)
 - video_quick: always true unless user explicitly says "sem video quick" or "only pro"
 - video_pro: true if user says "video pro", "video profissional", "remotion", "pro", "both", "2 videos"
-- image_source: "brand" (or "marca") if user mentions brand images, project images, fotos da marca; "free" (or "gratis") if user mentions free stock photos, banco de imagens, pexels, unsplash, pixabay; "api" if user mentions AI generation, gerar imagens, criar imagens com IA; "folder" (or "pasta") if user specifies a folder path; "screenshot" (or "captura") if user mentions screenshot, captura de site, print do site, capturar pagina. When screenshot, also populate "screenshot_urls" with any URLs mentioned. Default "brand".
+- image_source: "brand" (or "marca") if user mentions brand images, project images, fotos da marca; "free" (or "gratis") if user mentions free stock photos, banco de imagens, pexels, unsplash, pixabay; "api" if user mentions AI generation, gerar imagens, criar imagens com IA; "folder" (or "pasta") if user specifies a folder path; "screenshot" (or "captura") if user mentions screenshot, captura de site, print do site, capturar pagina; "solid" (or "solido") if user wants no images, only solid/flat background. When screenshot, also populate "screenshot_urls" with any URLs mentioned. Default "brand".
+- image_background_color: only relevant when image_source is "solid". If user says just "solido", default to "#0D0D0D". If they specify a color, preserve it (e.g. "#112233").
 - image_model: only relevant when image_source is "api". Default is ALWAYS "${env.KIE_DEFAULT_MODEL || 'z-image'}" (from .env). Only change if the user explicitly requests a different model. Options: "z-image", "z-image-turbo", "flux-kontext-pro", "flux-kontext-max", "gpt-image-1".
 - approval_modes: each stage can be "humano" (user must approve), "agente" (AI reviewer decides), or "auto" (advance automatically). Default "auto" for all. Set to "humano" if user explicitly asks for approval before each stage. Set to "agente" if user says "aprovação por agente", "agente revisa".
 - notifications: false only if user explicitly says "sem notificações", "silencioso", "não notificar".

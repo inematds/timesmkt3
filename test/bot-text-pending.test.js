@@ -301,3 +301,33 @@ test('handlePendingRerun resolves short folder paths under current project', asy
   assert.equal(handled, true);
   assert.equal(s.pendingRerun.payload.image_folder, 'prj/inema/imgs/novo_album');
 });
+
+test('handlePendingRerun accepts solid background source with explicit color', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-text-'));
+  const session = createSessionDouble();
+  const ctx = createCtx();
+  const chatId = '883';
+  const s = session.get(chatId);
+  s.pendingRerun = {
+    campaignFolder: 'c0046-campanha',
+    stages: [3],
+    payload: {
+      task_name: 'c0046-campanha',
+      project_dir: 'prj/inema',
+      image_source: 'brand',
+      image_folder: null,
+      image_background_color: null,
+      screenshot_urls: [],
+    },
+  };
+
+  const { handlePendingRerun } = createHandlers(projectRoot, session);
+  const handled = await handlePendingRerun(ctx, chatId, s, 'fonte solido #112233');
+
+  assert.equal(handled, true);
+  assert.equal(s.pendingRerun.payload.image_source, 'solid');
+  assert.equal(s.pendingRerun.payload.image_background_color, '#112233');
+  assert.deepEqual(s.pendingRerun.payload.screenshot_urls, []);
+  assert.match(ctx.replies[0].text, /fundo sólido/i);
+  assert.match(ctx.replies[1].text, /#112233/);
+});

@@ -264,6 +264,7 @@ function registerRerunCommands(bot, deps) {
     try { origPayload = JSON.parse(fs.readFileSync(origPayloadPath, 'utf-8')); } catch {}
     let imageSource = origPayload.image_source || 'brand';
     let payloadImageFolder = origPayload.image_folder || null;
+    let payloadImageBackgroundColor = origPayload.image_background_color || null;
     const screenshotUrls = Array.isArray(origPayload.screenshot_urls) ? [...origPayload.screenshot_urls] : [];
     const cleanFlags = { plan: false, img: false, audio: false };
 
@@ -289,15 +290,28 @@ function registerRerunCommands(bot, deps) {
       if (token === 'screenshot' || token === 'screenshots' || token === 'captura' || token === 'capturas') {
         imageSource = 'screenshot'; continue;
       }
-      if (token === 'api') { imageSource = 'api'; payloadImageFolder = null; screenshotUrls.length = 0; continue; }
-      if (token === 'brand' || token === 'marca') { imageSource = 'brand'; payloadImageFolder = null; screenshotUrls.length = 0; continue; }
-      if (token === 'free' || token === 'gratis' || token === 'stock') { imageSource = 'free'; payloadImageFolder = null; screenshotUrls.length = 0; continue; }
+      if (token === 'api') { imageSource = 'api'; payloadImageFolder = null; payloadImageBackgroundColor = null; screenshotUrls.length = 0; continue; }
+      if (token === 'brand' || token === 'marca') { imageSource = 'brand'; payloadImageFolder = null; payloadImageBackgroundColor = null; screenshotUrls.length = 0; continue; }
+      if (token === 'free' || token === 'gratis' || token === 'stock') { imageSource = 'free'; payloadImageFolder = null; payloadImageBackgroundColor = null; screenshotUrls.length = 0; continue; }
       if (token === 'pasta' || token === 'folder') {
         imageSource = 'folder';
+        payloadImageBackgroundColor = null;
         screenshotUrls.length = 0;
         if (next && !resolveStageAlias(next) && !['quick', 'pro', 'screenshot', 'api', 'free'].includes(next)) {
           payloadImageFolder = normalizeProjectFolder(projectDir, next);
           i += 1;
+        }
+        continue;
+      }
+      if (token === 'solido' || token === 'solid') {
+        imageSource = 'solid';
+        payloadImageFolder = null;
+        screenshotUrls.length = 0;
+        if (next && !resolveStageAlias(next) && !['quick', 'pro', 'screenshot', 'api', 'free', 'brand', 'marca', 'folder', 'pasta'].includes(next)) {
+          payloadImageBackgroundColor = next;
+          i += 1;
+        } else {
+          payloadImageBackgroundColor = '#0D0D0D';
         }
         continue;
       }
@@ -341,6 +355,7 @@ function registerRerunCommands(bot, deps) {
       video_count: 1,
       image_source: imageSource,
       image_folder: payloadImageFolder,
+      image_background_color: payloadImageBackgroundColor,
       image_model: getEnv('KIE_DEFAULT_MODEL', 'z-image'),
       screenshot_urls: screenshotUrls,
       use_brand_overlay: true,
