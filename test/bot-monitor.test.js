@@ -196,3 +196,127 @@ test('startContinuousMonitor advances stage3 when skip_image disables quick vide
     global.setInterval = originalSetInterval;
   }
 });
+
+test('startContinuousMonitor requests human approval for the completed stage', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-monitor-human-'));
+  const campDir = path.join(projectRoot, 'prj', 'inema', 'outputs', 'camp-04');
+  fs.mkdirSync(path.join(campDir, 'logs'), { recursive: true });
+  fs.writeFileSync(path.join(campDir, 'chat_context.json'), JSON.stringify({ chatId: '888' }));
+  fs.writeFileSync(path.join(campDir, 'logs', 'research_agent.log'), 'Completed successfully\n');
+  fs.writeFileSync(path.join(campDir, 'logs', 'creative_director.log'), 'Completed successfully\n');
+  fs.writeFileSync(path.join(campDir, 'logs', 'copywriter_agent.log'), 'Completed successfully\n');
+
+  const sessionState = {
+    runningTask: { outputDir: 'prj/inema/outputs/camp-04' },
+    campaignV3: {
+      payload: {
+        approval_modes: { stage1: 'humano' },
+      },
+      notifications: true,
+    },
+  };
+
+  const originalSetInterval = global.setInterval;
+  const requestedStages = [];
+  global.setInterval = (fn) => {
+    Promise.resolve().then(fn);
+    return { fake: true };
+  };
+
+  try {
+    startContinuousMonitor({
+      bot: {
+        api: {
+          sendMessage: async () => {},
+          sendDocument: async () => {},
+          sendVideo: async () => {},
+        },
+      },
+      session: {
+        get: () => sessionState,
+        clearRunningTask: () => {},
+        clearCampaignV3: () => {},
+      },
+      projectRoot,
+      monitoredSignals: new Set(),
+      readChatContext: (dir) => JSON.parse(fs.readFileSync(path.join(dir, 'chat_context.json'), 'utf-8')),
+      writeImageApproval: () => {},
+      writeVideoApproval: () => {},
+      sendImageApprovalRequest: async () => {},
+      sendVideoApprovalRequest: async () => {},
+      sendStageApprovalRequest: async (_ctx, _chatId, stage) => { requestedStages.push(stage); },
+      enqueueStage: async () => {},
+      stages: {},
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    assert.deepEqual(requestedStages, [1]);
+  } finally {
+    global.setInterval = originalSetInterval;
+  }
+});
+
+test('startContinuousMonitor syncs currentStage to the stage currently running', async () => {
+  const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-monitor-running-'));
+  const campDir = path.join(projectRoot, 'prj', 'inema', 'outputs', 'camp-05');
+  fs.mkdirSync(path.join(campDir, 'logs'), { recursive: true });
+  fs.writeFileSync(path.join(campDir, 'chat_context.json'), JSON.stringify({ chatId: '889' }));
+  fs.writeFileSync(path.join(campDir, 'logs', 'video_quick.log'), 'Starting video_quick...\nInvoking Claude CLI...\n');
+
+  const sessionState = {
+    runningTask: { outputDir: 'prj/inema/outputs/camp-05' },
+    campaignV3: {
+      currentStage: 2,
+      payload: {
+        video_quick: true,
+        video_pro: false,
+        approval_modes: { stage3: 'humano' },
+      },
+      notifications: true,
+    },
+  };
+
+  const originalSetInterval = global.setInterval;
+  global.setInterval = (fn) => {
+    Promise.resolve().then(fn);
+    return { fake: true };
+  };
+
+  try {
+    startContinuousMonitor({
+      bot: {
+        api: {
+          sendMessage: async () => {},
+          sendDocument: async () => {},
+          sendVideo: async () => {},
+        },
+      },
+      session: {
+        get: () => sessionState,
+        clearRunningTask: () => {},
+        clearCampaignV3: () => {},
+        setCampaignV3Stage: (_chatId, stage) => { sessionState.campaignV3.currentStage = stage; },
+      },
+      projectRoot,
+      monitoredSignals: new Set([
+        'stage_done:prj/inema/outputs/camp-05:1',
+        'stage_done:prj/inema/outputs/camp-05:2',
+      ]),
+      readChatContext: (dir) => JSON.parse(fs.readFileSync(path.join(dir, 'chat_context.json'), 'utf-8')),
+      writeImageApproval: () => {},
+      writeVideoApproval: () => {},
+      sendImageApprovalRequest: async () => {},
+      sendVideoApprovalRequest: async () => {},
+      sendStageApprovalRequest: async () => {},
+      enqueueStage: async () => {},
+      stages: {},
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    assert.equal(sessionState.campaignV3.currentStage, 3);
+  } finally {
+    global.setInterval = originalSetInterval;
+  }
+});

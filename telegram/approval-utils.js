@@ -16,6 +16,10 @@ function writeImageApproval(projectRoot, outputDir, approved, feedback = null) {
   fs.mkdirSync(imgsDir, { recursive: true });
   const file = approved ? 'approved.json' : 'rejected.json';
   fs.writeFileSync(path.join(imgsDir, file), JSON.stringify({ approved, feedback, ts: new Date().toISOString() }));
+  for (const stale of ['approval_needed.json', 'timed_out.json']) {
+    const fullPath = path.join(imgsDir, stale);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  }
 }
 
 function writeVideoApproval(projectRoot, outputDir, approved, feedback = null) {
@@ -23,6 +27,10 @@ function writeVideoApproval(projectRoot, outputDir, approved, feedback = null) {
   fs.mkdirSync(videoDir, { recursive: true });
   const file = approved ? 'approved.json' : 'rejected.json';
   fs.writeFileSync(path.join(videoDir, file), JSON.stringify({ approved, feedback, ts: new Date().toISOString() }));
+  for (const stale of ['approval_needed.json', 'timed_out.json']) {
+    const fullPath = path.join(videoDir, stale);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
+  }
 }
 
 function writeImageApprovalTimeout(projectRoot, outputDir, reason = 'approval timeout') {

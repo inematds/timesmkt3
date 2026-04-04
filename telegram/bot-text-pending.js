@@ -184,7 +184,7 @@ Keep the same JSON structure. Only modify what the feedback requests.`;
 
     const stageLabels = { 1: 'Brief', 2: 'Imagens', 3: 'Video', 4: 'Plataformas', 5: 'Distribuicao' };
     const label = rerunStages.map((n) => (n === 3 ? `Video ${videoMode}` : stageLabels[n])).join(' + ');
-    await ctx.reply(`Reprocessando <b>${campaignFolder}</b> — ${label}...`, { parse_mode: 'HTML' });
+    await ctx.reply(`Reprocessamento confirmado para <b>${campaignFolder}</b>.\nEnfileirando: ${label}...`, { parse_mode: 'HTML' });
 
     const absOutDir = path.resolve(projectRoot, payload.output_dir);
     if (payload.cleanFlags) {

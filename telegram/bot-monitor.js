@@ -159,6 +159,13 @@ function startContinuousMonitor(deps) {
           5: ['distribution_agent'],
         };
 
+        const syncCurrentStage = (stage) => {
+          if (typeof session.setCampaignV3Stage === 'function' && cv.currentStage !== stage) {
+            session.setCampaignV3Stage(chatId, stage);
+            cv.currentStage = stage;
+          }
+        };
+
         for (const [stageNum, agents] of Object.entries(stageAgentMap)) {
           const num = Number(stageNum);
           const stageKey = `stage_done:${relDir}:${num}`;
@@ -190,6 +197,7 @@ function startContinuousMonitor(deps) {
 
           let allDone = true;
           let anyStarted = activeAgents.length === 0;
+          let sawAgentLog = false;
           for (const agent of activeAgents) {
             const logFile = path.join(logsDir, `${agent}.log`);
             if (!fs.existsSync(logFile)) {
@@ -197,13 +205,21 @@ function startContinuousMonitor(deps) {
               continue;
             }
             anyStarted = true;
+            sawAgentLog = true;
             const tail = fs.readFileSync(logFile, 'utf-8').split('\n').filter((line) => line.trim()).slice(-3).join('\n');
             if (!tail.includes('Completed successfully')) allDone = false;
+          }
+
+          if (sawAgentLog && !allDone) {
+            syncCurrentStage(num);
           }
 
           if (!allDone || !anyStarted) continue;
 
           monitoredSignals.add(stageKey);
+          if (sawAgentLog) {
+            syncCurrentStage(num);
+          }
           console.log(`[monitor] Stage ${num} completed for ${relDir}`);
 
           if (cv.notifications !== false) {
@@ -279,7 +295,7 @@ function startContinuousMonitor(deps) {
             } else if (approvalMode === 'humano') {
               console.log(`[monitor] Stage ${num} needs human approval — sending request`);
               const fakeCtx = { reply: (text, opts) => bot.api.sendMessage(chatId, text, opts) };
-              sendStageApprovalRequest(fakeCtx, chatId, num + 1).catch((err) => {
+              sendStageApprovalRequest(fakeCtx, chatId, num).catch((err) => {
                 console.error(`[monitor] Failed to send approval request for stage ${num}:`, err.message);
               });
             }

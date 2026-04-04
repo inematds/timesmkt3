@@ -36,6 +36,46 @@ function createWorkerVideoProHandler({
     } = job.data;
     const { source: image_source, folder: imageFolder } = resolveImageSource(rawImageSource, image_folder);
     const absVideoDir = path.resolve(projectRoot, output_dir, 'video');
+    const collectFallbackVisualAssets = () => {
+      const seen = new Set();
+      const assets = [];
+      const addAssets = (items) => {
+        for (const item of items || []) {
+          if (!item?.path) continue;
+          if (seen.has(item.path)) continue;
+          if (item.imageType === 'clip') continue;
+          seen.add(item.path);
+          assets.push(item);
+        }
+      };
+
+      if (image_source === 'folder' && imageFolder) {
+        addAssets(getFolderAssets(imageFolder));
+      }
+
+      const absImgsDir = path.resolve(projectRoot, output_dir, 'imgs');
+      if (fs.existsSync(absImgsDir)) {
+        addAssets(
+          fs.readdirSync(absImgsDir)
+            .filter((file) => /\.(jpg|jpeg|png|webp)$/i.test(file))
+            .map((file) => {
+              const fullPath = path.join(absImgsDir, file);
+              return { path: fullPath, imageType: 'raw', ...(getImageDimensions(fullPath) || {}) };
+            }),
+        );
+      }
+
+      addAssets(getProjectAssets(project_dir));
+      return assets;
+    };
+
+    const pickFallbackAssetForScene = (fallbackAssets, sceneIndex) => {
+      if (!fallbackAssets.length) return null;
+      const portrait = fallbackAssets.filter((asset) => asset.orientation === 'portrait');
+      const rawPortrait = portrait.filter((asset) => asset.imageType !== 'banner');
+      const preferred = rawPortrait.length > 0 ? rawPortrait : (portrait.length > 0 ? portrait : fallbackAssets);
+      return preferred[sceneIndex % preferred.length]?.path || fallbackAssets[sceneIndex % fallbackAssets.length]?.path || null;
+    };
 
     const vf = (idx, suffix) => `${task_name}_video_${idx}${suffix}`;
     const vfFind = (idx, suffix) => {
@@ -852,6 +892,39 @@ Then print: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
           const promptsPath = path.resolve(absImgsDir, `${task_name}_video_${idx}_prompts.json`);
           fs.writeFileSync(promptsPath, JSON.stringify(promptsLog, null, 2), 'utf-8');
           log(output_dir, 'video_pro', `Saved ${promptsLog.length} image prompts to ${promptsPath}`);
+        }
+      }
+    }
+
+    const fallbackAssets = collectFallbackVisualAssets();
+    if (fallbackAssets.length > 0) {
+      for (let i = 1; i <= video_count; i++) {
+        const idx = String(i).padStart(2, '0');
+        const planPath = vfFind(idx, '_scene_plan_motion.json');
+        if (!fs.existsSync(planPath)) continue;
+
+        try {
+          const plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+          let fallbackFixes = 0;
+
+          for (let s = 0; s < plan.scenes.length; s++) {
+            const scene = plan.scenes[s];
+            if (scene.image && fs.existsSync(scene.image)) continue;
+
+            const replacement = pickFallbackAssetForScene(fallbackAssets, s);
+            if (!replacement) continue;
+
+            scene.image = replacement;
+            scene.image_has_text = /(_post|_stories|carousel_|oficial_|logo_|instagram|facebook|_ad\.|banner|calendar)/i.test(replacement);
+            fallbackFixes += 1;
+          }
+
+          if (fallbackFixes > 0) {
+            fs.writeFileSync(planPath, JSON.stringify(plan, null, 2), 'utf-8');
+            log(output_dir, 'video_pro', `Fallback: assigned ${fallbackFixes} existing project images in video ${idx}`);
+          }
+        } catch (e) {
+          log(output_dir, 'video_pro', `Fallback image fix failed for video ${idx}: ${e.message}`);
         }
       }
     }

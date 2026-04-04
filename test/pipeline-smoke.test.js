@@ -71,6 +71,91 @@ test('worker video pro skips when final render already exists and skip_completed
   assert.deepEqual(result, { status: 'skipped', reason: 'already completed' });
 });
 
+test('worker video pro falls back to project assets when scene images are missing', async () => {
+  const projectRoot = makeProjectRoot();
+  const outputDir = 'prj/demo/outputs/campanha';
+  const projectDir = 'prj/demo';
+  const videoDir = path.join(projectRoot, outputDir, 'video');
+  const assetDir = path.join(projectRoot, projectDir, 'assets');
+  fs.mkdirSync(videoDir, { recursive: true });
+  fs.mkdirSync(assetDir, { recursive: true });
+
+  const fallbackImage = path.join(assetDir, 'fallback.png');
+  fs.writeFileSync(fallbackImage, 'image');
+
+  const rendererPath = path.join(projectRoot, 'mock-renderer.js');
+  fs.writeFileSync(rendererPath, [
+    "const fs = require('fs');",
+    "const path = require('path');",
+    "const plan = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));",
+    "const output = process.argv[3];",
+    "fs.mkdirSync(path.dirname(output), { recursive: true });",
+    "fs.writeFileSync(output, JSON.stringify({ image: plan.scenes[0].image }));",
+  ].join('\n'));
+
+  const handleVideoPro = createWorkerVideoProHandler({
+    ...baseDeps(projectRoot),
+    renderFfmpeg: rendererPath,
+    renderRemotion: rendererPath,
+    getVideoRenderer: () => rendererPath,
+    runClaude: async () => {
+      fs.writeFileSync(path.join(videoDir, 'campanha_video_01_scene_plan_motion.json'), JSON.stringify({
+        titulo: 'Teste',
+        video_length: 6,
+        format: '9:16',
+        width: 1080,
+        height: 1920,
+        narration_file: null,
+        music: null,
+        scenes: [
+          {
+            id: 'scene_01',
+            type: 'hook',
+            duration: 3,
+            image: path.join(videoDir, 'frames', 'missing.png'),
+            image_has_text: false,
+            text_overlay: 'Teste',
+            text_layout: { font_size: 96, font_weight: 900, font_family: 'Lora', position: 'top', color: '#FFFFFF', line_height: 1 },
+            motion: { type: 'push-in' },
+          },
+          {
+            id: 'scene_02',
+            type: 'cta',
+            duration: 3,
+            image: path.join(videoDir, 'frames', 'missing-2.png'),
+            image_has_text: false,
+            text_overlay: 'CTA',
+            text_layout: { font_size: 96, font_weight: 900, font_family: 'Lora', position: 'top', color: '#FFFFFF', line_height: 1 },
+            motion: { type: 'drift' },
+          },
+        ],
+      }, null, 2));
+    },
+    waitForFile: async () => true,
+    getImageDimensions: () => ({ width: 1080, height: 1920, orientation: 'portrait', ratio: '0.56' }),
+    getProjectAssets: () => [{ path: fallbackImage, imageType: 'raw', width: 1080, height: 1920, orientation: 'portrait', ratio: '0.56' }],
+  });
+
+  const result = await handleVideoPro({
+    token: 'job-token',
+    extendLock: async () => {},
+    data: {
+      task_name: 'campanha',
+      task_date: '2026-04-02',
+      output_dir: outputDir,
+      project_dir: projectDir,
+      platform_targets: ['instagram'],
+      video_count: 1,
+      image_source: 'brand',
+    },
+  });
+
+  const plan = JSON.parse(fs.readFileSync(path.join(videoDir, 'campanha_video_01_scene_plan_motion.json'), 'utf-8'));
+  assert.equal(plan.scenes[0].image, fallbackImage);
+  assert.equal(plan.scenes[1].image, fallbackImage);
+  assert.deepEqual(result, { status: 'complete', output: `${outputDir}/video/` });
+});
+
 test('ad creative handler completes in CSS-only mode with mocked Claude run', async () => {
   const projectRoot = makeProjectRoot();
   const outputDir = 'prj/demo/outputs/campanha';
