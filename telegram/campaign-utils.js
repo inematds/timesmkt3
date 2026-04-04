@@ -37,6 +37,7 @@ function buildPayload(taskName, opts, projectDir, today, env = process.env) {
 }
 
 function buildConfigTable(payload, title, env = process.env) {
+  const imageSource = payload.image_source || 'brand';
   const providerLabel = (payload.image_provider || env.IMAGE_PROVIDER || 'kie').toUpperCase();
   const modelLabels = {
     'z-image': 'Z-Image', 'z-image-turbo': 'Z-Image Turbo',
@@ -60,11 +61,12 @@ function buildConfigTable(payload, title, env = process.env) {
   const bgLabel = payload.image_bg_mode === 'blur' ? 'blur' : 'escuro';
   const approvalAll = Object.values(payload.approval_modes || {});
   const approvalLabel = approvalAll.length > 0 && approvalAll.every(v => v === approvalAll[0]) ? approvalAll[0] : 'misto';
+  const sourceLabel = imageSource === 'folder' && payload.image_folder
+    ? `folder ${payload.image_folder}`
+    : imageSource;
 
   const rows = [
-    { setting: 'Fonte imgs', current: payload.image_source, def: DEFAULTS.image_source, opts: 'brand / api / free / screenshot' },
-    { setting: 'Provider', current: providerLabel, def: DEFAULTS.image_provider, opts: 'kie / pollinations' },
-    { setting: 'Modelo', current: modelLabel, def: DEFAULTS.image_model, opts: 'z-image / flux / flux-2 / seedream' },
+    { setting: 'Fonte imgs', current: sourceLabel, def: DEFAULTS.image_source, opts: 'brand / api / free / screenshot / folder xxx' },
     { setting: 'Quick', current: vQuick ? 'sim' : 'nao', def: 'sim', opts: 'sim / sem quick' },
     { setting: 'Pro', current: vPro ? 'sim' : 'nao', def: 'nao', opts: 'pro' },
     { setting: 'Narrador', current: payload.narrator || 'rachel', def: DEFAULTS.narrator, opts: 'rachel / bella / domi / antoni / josh / arnold' },
@@ -77,6 +79,13 @@ function buildConfigTable(payload, title, env = process.env) {
     { setting: 'Aprovação', current: approvalLabel, def: DEFAULTS.approval, opts: 'humano / auto' },
     { setting: 'Notif', current: payload.notifications === false ? 'off' : 'on', def: 'on', opts: 'on / off' },
   ];
+
+  if (imageSource === 'api') {
+    rows.splice(1, 0,
+      { setting: 'Provider', current: providerLabel, def: DEFAULTS.image_provider, opts: 'kie / pollinations' },
+      { setting: 'Modelo', current: modelLabel, def: DEFAULTS.image_model, opts: 'z-image / flux / flux-2 / seedream' },
+    );
+  }
 
   const lines = [
     `<b>${title}</b>\n`,

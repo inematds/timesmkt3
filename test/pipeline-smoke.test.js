@@ -4,7 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 
-const { createWorkerVideoHandlers, attachExistingQuickNarration } = require('../pipeline/worker-video');
+const { createWorkerVideoHandlers, attachExistingQuickNarration, ensureQuickNarration } = require('../pipeline/worker-video');
 const { createWorkerVideoProHandler } = require('../pipeline/worker-video-pro');
 const { createAdCreativeHandler } = require('../pipeline/worker-ad-creative');
 const { createPlatformHandlers } = require('../pipeline/worker-platforms');
@@ -66,6 +66,53 @@ test('attachExistingQuickNarration reuses prior quick narration when plan has nu
 
   assert.equal(reused, true);
   assert.equal(updated.narration_file, `${outputDir}/audio/campanha-quick_quick_01_narration.mp3`);
+});
+
+test('ensureQuickNarration generates narration from scene text when quick plan has no audio file', () => {
+  const projectRoot = makeProjectRoot();
+  const outputDir = 'prj/demo/outputs/campanha-quick';
+  const videoDir = path.join(projectRoot, outputDir, 'video');
+  fs.mkdirSync(videoDir, { recursive: true });
+
+  const planPath = path.join(videoDir, 'campanha-quick_video_01_scene_plan.json');
+  fs.writeFileSync(planPath, JSON.stringify({
+    titulo: 'Teste',
+    narration_file: null,
+    scenes: [
+      { id: 'hook', duration: 3, narration: 'Primeira frase.' },
+      { id: 'cta', duration: 3, narration: 'Segunda frase.' },
+    ],
+  }, null, 2));
+
+  process.env.ELEVENLABS_API_KEY = 'test-key';
+  const fakeExec = (cmd, args) => {
+    assert.equal(cmd, 'node');
+    assert.match(args[0], /pipeline\/generate-audio\.js$/);
+    assert.equal(args[2], 'Primeira frase. Segunda frase.');
+    fs.mkdirSync(path.dirname(args[1]), { recursive: true });
+    fs.writeFileSync(args[1], 'audio');
+    return Buffer.from('ok');
+  };
+
+  try {
+    const result = ensureQuickNarration({
+      projectRoot,
+      output_dir: outputDir,
+      task_name: 'campanha-quick',
+      idx: '01',
+      narrator: 'rachel',
+      log: () => {},
+      execFile: fakeExec,
+    });
+
+    const updated = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+    assert.equal(result.ok, true);
+    assert.equal(result.reason, 'generated_from_scene_narration');
+    assert.equal(updated.narration_file, `${outputDir}/audio/campanha-quick_quick_01_narration.mp3`);
+    assert.ok(fs.existsSync(path.join(projectRoot, updated.narration_file)));
+  } finally {
+    delete process.env.ELEVENLABS_API_KEY;
+  }
 });
 
 test('worker video pro skips when final render already exists and skip_completed is enabled', async () => {

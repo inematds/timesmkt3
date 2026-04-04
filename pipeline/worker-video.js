@@ -33,6 +33,72 @@ function attachExistingQuickNarration(projectRoot, output_dir, task_name, idx, l
   return true;
 }
 
+function ensureQuickNarration({
+  projectRoot,
+  output_dir,
+  task_name,
+  idx,
+  narrator,
+  log = () => {},
+  execFile = execFileSync,
+}) {
+  let planPath = path.resolve(projectRoot, output_dir, 'video', `${task_name}_video_${idx}_scene_plan.json`);
+  if (!fs.existsSync(planPath)) planPath = path.resolve(projectRoot, output_dir, 'video', `video_${idx}_scene_plan.json`);
+  if (!fs.existsSync(planPath)) {
+    return { ok: false, reason: 'plan_missing', planPath: null };
+  }
+
+  let plan;
+  try {
+    plan = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
+  } catch (err) {
+    return { ok: false, reason: `plan_parse_failed:${err.message}`, planPath };
+  }
+
+  const narrationFile = plan.narration_file ? path.resolve(projectRoot, plan.narration_file) : null;
+  if (narrationFile && fs.existsSync(narrationFile)) {
+    return { ok: true, reason: 'existing_narration', planPath };
+  }
+
+  const reused = attachExistingQuickNarration(projectRoot, output_dir, task_name, idx, log);
+  if (reused) {
+    return { ok: true, reason: 'reused_narration', planPath };
+  }
+
+  const script = (plan.scenes || [])
+    .map((scene) => String(scene?.narration || '').trim())
+    .filter(Boolean)
+    .join(' ');
+  if (!script) {
+    return { ok: false, reason: 'missing_script', planPath };
+  }
+  if (!hasEnv('ELEVENLABS_API_KEY')) {
+    return { ok: false, reason: 'missing_elevenlabs', planPath };
+  }
+
+  const relAudioPath = `${output_dir}/audio/${task_name}_quick_${idx}_narration.mp3`;
+  const absAudioPath = path.resolve(projectRoot, relAudioPath);
+  try {
+    execFile('node', [
+      path.resolve(projectRoot, 'pipeline', 'generate-audio.js'),
+      absAudioPath,
+      script,
+      narrator || 'rachel',
+    ], {
+      cwd: projectRoot,
+      stdio: 'pipe',
+      timeout: 180000,
+    });
+  } catch (err) {
+    return { ok: false, reason: `tts_failed:${err.message}`, planPath };
+  }
+
+  plan.narration_file = relAudioPath;
+  fs.writeFileSync(planPath, JSON.stringify(plan, null, 2));
+  log(output_dir, 'video_quick', `Generated narration for video ${idx}: ${relAudioPath}`);
+  return { ok: true, reason: 'generated_from_scene_narration', planPath };
+}
+
 function createWorkerVideoHandlers({
   projectRoot,
   imageProviderName,
@@ -226,12 +292,24 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
 
     for (let i = 1; i <= video_count; i++) {
       const idx = String(i).padStart(2, '0');
-      const reusedNarration = attachExistingQuickNarration(projectRoot, output_dir, task_name, idx, log);
-      let planPath = path.resolve(projectRoot, output_dir, 'video', `${task_name}_video_${idx}_scene_plan.json`);
-      if (!fs.existsSync(planPath)) planPath = path.resolve(projectRoot, output_dir, 'video', `video_${idx}_scene_plan.json`);
-      if (!fs.existsSync(planPath)) {
+      const narrationStatus = ensureQuickNarration({
+        projectRoot,
+        output_dir,
+        task_name,
+        idx,
+        narrator: job.data.narrator || 'rachel',
+        log,
+      });
+      const planPath = narrationStatus.planPath;
+      if (!planPath || !fs.existsSync(planPath)) {
         log(output_dir, 'video_quick', `Scene plan not found: video_${idx}, skipping.`);
         continue;
+      }
+
+      if (!narrationStatus.ok) {
+        log(output_dir, 'video_quick', `Missing narration for video ${idx}; stopping quick render (${narrationStatus.reason}).`);
+        process.stdout.write(`[VIDEO_QUICK_AUDIO_MISSING] ${output_dir} video_${idx}\n`);
+        return { status: 'failed', reason: `missing narration for quick video ${idx}: ${narrationStatus.reason}` };
       }
 
       const ts = videoTimestamp();
@@ -241,25 +319,14 @@ After saving scene plans, print exactly: [VIDEO_APPROVAL_NEEDED] ${output_dir}`;
       if (job.data.image_bg_mode) {
         try {
           const planData = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
-          const hasNarration = !!(planData.narration_file && fs.existsSync(path.resolve(projectRoot, planData.narration_file)));
-          if (!hasNarration && !reusedNarration) {
-            log(output_dir, 'video_quick', `Missing narration for video ${idx}; stopping quick render.`);
-            process.stdout.write(`[VIDEO_QUICK_AUDIO_MISSING] ${output_dir} video_${idx}\n`);
-            return { status: 'failed', reason: `missing narration for quick video ${idx}` };
+          if (job.data.image_bg_mode) {
+            planData.image_bg_mode = job.data.image_bg_mode;
+            fs.writeFileSync(planPath, JSON.stringify(planData, null, 2));
           }
-          planData.image_bg_mode = job.data.image_bg_mode;
-          fs.writeFileSync(planPath, JSON.stringify(planData, null, 2));
-        } catch {}
-      } else {
-        try {
-          const planData = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
-          const hasNarration = !!(planData.narration_file && fs.existsSync(path.resolve(projectRoot, planData.narration_file)));
-          if (!hasNarration && !reusedNarration) {
-            log(output_dir, 'video_quick', `Missing narration for video ${idx}; stopping quick render.`);
-            process.stdout.write(`[VIDEO_QUICK_AUDIO_MISSING] ${output_dir} video_${idx}\n`);
-            return { status: 'failed', reason: `missing narration for quick video ${idx}` };
-          }
-        } catch {}
+        } catch (err) {
+          log(output_dir, 'video_quick', `Could not update quick scene plan ${idx}: ${err.message}`);
+          return { status: 'failed', reason: `invalid quick scene plan ${idx}` };
+        }
       }
 
       log(output_dir, 'video_quick', `Rendering video ${i}/${video_count}...`);
@@ -672,4 +739,4 @@ After saving all files, print exactly: [MOTION_PLAN_DONE] ${outputDir}`;
   };
 }
 
-module.exports = { createWorkerVideoHandlers, attachExistingQuickNarration };
+module.exports = { createWorkerVideoHandlers, attachExistingQuickNarration, ensureQuickNarration };
