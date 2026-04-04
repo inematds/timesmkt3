@@ -589,7 +589,12 @@ bot.command('cancel', async (ctx) => {
 
   // Clear session state
   session.clearRunningTask(chatId);
+  session.clearCampaignV3(chatId);
+  session.clearPendingStageApproval(chatId);
+  session.clearPendingVideoApproval(chatId);
+  session.clearPendingCampaign(chatId);
   session.clearPendingRerun(chatId);
+  session.clearPendingImageError(chatId);
 
   await ctx.reply(`Pipeline <b>${taskName}</b> cancelado.`, { parse_mode: 'HTML' });
 });
