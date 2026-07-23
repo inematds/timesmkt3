@@ -132,15 +132,15 @@ function ensureQuickNarration({
 
         let realDur = plannedDur;
         try {
-          const probe = execFileSync('ffprobe', [
+          const probe = execFile('ffprobe', [
             '-v', 'quiet', '-show_entries', 'format=duration',
             '-of', 'csv=p=0', scenePath,
-          ], { encoding: 'utf-8', timeout: 10000 }).trim();
+          ], { encoding: 'utf-8', timeout: 10000 }).toString().trim();
           realDur = parseFloat(probe) || plannedDur;
         } catch {}
         scene.duration = parseFloat(realDur.toFixed(2));
       } else {
-        execFileSync('ffmpeg', [
+        execFile('ffmpeg', [
           '-y', '-f', 'lavfi', '-i', 'anullsrc=r=44100:cl=stereo',
           '-t', String(plannedDur),
           '-c:a', 'libmp3lame', '-b:a', '128k',
@@ -160,7 +160,7 @@ function ensureQuickNarration({
       concatList,
       sceneAudioPaths.map(p => `file '${p.replace(/'/g, "'\\''")}'`).join('\n'),
     );
-    execFileSync('ffmpeg', [
+    execFile('ffmpeg', [
       '-y', '-f', 'concat', '-safe', '0', '-i', concatList,
       '-c:a', 'libmp3lame', '-b:a', '128k', absAudioPath,
     ], { stdio: 'pipe', timeout: 60000 });

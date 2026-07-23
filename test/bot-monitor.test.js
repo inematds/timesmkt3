@@ -130,7 +130,11 @@ test('startContinuousMonitor advances stage1 when research is skipped and copywr
   }
 });
 
-test('startContinuousMonitor advances stage3 when skip_image disables quick video', async () => {
+test('startContinuousMonitor finalizes at stage3 instead of advancing to platforms (MAX_AUTO_STAGE)', async () => {
+  // Stages 4/5 auto-advance is disabled on purpose (see CLAUDE.md "Limitações
+  // ativas" + telegram/bot-monitor.js MAX_AUTO_STAGE=3). Once stage 3 completes,
+  // the monitor must stop and clear the running task/session instead of
+  // enqueueing platform agents, even when approval_modes.stage3 is "auto".
   const projectRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'timesmkt3-monitor-stage3-'));
   const campDir = path.join(projectRoot, 'prj', 'inema', 'outputs', 'camp-03');
   fs.mkdirSync(path.join(campDir, 'logs'), { recursive: true });
@@ -156,6 +160,9 @@ test('startContinuousMonitor advances stage3 when skip_image disables quick vide
 
   const originalSetInterval = global.setInterval;
   const enqueued = [];
+  const sentMessages = [];
+  let runningTaskClearedFor = null;
+  let campaignV3ClearedFor = null;
   global.setInterval = (fn) => {
     Promise.resolve().then(fn);
     return { fake: true };
@@ -165,15 +172,15 @@ test('startContinuousMonitor advances stage3 when skip_image disables quick vide
     startContinuousMonitor({
       bot: {
         api: {
-          sendMessage: async () => {},
+          sendMessage: async (_chatId, text) => { sentMessages.push(text); },
           sendDocument: async () => {},
           sendVideo: async () => {},
         },
       },
       session: {
         get: () => sessionState,
-        clearRunningTask: () => {},
-        clearCampaignV3: () => {},
+        clearRunningTask: (chatId) => { runningTaskClearedFor = chatId; },
+        clearCampaignV3: (chatId) => { campaignV3ClearedFor = chatId; },
         setCampaignV3Stage: (_chatId, stage) => { sessionState.campaignV3.currentStage = stage; },
       },
       projectRoot,
@@ -190,8 +197,10 @@ test('startContinuousMonitor advances stage3 when skip_image disables quick vide
 
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    assert.equal(sessionState.campaignV3.currentStage, 4);
-    assert.deepEqual(enqueued[0], ['platform_instagram']);
+    assert.equal(enqueued.length, 0, 'não deve enfileirar stage 4 — MAX_AUTO_STAGE bloqueia plataformas/distribuição');
+    assert.equal(runningTaskClearedFor, '777');
+    assert.equal(campaignV3ClearedFor, '777');
+    assert.ok(sentMessages.some((m) => m.includes('finalizada') && m.includes('Plataformas e distribuição desabilitadas')));
   } finally {
     global.setInterval = originalSetInterval;
   }
