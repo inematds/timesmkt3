@@ -106,28 +106,7 @@ npm run pipeline:run:payload '<json>'    # payload inline
 
 ## Comando /import
 
-Copia assets de múltiplas campanhas para uma pasta `imports/` central do projeto.
-
-```
-/import <campanhas> <origem> [modificador]
-```
-
-**Campanhas:** lista (`c55 c56`), range (`c55-c59`), ou `todos`.
-
-**Origens:** `videos` (MP4 quick+pro), `ads` (PNG carousels), `imgs` (JPG gerados), `report` (pasta completa), `gatilhos` (pasta completa).
-
-**Modificadores** (só para `report` / `gatilhos`): `videos` ou `ads`.
-
-**Destino:** `prj/<projeto>/imports/{videos,ads}/` com prefixo da campanha.
-
-Exemplos:
-```
-/import c55-c59 report
-/import todos gatilhos videos
-/import c56 gatilhos ads
-```
-
-Reimports sobrescrevem.
+`/import <campanhas> <origem> [modificador]` copia assets de campanhas para `prj/<projeto>/imports/`. Sintaxe, origens e exemplos: [doc/comando-import.md](doc/comando-import.md).
 
 ---
 
@@ -150,58 +129,9 @@ Cada agente tem sua spec detalhada no respectivo `SKILL.md` — ler o SKILL.md p
 
 **Regra fixa de imagens geradas via API:** imagens de modelos (KIE/z-image) devem ser **limpas de texto** — texto sempre sobreposto via HTML/CSS na montagem, nunca embutido na geração.
 
-### Video Pro Templates
+### Video Pro Templates e Video Viral
 
-Templates controlam o `visual_type` de cada cena (não só fotos). Uso: `"video_template": "<template>"` no payload, ou "template <nome>" na descrição no Telegram.
-
-| Template | Mix visual |
-|---|---|
-| `auto` (padrão) | Agente decide |
-| `data_story` | ~60% chart, ~20% text_card, ~20% photo |
-| `explainer` | ~40% list/text_card, ~30% photo, ~30% chart |
-| `narrativo` | ~50% text_card, ~30% photo, ~20% chart |
-| `brand_film` | ~70% photo, ~20% text_card, ~10% chart |
-
-**Visual types por cena:** `photo`, `chart` (Chart.js bar/line/pie/donut), `text_card`, `list`, `split`.
-
-**Implementação:** `pipeline/render-visual-png.js` (PNGs via Playwright), `pipeline/render-video-ffmpeg.js` (pre-render), `pipeline/worker-video-pro.js` (injeta template no scene plan). Múltiplos templates coexistem no mesmo output dir (compartilham áudio/imagens).
-
-### Video Viral (V1)
-
-Tipo paralelo a Quick e Pro — pegada Reels/TikTok. Diferenças do gatilho/report:
-
-- **Determinístico** (sem agente Claude no scene plan)
-- **Bg image full-frame** + texto enorme overlay (estilo ad em movimento)
-- **Punch hook nos 0-3s** (cena 1 tem texto extra-grande, sempre on)
-- **N vídeos por hook** lidos do research (mesmo extrator do gatilho)
-
-**Flags opcionais:**
-
-| Flag payload | Token /loterun | Default | O que faz |
-|---|---|---|---|
-| `music_enabled: true` | `musica` ou `music` | OFF | Trilha de fundo com ducking sob narração (volume 0.12) |
-| `captions_enabled: true` | `caption` ou `legenda` | OFF | Captions baked nos slides (V1) — V2: word-by-word ASS karaoke |
-| `video_template: <nome>` | token do template (`data_story`, `narrativo`, `brand_film`, `explainer`) | `viral` | Estilo visual dos slides — combina com qualquer tipo |
-
-Sintaxe:
-```
-/loterun c99 video viral                       → cru (só narração + bg, template viral default)
-/loterun c99 video viral musica caption        → com música + captions
-/loterun c99 video viral data_story            → slides chart-heavy estilo data_story
-/loterun c99 video viral brand_film            → slides photo-dominantes minimal
-/loterun c99 video pro viral                   → roda os dois em paralelo
-/loterun c99 video pro viral data_story        → ambos com mesmo estilo data_story
-```
-
-**Output:** `<output_dir>/viral/v01_<slug>/{video.mp4, narration.mp3, scene_plan.json, slide_NN.png, caption_timing.json, _meta.json}`
-
-**Word timing (V1):** estimador estilo Phase 1.5 do Pro — divide audioDuration ÷ totalWords com peso por length de palavra. Drift ±200-400ms aceito. V2 troca por Whisper.
-
-**Música:** se `music_enabled=true`, busca em `prj/<dir>/assets/music/` → fallback `assets/music/` global. Pega o primeiro arquivo (V2: mood-matched).
-
-**Implementação:** `pipeline/worker-video-viral.js` (worker) + `pipeline/render-slide-png.js` (template `viral`) + `pipeline/render-video-ffmpeg.js` (compõe vídeo, já suporta `music`/`music_volume` no plan).
-
-**V2 features (não nesse build):** Whisper word-level, pattern interrupts (zoom in/out), pacing adaptativo, multi-template, self-eval LLM.
+Templates do Pro (`video_template`: auto, data_story, explainer, narrativo, brand_film) e o Video Viral V1 (determinístico, flags `music_enabled`/`captions_enabled`, sintaxe `/loterun cXX video viral ...`): [doc/video-templates-e-viral.md](doc/video-templates-e-viral.md). Ler antes de mexer nesses workers.
 
 ---
 
@@ -212,19 +142,3 @@ Em cada `<project_dir>/knowledge/`:
 - `brand_identity.md` — tom, emojis, CTA, hashtags. Usado por todos os agentes.
 - `product_campaign.md` — features, assets, ângulos. Usado por Research, Ad Creative, Video, Copywriter.
 - `platform_guidelines.md` — best practices por plataforma. Usado por Ad Creative, Copywriter, Distribution.
-
----
-
-## Tech Stack
-
-| Tool | Uso |
-|---|---|
-| BullMQ + Redis (Docker local) | Fila e worker |
-| Tavily AI SDK (`@tavily/core`) | Research |
-| Playwright (`chromium`) | HTML → PNG |
-| ffmpeg | Video Quick + pré-render visual types |
-| Remotion | Video Pro |
-| Supabase (`@supabase/supabase-js`) | Hosting de mídia + URLs públicas |
-| Instagram Graph API | Publicação IG |
-| YouTube Data API | Publicação YT (OAuth `YOUTUBE_REFRESH_TOKEN`) |
-| graph.threads.net | Publicação Threads |
