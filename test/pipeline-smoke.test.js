@@ -69,6 +69,11 @@ test('attachExistingQuickNarration reuses prior quick narration when plan has nu
 });
 
 test('ensureQuickNarration generates narration from scene text when quick plan has no audio file', () => {
+  // Since commit 22c5c7d ("TTS-per-scene em Pro e Quick"), ensureQuickNarration
+  // generates one MP3 per scene (ffprobe measures real duration) and concats
+  // them at the end — it no longer does a single TTS call with the joined
+  // script. All three subprocess calls (TTS + ffprobe + concat ffmpeg) go
+  // through the injected execFile seam so the test needs no real binaries.
   const projectRoot = makeProjectRoot();
   const outputDir = 'prj/demo/outputs/campanha-quick';
   const videoDir = path.join(projectRoot, outputDir, 'video');
@@ -85,13 +90,25 @@ test('ensureQuickNarration generates narration from scene text when quick plan h
   }, null, 2));
 
   process.env.ELEVENLABS_API_KEY = 'test-key';
+  const ttsCalls = [];
   const fakeExec = (cmd, args) => {
-    assert.equal(cmd, 'node');
-    assert.match(args[0], /pipeline\/generate-audio\.js$/);
-    assert.equal(args[2], 'Primeira frase. Segunda frase.');
-    fs.mkdirSync(path.dirname(args[1]), { recursive: true });
-    fs.writeFileSync(args[1], 'audio');
-    return Buffer.from('ok');
+    if (cmd === 'node') {
+      assert.match(args[0], /pipeline\/generate-audio\.js$/);
+      ttsCalls.push(args[2]);
+      fs.mkdirSync(path.dirname(args[1]), { recursive: true });
+      fs.writeFileSync(args[1], 'audio');
+      return Buffer.from('ok');
+    }
+    if (cmd === 'ffprobe') {
+      return '3.5';
+    }
+    if (cmd === 'ffmpeg') {
+      const outPath = args[args.length - 1];
+      fs.mkdirSync(path.dirname(outPath), { recursive: true });
+      fs.writeFileSync(outPath, 'concat-audio');
+      return Buffer.from('ok');
+    }
+    throw new Error(`unexpected exec: ${cmd}`);
   };
 
   try {
@@ -108,8 +125,10 @@ test('ensureQuickNarration generates narration from scene text when quick plan h
     const updated = JSON.parse(fs.readFileSync(planPath, 'utf-8'));
     assert.equal(result.ok, true);
     assert.equal(result.reason, 'generated_from_scene_narration');
+    assert.deepEqual(ttsCalls, ['Primeira frase.', 'Segunda frase.']);
     assert.equal(updated.narration_file, `${outputDir}/audio/campanha-quick_quick_01_narration.mp3`);
     assert.ok(fs.existsSync(path.join(projectRoot, updated.narration_file)));
+    assert.equal(updated.scenes[0].duration, 3.5);
   } finally {
     delete process.env.ELEVENLABS_API_KEY;
   }

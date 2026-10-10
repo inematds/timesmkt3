@@ -75,10 +75,12 @@ const PROVIDER_DEFAULT_MODEL_FALLBACK = {
   piramyd: 'flux',
 };
 
-function getDefaultImageModel(providerName) {
-  const provider = String(providerName || getEnv('IMAGE_PROVIDER', 'inemaimg')).toLowerCase();
+function getDefaultImageModel(providerName, env) {
+  const provider = String(providerName || (env && env.IMAGE_PROVIDER) || getEnv('IMAGE_PROVIDER', 'inemaimg')).toLowerCase();
   const envKey = PROVIDER_DEFAULT_MODEL_ENV[provider];
   if (envKey) {
+    const injectedValue = env ? normalizeValue(env[envKey]) : '';
+    if (injectedValue) return injectedValue;
     const envValue = getEnv(envKey, '');
     if (envValue) return envValue;
   }

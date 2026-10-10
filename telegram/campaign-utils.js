@@ -30,7 +30,7 @@ function buildPayload(taskName, opts, projectDir, today, env = process.env) {
     image_source: opts['img-source'] || 'brand',
     image_background_color: opts['img-bg-color'] || null,
     screenshot_urls: opts['screenshot-urls'] ? opts['screenshot-urls'].split(',').map(u => u.trim()) : [],
-    image_model: opts['img-model'] || getDefaultImageModel(env.IMAGE_PROVIDER),
+    image_model: opts['img-model'] || getDefaultImageModel(env.IMAGE_PROVIDER, env),
     use_brand_overlay: opts['brand-overlay'] !== 'false',
     campaign_brief: opts.brief || '',
     video_mode: opts['video-pro'] ? 'pro' : 'quick',
@@ -184,7 +184,7 @@ Return a JSON object with these fields:
   "video_template": "auto",
   "image_source": "brand",
   "image_background_color": null,
-  "image_model": "${getDefaultImageModel(env.IMAGE_PROVIDER)}",
+  "image_model": "${getDefaultImageModel(env.IMAGE_PROVIDER, env)}",
   "approval_modes": {
     "stage1": "auto",
     "stage2": "auto",
@@ -208,7 +208,7 @@ Rules:
 - video_template: "auto" (default, agent decides freely), "data_story" (data/statistics focused), "explainer" (step-by-step, process), "narrativo" (text-card narrative), "brand_film" (cinematic, photo-dominant). Set based on user request: "template data_story", "template explicativo", "template narrativo", "template cinematografico/filme".
 - image_source: "brand" (or "marca") if user mentions brand images, project images, fotos da marca; "free" (or "gratis") if user mentions free stock photos, banco de imagens, pexels, unsplash, pixabay; "api" if user mentions AI generation, gerar imagens, criar imagens com IA; "folder" (or "pasta") if user specifies a folder path; "screenshot" (or "captura") if user mentions screenshot, captura de site, print do site, capturar pagina; "solid" (or "solido") if user wants no images, only solid/flat background. When screenshot, also populate "screenshot_urls" with any URLs mentioned. Default "brand".
 - image_background_color: only relevant when image_source is "solid". If user says just "solido", default to "#0D0D0D". If they specify a color, preserve it (e.g. "#112233").
-- image_model: only relevant when image_source is "api". Default is ALWAYS "${getDefaultImageModel(env.IMAGE_PROVIDER)}" (derived from IMAGE_PROVIDER + per-provider defaults in .env). Only change if the user explicitly requests a different model. Options depend on provider: inemaimg → "flux2-klein", "qwen-edit-2511", "ernie", "flux2-dev"; kie → "z-image", "z-image-turbo", "flux-kontext-pro", "flux-kontext-max", "gpt-image-1"; pollinations → "flux".
+- image_model: only relevant when image_source is "api". Default is ALWAYS "${getDefaultImageModel(env.IMAGE_PROVIDER, env)}" (derived from IMAGE_PROVIDER + per-provider defaults in .env). Only change if the user explicitly requests a different model. Options depend on provider: inemaimg → "flux2-klein", "qwen-edit-2511", "ernie", "flux2-dev"; kie → "z-image", "z-image-turbo", "flux-kontext-pro", "flux-kontext-max", "gpt-image-1"; pollinations → "flux".
 - approval_modes: each stage can be "humano" (user must approve), "agente" (AI reviewer decides), or "auto" (advance automatically). Default "auto" for all. Set to "humano" if user explicitly asks for approval before each stage. Set to "agente" if user says "aprovação por agente", "agente revisa".
 - notifications: false only if user explicitly says "sem notificações", "silencioso", "não notificar".
 - video_audio: "narration" if user wants voiceover/narração (default), "music" if user wants background music only, "both" if user wants narration + music, "none" for silent/no audio.
@@ -232,7 +232,7 @@ Rules:
       const payload = JSON.parse(source.slice(start, end + 1));
       const modelKeywords = ['z-image-turbo', 'flux-kontext-pro', 'flux-kontext-max', 'gpt-image-1', 'flux pro', 'flux max', 'gpt image', 'flux2-klein', 'flux2-dev', 'qwen-edit', 'ernie'];
       const userPickedModel = modelKeywords.some(k => text.toLowerCase().includes(k));
-      if (!userPickedModel) payload.image_model = getDefaultImageModel(env.IMAGE_PROVIDER);
+      if (!userPickedModel) payload.image_model = getDefaultImageModel(env.IMAGE_PROVIDER, env);
       payload.video_quick = true;
       payload.video_pro = payload.video_pro === true;
       payload.video_mode = payload.video_pro ? 'both' : 'quick';
